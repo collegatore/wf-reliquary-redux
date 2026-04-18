@@ -22,3 +22,4 @@ WF Reliquary Redux is a companion app for [*Warframe*](https://www.warframe.com)
 - MCP
 - OCR for mission rewards / inventory tracking
 - mission duration statistics
+- chat message generator
