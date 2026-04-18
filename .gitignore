@@ -1,0 +1,47 @@
+# Build outputs
+bin/
+obj/
+out/
+artifacts/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE and editor settings
+.vs/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and diagnostics
+*.log
+*.tmp
+*.cache
+
+# Local databases
+*.db-shm
+*.db-wal
+
+# Test and coverage output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Package and tool artifacts
+packages/
+*.nupkg
+
+# Local app secrets and environment overrides
+.env
+.env.*
+appsettings.Development.json
+
+# Project-local Codex state
+.codex/
