@@ -45,3 +45,10 @@ appsettings.Development.json
 
 # Project-local Codex state
 .codex/
+
+# Github Spec Kit
+.specify/
+.agents/
+
+# Design artifacts
+.meta

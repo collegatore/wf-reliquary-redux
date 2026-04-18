@@ -1,22 +1,24 @@
 # WF Reliquary Redux
 
-WF Reliquary Redux is a Warframe companion app focused on helping players understand how to acquire desired items from publicly available drop table data.
+## Project Description
 
-The broader product vision is to turn structured drop data into actionable acquisition paths. The first implementation priority is centered on Void Relics, Prime Parts, and mission rotation-aware relic sourcing.
+WF Reliquary Redux is a companion app for [*Warframe*](https://www.warframe.com). Its goal is to help a player to find the best mission for a combination of items the player desires. The project is intended to process the official drop tables, extract mission and reward data, and organize that information to support item lookup, farming decisions, and activity planning. It should connect items to the missions, rotations, and reward sources where they can be obtained, and use those relationships to build acquisition paths for individual items or entire sets.
 
-## Current Project Docs
+## Core Technology Decisions
 
-- [Project Description](./PROJECT_DESCRIPTION.md)
-- [Technology Stack](./TECHNOLOGY_STACK.md)
+- Programming language: C#
+- Runtime and SDK: .NET
+- Primary data storage: SQLite
+- Development environment: Visual Studio Code
+- Target operating systems: Windows and Linux
+- GUI framework: Avalonia
 
-## Planned MVP
+## Suggested Future Extensions
 
-- Cross-platform desktop app for Windows and Linux
-- C# and .NET application layer
-- SQLite data storage
-- Avalonia GUI framework
-- Prime Part -> Relic -> mission source lookup flow
-
-## Development
-
-The project is intended to be buildable from Visual Studio Code on both Windows and Linux using standard .NET CLI tooling.
+- Wishlist support and account-specific progress tracking.
+- Mission rundowns based on multiple desired items.
+- Alerts when new drop table data becomes available.
+- Rotation-aware mission efficiency analysis.
+- MCP
+- OCR for mission rewards / inventory tracking
+- mission duration statistics
