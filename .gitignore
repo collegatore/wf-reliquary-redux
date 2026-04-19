@@ -12,7 +12,10 @@ out/
 
 # IDE and editor settings
 .vs/
-.vscode/
+.vscode/*
+!.vscode/
+!.vscode/tasks.json
+!.vscode/launch.json
 
 # OS files
 .DS_Store

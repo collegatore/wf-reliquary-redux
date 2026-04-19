@@ -27,6 +27,17 @@ dotnet test
 
 The same commands are intended to work from Windows PowerShell and Linux shells.
 
+VS Code users can run the checked-in workspace tasks for the same workflows:
+
+- `dotnet: restore`: restore solution dependencies.
+- `dotnet: build`: default build task for the solution.
+- `dotnet: test`: default test task for the NUnit test projects.
+- `dotnet: run presentation`: run the Avalonia presentation shell.
+
+Use the `.NET: Launch Presentation` launch configuration to build and run the
+current Avalonia presentation project without attaching the debugger. Use
+`.NET: Debug Presentation` when you want to debug it from VS Code.
+
 ## Project Layout
 
 - `WF.Reliquary.Redux.sln`: solution-level restore, build, and test entry point.

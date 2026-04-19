@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET: Debug Presentation",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "dotnet: build",
+      "program": "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation/bin/Debug/net10.0/WF.Reliquary.Presentation.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": ".NET: Launch Presentation",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "dotnet: build",
+      "program": "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation/bin/Debug/net10.0/WF.Reliquary.Presentation.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation",
+      "console": "internalConsole",
+      "stopAtEntry": false,
+      "noDebug": true
+    }
+  ]
+}
