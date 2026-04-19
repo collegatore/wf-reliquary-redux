@@ -1,0 +1,19 @@
+<Window
+    x:Class="WF.Reliquary.Presentation.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="WF Reliquary Redux"
+    Width="900"
+    Height="600">
+  <Grid RowDefinitions="Auto,*" Margin="24">
+    <TextBlock
+        FontSize="24"
+        FontWeight="SemiBold"
+        Text="{Binding Title}" />
+    <TextBlock
+        Grid.Row="1"
+        Margin="0,16,0,0"
+        Text="{Binding Summary}"
+        TextWrapping="Wrap" />
+  </Grid>
+</Window>

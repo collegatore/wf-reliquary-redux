@@ -7,11 +7,40 @@ WF Reliquary Redux is a companion app for [*Warframe*](https://www.warframe.com)
 ## Core Technology Decisions
 
 - Programming language: C#
-- Runtime and SDK: .NET
+- Runtime and SDK: .NET 10 SDK
 - Primary data storage: SQLite
 - Development environment: Visual Studio Code
 - Target operating systems: Windows and Linux
 - GUI framework: Avalonia
+
+## Development Setup
+
+Install the .NET 10 SDK and open the repository root in a terminal or Visual Studio Code.
+
+Validate the boilerplate with:
+
+```powershell
+dotnet restore
+dotnet build
+dotnet test
+```
+
+The same commands are intended to work from Windows PowerShell and Linux shells.
+
+## Project Layout
+
+- `WF.Reliquary.Redux.sln`: solution-level restore, build, and test entry point.
+- `src/Application/WF.Reliquary.Application`: core application boundary for future parsing abstractions, normalization, query orchestration, and business rules.
+- `src/Infrastructure/WF.Reliquary.Infrastructure`: adapter boundary for future file access, SQLite persistence, and external data ingestion.
+- `src/Presentation/WF.Reliquary.Presentation`: Avalonia desktop UI boundary for future screens and user interaction.
+- `tests/Unit/WF.Reliquary.UnitTests`: NUnit coverage for application-layer behavior.
+- `tests/Integration/WF.Reliquary.IntegrationTests`: NUnit checks for cross-layer wiring, dependency direction, and contributor-facing guidance.
+
+Dependency direction starts deliberately narrow: presentation may reference application, infrastructure may reference application, and application must not reference presentation or infrastructure.
+
+## Future Work Scope
+
+The current implementation is boilerplate only. Drop-table parsing, SQLite schema creation, item lookup, mission recommendation, and full product UI workflows are future work and should be introduced through separate features.
 
 ## Suggested Future Extensions
 
