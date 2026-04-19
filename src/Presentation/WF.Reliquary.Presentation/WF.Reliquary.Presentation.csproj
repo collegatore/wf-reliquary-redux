@@ -18,5 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Application\WF.Reliquary.Application\WF.Reliquary.Application.csproj" />
+    <ProjectReference Include="..\..\Composition\WF.Reliquary.Composition\WF.Reliquary.Composition.csproj" />
   </ItemGroup>
 </Project>

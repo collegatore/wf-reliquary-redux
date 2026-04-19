@@ -1,17 +1,19 @@
 using Avalonia.Controls;
-using WF.Reliquary.Application;
+using WF.Reliquary.Composition;
 
 namespace WF.Reliquary.Presentation;
 
 public sealed partial class MainWindow : Window
 {
     public MainWindow()
+        : this(new MainWindowViewModel(ReliquaryServiceFactory.CreateDropTableSourceRefreshService()))
+    {
+    }
+
+    public MainWindow(MainWindowViewModel viewModel)
     {
         InitializeComponent();
-        DataContext = new MainWindowViewModel(
-            ApplicationInfo.Name,
-            "Boilerplate shell only. Product workflows will be added in future features.");
+        DataContext = viewModel;
+        _ = viewModel.LoadStatusAsync();
     }
 }
-
-public sealed record MainWindowViewModel(string Title, string Summary);

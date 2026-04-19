@@ -38,16 +38,38 @@ Use the `.NET: Launch Presentation` launch configuration to build and run the
 current Avalonia presentation project without attaching the debugger. Use
 `.NET: Debug Presentation` when you want to debug it from VS Code.
 
+## Drop Table Source
+
+The application can download and store the official Warframe drop-table HTML
+file. The default source URL is:
+
+```text
+https://warframe-web-assets.nyc3.cdn.digitaloceanspaces.com/uploads/cms/hnfvc0o3jnfvc873njb03enrf56.html
+```
+
+Edit the source URL in the application UI to override the default for future
+downloads. The configured URL is stored as application-level user settings in
+the current user's local application data folder. Downloaded data is stored as a
+raw HTML file under `WF Reliquary Redux/DropTables`, with adjacent metadata for
+source URL, download time, and the parsed `Last Update` value. A download is
+considered unsuccessful if `Last Update` cannot be parsed from the downloaded
+file.
+
+This workflow stores the raw source only. Drop-table parsing, SQLite schema
+creation, normalized import, item lookup, mission recommendation, and
+acquisition ranking remain future feature work.
+
 ## Project Layout
 
 - `WF.Reliquary.Redux.sln`: solution-level restore, build, and test entry point.
 - `src/Application/WF.Reliquary.Application`: core application boundary for future parsing abstractions, normalization, query orchestration, and business rules.
 - `src/Infrastructure/WF.Reliquary.Infrastructure`: adapter boundary for future file access, SQLite persistence, and external data ingestion.
+- `src/Composition/WF.Reliquary.Composition`: composition boundary that wires application contracts to infrastructure implementations.
 - `src/Presentation/WF.Reliquary.Presentation`: Avalonia desktop UI boundary for future screens and user interaction.
 - `tests/Unit/WF.Reliquary.UnitTests`: NUnit coverage for application-layer behavior.
 - `tests/Integration/WF.Reliquary.IntegrationTests`: NUnit checks for cross-layer wiring, dependency direction, and contributor-facing guidance.
 
-Dependency direction starts deliberately narrow: presentation may reference application, infrastructure may reference application, and application must not reference presentation or infrastructure.
+Dependency direction starts deliberately narrow: presentation may reference application and composition, composition may reference application and infrastructure, infrastructure may reference application, and application must not reference presentation, composition, or infrastructure.
 
 ## Future Work Scope
 
@@ -55,6 +77,8 @@ The current implementation is boilerplate only. Drop-table parsing, SQLite schem
 
 ## Suggested Future Extensions
 
+- Vaulted relics marking and filtering
+- Vaulted primes marking and filtering
 - Wishlist support and account-specific progress tracking.
 - Mission rundowns based on multiple desired items.
 - Alerts when new drop table data becomes available.

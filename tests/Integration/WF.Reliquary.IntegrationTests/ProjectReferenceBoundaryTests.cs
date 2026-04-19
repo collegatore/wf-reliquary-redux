@@ -21,6 +21,7 @@ public sealed class ProjectReferenceBoundaryTests
 
         Assert.That(references, Has.None.Contains("Infrastructure"));
         Assert.That(references, Has.Some.Contains("Application"));
+        Assert.That(references, Has.Some.Contains("Composition"));
     }
 
     [Test]
@@ -29,6 +30,15 @@ public sealed class ProjectReferenceBoundaryTests
         var references = ProjectReferences("src", "Infrastructure", "WF.Reliquary.Infrastructure", "WF.Reliquary.Infrastructure.csproj");
 
         Assert.That(references, Has.Some.Contains("Application"));
+    }
+
+    [Test]
+    public void CompositionProject_WiresApplicationAndInfrastructure()
+    {
+        var references = ProjectReferences("src", "Composition", "WF.Reliquary.Composition", "WF.Reliquary.Composition.csproj");
+
+        Assert.That(references, Has.Some.Contains("Application"));
+        Assert.That(references, Has.Some.Contains("Infrastructure"));
     }
 
     private static string[] ProjectReferences(params string[] pathParts)
