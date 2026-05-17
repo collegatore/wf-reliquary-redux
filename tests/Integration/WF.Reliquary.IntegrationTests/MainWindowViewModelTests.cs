@@ -12,7 +12,7 @@ public sealed class MainWindowViewModelTests
     public async Task LoadStatusAsync_ShowsEmptyStateWhenNoFileExists()
     {
         var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
-        var viewModel = new MainWindowViewModel(workflow.Object);
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object);
 
         await viewModel.LoadStatusAsync();
 
@@ -28,7 +28,7 @@ public sealed class MainWindowViewModelTests
     {
         var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
         var sourceUrl = new Uri("https://example.test/custom.html");
-        var viewModel = new MainWindowViewModel(workflow.Object)
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object)
         {
             SourceUrlText = sourceUrl.ToString()
         };
@@ -47,7 +47,7 @@ public sealed class MainWindowViewModelTests
     public async Task SaveSourceUrlAsync_RejectsRelativeUrl()
     {
         var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
-        var viewModel = new MainWindowViewModel(workflow.Object)
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object)
         {
             SourceUrlText = "/relative/path.html"
         };
@@ -63,7 +63,9 @@ public sealed class MainWindowViewModelTests
     [Test]
     public async Task LoadStatusAsync_ShowsLastUpdateWhenAvailable()
     {
-        var viewModel = new MainWindowViewModel(CreateWorkflow(StatusWithLastUpdate("08 April, 2026")).Object);
+        var viewModel = new MainWindowViewModel(
+            CreateWorkflow(StatusWithLastUpdate("08 April, 2026")).Object,
+            CreateImportWorkflow().Object);
 
         await viewModel.LoadStatusAsync();
 
@@ -78,7 +80,7 @@ public sealed class MainWindowViewModelTests
         workflow
             .Setup(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DropTableRefreshResult.Failure(status, "network unavailable"));
-        var viewModel = new MainWindowViewModel(workflow.Object);
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object);
 
         await viewModel.RefreshAsync();
 
@@ -89,6 +91,44 @@ public sealed class MainWindowViewModelTests
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.DownloadCommand.CanExecute(null), Is.True);
         });
+    }
+
+    [Test]
+    public async Task ImportAsync_InvokesImportWorkflowWithoutRefreshingSource()
+    {
+        var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"));
+        var importWorkflow = CreateImportWorkflow(DropTableImportResult.Success(SampleParsedImport()));
+        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object);
+
+        await viewModel.ImportAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.OperationStatusText, Does.Contain("Import completed."));
+            Assert.That(viewModel.OperationStatusText, Does.Contain("Relics: 1"));
+            Assert.That(viewModel.IsBusy, Is.False);
+            Assert.That(viewModel.ImportCommand.CanExecute(null), Is.True);
+        });
+        importWorkflow.Verify(workflow => workflow.ImportAsync(It.IsAny<CancellationToken>()), Times.Once);
+        refreshWorkflow.Verify(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ImportAsync_ShowsFailureAndKeepsCommandAvailable()
+    {
+        var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"));
+        var importWorkflow = CreateImportWorkflow(DropTableImportResult.Failure("source file missing"));
+        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object);
+
+        await viewModel.ImportAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.OperationStatusText, Is.EqualTo("Import failed: source file missing"));
+            Assert.That(viewModel.IsBusy, Is.False);
+            Assert.That(viewModel.ImportCommand.CanExecute(null), Is.True);
+        });
+        refreshWorkflow.Verify(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private static Mock<IDropTableSourceRefreshWorkflow> CreateWorkflow(DropTableSourceStatus status)
@@ -105,6 +145,33 @@ public sealed class MainWindowViewModelTests
             .ReturnsAsync(DropTableRefreshResult.Success(status));
 
         return workflow;
+    }
+
+    private static Mock<IDropTableImportWorkflow> CreateImportWorkflow(DropTableImportResult? result = null)
+    {
+        var workflow = new Mock<IDropTableImportWorkflow>();
+        workflow
+            .Setup(workflow => workflow.ImportAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result ?? DropTableImportResult.Failure("not configured"));
+
+        return workflow;
+    }
+
+    private static ParsedDropTableImport SampleParsedImport()
+    {
+        return new ParsedDropTableImport(
+            new Uri(DropTableSourceDefaults.SourceUrl),
+            "stored.html",
+            DateTimeOffset.UnixEpoch,
+            "08 April, 2026",
+            DateTimeOffset.UnixEpoch,
+            [new ParsedRewardItem("Lith C14 Relic", "LITH C14 RELIC", "Relic")],
+            [new ParsedRelic("Lith", "C14", "Lith C14 Relic", "Lith C14 Relic")],
+            [],
+            [],
+            [],
+            [],
+            []);
     }
 
     private static DropTableSourceStatus StatusWithLastUpdate(string lastUpdate)

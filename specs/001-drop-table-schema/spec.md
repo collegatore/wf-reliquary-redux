@@ -68,7 +68,7 @@ A developer needs design documents that define a proposed data structure for lat
 - **FR-006**: Analysis MUST represent relic reward tiers and derived refinement chances separately from mission reward probabilities because they answer different player questions.
 - **FR-007**: Analysis MUST identify mission reward sources by location label, mission type when available, rotation label when available, reward item, rarity label, and drop percentage.
 - **FR-008**: The proposed storage model MUST support a query path from Prime Part to relics and from those relics to mission sources.
-- **FR-009**: The proposed storage model MUST preserve source-row context so duplicate reward names, event variants, unrotated rewards, and repeated mission pools can be distinguished.
+- **FR-009**: The proposed storage model MUST preserve source-row context so duplicate reward names, duplicate mission source labels, event variants, unrotated rewards, and repeated mission pools can be distinguished.
 - **FR-010**: The proposed storage model MUST keep non-relic mission rewards available as contextual reward rows without making broader non-relic acquisition a first-increment requirement.
 - **FR-011**: The feature MUST produce a design artifact describing the candidate DB structure, key relationships, and representative query needs.
 - **FR-012**: The feature MUST deliver only design documents and preserved design artifacts; it MUST NOT produce or modify application source code, test code, project files, or runtime database files.
@@ -94,8 +94,8 @@ A developer needs design documents that define a proposed data structure for lat
 - **Reward Item**: A normalized item name that may represent a Prime Part, relic, blueprint, resource, mod, or contextual mission reward.
 - **Prime Part**: A reward item identified from relic reward rows as a Prime item or Prime blueprint relevant to relic acquisition planning.
 - **Relic**: A Void Relic identified by era and code, such as Lith C14, Meso D8, Neo C7, or Axi A1.
-- **Relic Reward**: A reward slot connecting a base relic to a Prime Part or other relic reward item, with a reward tier of Common, Uncommon, or Rare.
-- **Mission Source**: A mission reward table identified by its source label, including planet/location text, mission type when available, and event or special-source qualifiers when present.
+- **Relic Reward**: A reward row connecting a base relic to a Prime Part or other relic reward item, with a reward tier of Common, Uncommon, or Rare.
+- **Mission Source**: A mission reward table identified by an internal row identity plus its source label, including planet/location text, mission type when available, source order for duplicate labels, and event or special-source qualifiers when present.
 - **Reward Rotation**: An optional mission reward grouping such as Rotation A, Rotation B, or Rotation C.
 - **Mission Reward**: A probability row connecting a mission source and optional rotation to a reward item, with rarity label and drop percentage.
 
@@ -113,6 +113,6 @@ A developer needs design documents that define a proposed data structure for lat
 - The preserved sample is a planning artifact, not the final production refresh mechanism.
 - This feature is a documentation and design-artifact deliverable only; implementation tasks are deferred to later features.
 - The first increment is limited to Void Relics, Prime Parts obtained from relics, and mission sources that award those relics.
-- The source's `Relics` section is treated as authoritative for base relic reward slots; reward tiers are derived from Intact relic chances, and refinement-specific chances follow the fixed relic reward-tier table.
+- The source's `Relics` section is treated as authoritative for base relic reward rows; reward tiers are derived from Intact relic chances, and refinement-specific chances follow the fixed relic reward-tier table.
 - The source's `Missions` section is treated as authoritative for mission reward chances and rotation labels where present.
 - Broader non-relic item acquisition remains out of scope except as contextual rows needed to preserve complete mission reward pools.

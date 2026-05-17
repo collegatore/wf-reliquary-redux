@@ -37,8 +37,8 @@ queries.
 
 #### Scenario: Prime Part reward row is parsed
 - **WHEN** an Intact relic table contains a Prime Part reward row
-- **THEN** the parser records the reward item, relic reward slot, source rarity,
-  source chance, and derived reward tier
+- **THEN** the parser records the reward item, source rarity, source chance,
+  and derived reward tier
 
 #### Scenario: Reward tier is derived from Intact chance
 - **WHEN** an Intact relic reward row has chance `25.33%`, `11.00%`, or `2.00%`
@@ -61,6 +61,13 @@ percentages.
   `Mercury/Apollodorus (Survival)`
 - **THEN** the parser preserves the full display label and records parsed
   region, node, and mission type fields when available
+
+#### Scenario: Duplicate mission source labels are parsed
+- **WHEN** the Missions section contains multiple source headings with the same
+  display label
+- **THEN** the parser preserves them as distinct mission source records with
+  source order, and links each rotation and reward row to the matching source
+  occurrence rather than using the display label alone
 
 #### Scenario: Mission reward rotation is parsed
 - **WHEN** mission reward rows are grouped under `Rotation A`, `Rotation B`, or
@@ -113,6 +120,12 @@ the downloaded HTML.
   reward pools
 - **THEN** the import preserves distinct rows with source order and parent
   source context
+
+#### Scenario: Duplicate mission source labels exist
+- **WHEN** the source contains multiple mission reward pools with the same
+  display label, including the same rotation label under each pool
+- **THEN** persistence allows the duplicate source labels and keeps rewards and
+  rotations linked to the correct mission source occurrence
 
 #### Scenario: Mission label cannot be fully structured
 - **WHEN** a mission source label cannot be parsed into region, node, mission

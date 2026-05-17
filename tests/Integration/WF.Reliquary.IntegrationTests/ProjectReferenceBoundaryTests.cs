@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using NUnit.Framework;
+using WF.Reliquary.Application.DropTables;
+using WF.Reliquary.Composition;
 
 namespace WF.Reliquary.IntegrationTests;
 
@@ -39,6 +41,14 @@ public sealed class ProjectReferenceBoundaryTests
 
         Assert.That(references, Has.Some.Contains("Application"));
         Assert.That(references, Has.Some.Contains("Infrastructure"));
+    }
+
+    [Test]
+    public void CompositionFactory_CreatesImportWorkflowThroughApplicationContract()
+    {
+        var workflow = ReliquaryServiceFactory.CreateDropTableImportService();
+
+        Assert.That(workflow, Is.InstanceOf<IDropTableImportWorkflow>());
     }
 
     private static string[] ProjectReferences(params string[] pathParts)

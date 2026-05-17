@@ -109,7 +109,7 @@ Stores the base relic independent of refinement.
 
 ### relic_rewards
 
-Stores reward slots inside base relics.
+Stores reward rows inside base relics.
 
 | Field | Purpose |
 |-------|---------|
@@ -117,7 +117,6 @@ Stores reward slots inside base relics.
 | relic_id | Base relic that can award the item. |
 | item_id | Reward item, usually a Prime Part in PI1 scope. |
 | reward_tier | Common, Uncommon, or Rare. |
-| reward_slot | Stable ordinal position within the relic reward set. |
 
 ### mission_sources
 
@@ -131,6 +130,7 @@ Stores mission reward table headers as source pools.
 | node | Parsed node or location when available. |
 | mission_type | Parsed mission type when available. |
 | qualifier | Event, Extra, Cache, Steel Path, or other source qualifier when available. |
+| source_order | Source table order, retained because display labels are not guaranteed unique. |
 
 ### reward_rotations
 
@@ -142,6 +142,11 @@ Stores optional reward pool groupings for mission sources.
 | mission_source_id | Parent mission source. |
 | rotation_label | A, B, C, or source-provided label. |
 | display_label | Full source label, such as Rotation A. |
+
+`display_label` is source text for audit and display, not a unique mission
+source key. The source can repeat mission source labels, so implementations must
+distinguish mission source rows by their internal identifier and source order.
+Rotation labels are likewise scoped to the parent mission source row.
 
 ### mission_rewards
 
@@ -194,5 +199,7 @@ Prime Part to acquisition path:
 - Relic refinement chances are derived from the fixed reward-tier table rather than stored as separate refinement records.
 - Rotation is optional because some mission reward tables list direct rewards without A/B/C grouping.
 - Duplicate item names in the same reward pool should remain as separate source rows when the source contains separate rows.
+- Duplicate mission source labels should remain as separate mission source rows
+  when the source contains separate tables or pool headings with the same text.
 - Mission source parsing should preserve the full display label even when region, node, or mission type parsing succeeds.
 - Non-relic mission rewards should remain stored because complete reward pools help validate percentages and preserve source fidelity, but PI1 queries primarily consume rows where the reward item is a relic.

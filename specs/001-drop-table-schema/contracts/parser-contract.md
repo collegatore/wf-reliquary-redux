@@ -25,7 +25,7 @@ boundary between infrastructure parsing and application import behavior.
 | `sourceSample` | Non-persistent source provenance, including detected source last-update date. |
 | `rewardItems` | Distinct normalized reward items found in relevant sections. |
 | `relics` | Base relics identified by era and code. |
-| `relicRewards` | Base relic reward slots with derived reward tier. |
+| `relicRewards` | Base relic reward rows with derived reward tier. |
 | `missionSources` | Mission reward table headers and parsed source fields. |
 | `rewardRotations` | Rotation headings found under mission sources. |
 | `missionRewards` | Mission reward probability rows. |
@@ -48,9 +48,14 @@ boundary between infrastructure parsing and application import behavior.
   2.00% is `Rare`.
 - Ignore Relics-section rarity labels for tier assignment because they are not
   reliable for this model.
-- Preserve source order for every parsed mission reward row and reward slot
-  order for every relic reward row.
+- Preserve source order for every parsed mission reward row and relic reward
+  row.
 - Preserve duplicate reward names as separate rows.
+- Preserve source order for every parsed mission source and use that source
+  order, not the display label alone, when linking rotations and mission reward
+  rows back to their parent source.
+- Preserve duplicate mission source display labels as separate mission source
+  records.
 
 ## Error Handling
 

@@ -28,7 +28,8 @@ identify future NUnit coverage for parsing, normalization, and query behavior
 **Constraints**: Preserve layer separation; keep VS Code/.NET CLI workflows
 viable on Windows and Linux; store relic reward tiers instead of per-variant
 relic reward chances; derive refinement-specific relic chances from the fixed
-tier table; preserve source-row context for duplicate and unrotated mission rows
+tier table; preserve source-row context for duplicate reward rows, duplicate
+mission source labels, and unrotated mission rows
 
 ## Constitution Check
 
@@ -124,8 +125,9 @@ planning artifact checks.
   application queries, preparation-only source metadata, and persistence-ready
   entities without UI dependencies or source-code changes.
 - `Unit Testing`: PASS. `data-model.md` and contracts identify parser,
-  normalization, duplicate-row, optional-rotation, and query-path behaviors that
-  future implementation should cover with NUnit.
+  normalization, duplicate reward row, duplicate mission source label,
+  optional-rotation, and query-path behaviors that future implementation should
+  cover with NUnit.
 - `Cross-Platform`: PASS. Quickstart uses repo-relative paths and shell
   commands intended to work on Windows PowerShell, Linux shells, and VS Code
   terminals without requiring a runnable project.
@@ -142,6 +144,7 @@ planning artifact checks.
 |------|----------------|------------|
 | Parser assumes too much from current HTML formatting | The official drop table is generated and may change row ordering or table structure | Contract parser around semantic headings, table headers, row cells, and fixture tests rather than brittle line positions |
 | Mission source parsing loses source fidelity | Event, Extra, Cache, and unrotated pools can be hard to classify | Store full `display_label` and parsed fields separately; queries can use parsed fields without discarding original text |
+| Mission source labels are treated as unique | The official source can repeat source labels, and label-only linking can attach rotations or rewards to the wrong row | Preserve `source_order`; use internal IDs/source occurrence for relationships; do not add uniqueness rules to `mission_sources.display_label` |
 | Relic and mission probabilities get merged too early | A Prime Part tier inside a relic and a relic source chance in a mission mean different things | Store `relic_rewards.reward_tier`, compute refinement chances by rule, and keep mission reward chances separate |
 | Duplicate reward rows collapse during normalization | Some pools repeat reward names with different source-row meaning | Preserve `source_order` and avoid uniqueness rules that collapse rows within a pool |
 | SQLite schema overfits PI1 | Later increments may need broader item acquisition | Keep `reward_items` generic and classify PI1 rows without excluding contextual non-relic rewards |

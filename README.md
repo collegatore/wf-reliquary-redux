@@ -55,15 +55,22 @@ source URL, download time, and the parsed `Last Update` value. A download is
 considered unsuccessful if `Last Update` cannot be parsed from the downloaded
 file.
 
-This workflow stores the raw source only. Drop-table parsing, SQLite schema
-creation, normalized import, item lookup, mission recommendation, and
-acquisition ranking remain future feature work.
+Use **Import stored file** in the application UI to parse the already downloaded
+HTML file into the local SQLite import database. The import action does not
+download or refresh the source file; use **Download drop tables** first when the
+stored source is missing or stale. The import database is stored beside the raw
+HTML under `WF Reliquary Redux/DropTables` in the current user's local
+application data folder.
+
+This workflow stops at normalized import status and stored parsed data. Item
+lookup, mission recommendation, and acquisition ranking remain future feature
+work.
 
 ## Project Layout
 
 - `WF.Reliquary.Redux.sln`: solution-level restore, build, and test entry point.
-- `src/Application/WF.Reliquary.Application`: core application boundary for future parsing abstractions, normalization, query orchestration, and business rules.
-- `src/Infrastructure/WF.Reliquary.Infrastructure`: adapter boundary for future file access, SQLite persistence, and external data ingestion.
+- `src/Application/WF.Reliquary.Application`: core application boundary for source refresh, import orchestration, parsing abstractions, normalization, query orchestration, and business rules.
+- `src/Infrastructure/WF.Reliquary.Infrastructure`: adapter boundary for file access, HTML parsing, SQLite persistence, and external data ingestion.
 - `src/Composition/WF.Reliquary.Composition`: composition boundary that wires application contracts to infrastructure implementations.
 - `src/Presentation/WF.Reliquary.Presentation`: Avalonia desktop UI boundary for future screens and user interaction.
 - `tests/Unit/WF.Reliquary.UnitTests`: NUnit coverage for application-layer behavior.
@@ -73,7 +80,10 @@ Dependency direction starts deliberately narrow: presentation may reference appl
 
 ## Future Work Scope
 
-The current implementation is boilerplate only. Drop-table parsing, SQLite schema creation, item lookup, mission recommendation, and full product UI workflows are future work and should be introduced through separate features.
+The current implementation can download the drop-table source and manually import
+the stored file into SQLite. Item lookup, mission recommendation, acquisition
+ranking, and full product UI workflows are future work and should be introduced
+through separate features.
 
 ## Suggested Future Extensions
 

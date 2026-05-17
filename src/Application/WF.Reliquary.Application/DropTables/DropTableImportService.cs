@@ -1,0 +1,70 @@
+using WF.Reliquary.Application.Ports;
+
+namespace WF.Reliquary.Application.DropTables;
+
+public sealed class DropTableImportService : IDropTableImportWorkflow
+{
+    private readonly DropTableSourceOptions options;
+    private readonly IDropTableSourceStore sourceStore;
+    private readonly IDropTableParser parser;
+    private readonly IDropTableImportStore importStore;
+    private readonly Func<DateTimeOffset> now;
+
+    public DropTableImportService(
+        DropTableSourceOptions options,
+        IDropTableSourceStore sourceStore,
+        IDropTableParser parser,
+        IDropTableImportStore importStore,
+        Func<DateTimeOffset>? now = null)
+    {
+        this.options = options;
+        this.sourceStore = sourceStore;
+        this.parser = parser;
+        this.importStore = importStore;
+        this.now = now ?? (() => DateTimeOffset.UtcNow);
+    }
+
+    public async Task<DropTableImportResult> ImportAsync(CancellationToken cancellationToken = default)
+    {
+        StoredDropTableSource? stored;
+
+        try
+        {
+            stored = await sourceStore.LoadAsync(options.FileName, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return DropTableImportResult.Failure($"Unable to load stored drop-table source: {ex.Message}");
+        }
+
+        if (stored is null)
+        {
+            return DropTableImportResult.Failure("Drop-table source file must be downloaded before import can run.");
+        }
+
+        ParsedDropTableImport parsed;
+
+        try
+        {
+            parsed = parser.Parse(stored, now());
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return DropTableImportResult.Failure(ex.Message, stored.FilePath, stored.Provenance?.LastUpdate);
+        }
+
+        try
+        {
+            await importStore.ReplaceAsync(parsed, cancellationToken);
+            return DropTableImportResult.Success(parsed);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return DropTableImportResult.Failure(
+                $"Unable to persist parsed drop-table import: {ex.Message}",
+                parsed.SourcePath,
+                parsed.SourceLastUpdate,
+                parsed.Warnings);
+        }
+    }
+}

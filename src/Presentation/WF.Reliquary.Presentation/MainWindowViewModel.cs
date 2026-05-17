@@ -9,15 +9,20 @@ namespace WF.Reliquary.Presentation;
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly IDropTableSourceRefreshWorkflow refreshWorkflow;
+    private readonly IDropTableImportWorkflow importWorkflow;
     private string statusText = "Checking drop-table file status...";
     private string operationStatusText = string.Empty;
     private string sourceUrlText = DropTableSourceDefaults.SourceUrl;
     private bool isBusy;
 
-    public MainWindowViewModel(IDropTableSourceRefreshWorkflow refreshWorkflow)
+    public MainWindowViewModel(
+        IDropTableSourceRefreshWorkflow refreshWorkflow,
+        IDropTableImportWorkflow importWorkflow)
     {
         this.refreshWorkflow = refreshWorkflow;
+        this.importWorkflow = importWorkflow;
         DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
+        ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy);
         SaveSourceUrlCommand = new AsyncRelayCommand(SaveSourceUrlAsync, () => !IsBusy);
     }
 
@@ -45,6 +50,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             if (SetProperty(ref isBusy, value))
             {
                 DownloadCommand.RaiseCanExecuteChanged();
+                ImportCommand.RaiseCanExecuteChanged();
                 SaveSourceUrlCommand.RaiseCanExecuteChanged();
             }
         }
@@ -57,6 +63,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     }
 
     public AsyncRelayCommand DownloadCommand { get; }
+
+    public AsyncRelayCommand ImportCommand { get; }
 
     public AsyncRelayCommand SaveSourceUrlCommand { get; }
 
@@ -91,6 +99,29 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public async Task ImportAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        OperationStatusText = "Importing stored drop-table file...";
+
+        try
+        {
+            var result = await importWorkflow.ImportAsync();
+            OperationStatusText = result.Succeeded
+                ? ImportSuccessText(result)
+                : $"Import failed: {result.ErrorMessage}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     public async Task SaveSourceUrlAsync()
     {
         if (!Uri.TryCreate(SourceUrlText, UriKind.Absolute, out var sourceUrl))
@@ -115,6 +146,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         StatusText = string.IsNullOrWhiteSpace(status.LastUpdate)
             ? "Drop-table file exists. Last Update unavailable."
             : $"Last Update: {status.LastUpdate}";
+    }
+
+    private static string ImportSuccessText(DropTableImportResult result)
+    {
+        var lastUpdate = string.IsNullOrWhiteSpace(result.SourceLastUpdate)
+            ? "Last Update unavailable"
+            : $"Last Update: {result.SourceLastUpdate}";
+
+        return $"Import completed. {lastUpdate}. Relics: {result.Counts.Relics}; relic rewards: {result.Counts.RelicRewards}; mission sources: {result.Counts.MissionSources}; mission rewards: {result.Counts.MissionRewards}.";
     }
 
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

@@ -10,8 +10,8 @@ PI1 needs the next ingestion step: load the already stored HTML, parse the
 source's `Relics` and `Missions` sections, normalize the rows into the researched
 logical model, and persist them in SQLite for later query features. The parser
 must keep source fidelity high because the official page can contain duplicate
-rows, optional rotations, ambiguous mission labels, and contextual non-relic
-mission rewards.
+rows, optional rotations, ambiguous or duplicate mission labels, and contextual
+non-relic mission rewards.
 
 ## Goals / Non-Goals
 
@@ -19,15 +19,16 @@ mission rewards.
 
 - Load the previously downloaded raw drop-table HTML through the existing
   application-owned source-store port.
-- Parse relic reward tables into base relics, Prime Part reward items, relic
-  reward slots, and reward tiers.
+- Parse relic reward tables into base relics, Prime Part reward items, and
+  reward tiers.
 - Parse mission reward tables into mission sources, optional reward rotations,
   mission reward rows, rarity labels, drop percentages, and relic links when the
   reward item is recognized as a relic.
 - Persist parsed import data in SQLite using infrastructure-owned storage behind
   application-owned ports.
 - Preserve source Last Update, source path, import timestamp, row counts,
-  source order, full display labels, and parse warnings/errors.
+  source order, full display labels, duplicate mission source occurrences, and
+  parse warnings/errors.
 - Provide deterministic import replacement behavior so a successful import
   replaces the previous parsed data set atomically.
 - Cover parser and persistence behavior with NUnit tests using focused fixtures
@@ -115,7 +116,7 @@ Rationale: the researched model separates persistent reward tiers from
 refinement-specific display chances.
 
 Alternative considered: store every refinement row as a separate reward. This
-was rejected because it duplicates reward slots and blurs source odds with
+was rejected because it duplicates relic reward rows and blurs source odds with
 derived relic-opening odds.
 
 ### Decision: Mission parsing preserves labels before structured parsing
@@ -123,6 +124,10 @@ derived relic-opening odds.
 Mission source records should always store the full source table label. The
 parser may fill optional region, node, mission type, and qualifier fields when a
 label matches known patterns, but unknown labels must still import.
+The full label is display/audit text only; it is not a uniqueness key. Duplicate
+mission source labels must remain separate source records, and rotations and
+mission rewards must link by source occurrence, such as internal ID/source
+order, rather than by label alone.
 
 Rationale: Warframe source labels include special events, variants, and unusual
 reward pools. Preserving the label keeps the row auditable even when structured
@@ -185,8 +190,9 @@ workflow unnecessarily indirect.
   operations and one transaction; defer progress UI until import is user-facing.
 - Ambiguous mission labels -> Preserve full labels and treat structured fields
   as optional.
-- Duplicate reward names -> Preserve source order and row context rather than
-  deduplicating source rows.
+- Duplicate reward names or mission source labels -> Preserve source order and
+  row context rather than deduplicating source rows or constraining display
+  labels to be unique.
 
 ## Migration Plan
 

@@ -97,7 +97,7 @@ Validation rules:
 
 ## Entity: RelicReward
 
-Represents one reward slot inside a base relic.
+Represents one reward row inside a base relic.
 
 Fields:
 
@@ -105,8 +105,6 @@ Fields:
 - `RelicId`: base relic that can award the item.
 - `ItemId`: reward item.
 - `RewardTier`: `Common`, `Uncommon`, or `Rare`.
-- `RewardSlot`: ordinal position within the relic reward set, useful for stable
-  display and import validation.
 
 Relationships:
 
@@ -122,7 +120,7 @@ Validation rules:
 - Source rarity labels in the Relics section must not be used for reward tier
   assignment because they are unreliable for this purpose.
 - Duplicate reward item names must remain separate rows if the source has
-  separate reward slots.
+  separate reward rows.
 
 ## Entity: MissionSource
 
@@ -137,6 +135,8 @@ Fields:
 - `MissionType`: parsed mission type when available.
 - `Qualifier`: event, extra pool, cache, Steel Path, or other qualifier when
   available.
+- `SourceOrder`: source table order used to distinguish repeated labels and
+  preserve traceability.
 
 Relationships:
 
@@ -147,6 +147,9 @@ Validation rules:
 
 - `DisplayLabel` is required.
 - Parsed fields are optional and must never replace the full display label.
+- `DisplayLabel` is descriptive source text, not a uniqueness key. The source
+  can contain repeated mission source labels, so persistence and parsed models
+  must use `MissionSourceId` and/or `SourceOrder` to distinguish rows.
 
 ## Entity: RewardRotation
 
@@ -168,6 +171,9 @@ Validation rules:
 
 - `MissionSourceId` and `DisplayLabel` are required.
 - Mission rewards may exist without a rotation.
+- `RotationLabel` may repeat under different mission source rows, including
+  mission source rows with the same `DisplayLabel`; rotation identity is scoped
+  to the parent `MissionSourceId`.
 
 ## Entity: MissionReward
 
@@ -199,6 +205,8 @@ Validation rules:
 - `RelicId` is required when `ItemId` is recognized as a relic.
 - Duplicate reward item names must remain separate rows if the source has
   separate rows.
+- Duplicate mission source display labels must remain separate mission source
+  rows if the source has separate tables or source-pool headings.
 
 ## State and Lifecycle
 

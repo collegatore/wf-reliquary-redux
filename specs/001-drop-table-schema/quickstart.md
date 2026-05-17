@@ -65,6 +65,8 @@ Required future test coverage identified by this feature:
   11.00% as `Uncommon`, and 2.00% as `Rare`.
 - Parser does not persist refinement records.
 - Normalization preserves duplicate reward rows using source order.
+- Normalization preserves duplicate mission source labels as separate source
+  rows and links rotations/rewards to the matching source occurrence.
 - Query behavior resolves Prime Part to base relics and reward tiers.
 - Query behavior resolves relics to mission sources.
 - Derived relic reward chance and mission reward chance remain separate fields.

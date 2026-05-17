@@ -6,7 +6,9 @@ namespace WF.Reliquary.Presentation;
 public sealed partial class MainWindow : Window
 {
     public MainWindow()
-        : this(new MainWindowViewModel(ReliquaryServiceFactory.CreateDropTableSourceRefreshService()))
+        : this(new MainWindowViewModel(
+            ReliquaryServiceFactory.CreateDropTableSourceRefreshService(),
+            ReliquaryServiceFactory.CreateDropTableImportService()))
     {
     }
 

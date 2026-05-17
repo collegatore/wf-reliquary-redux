@@ -11,8 +11,7 @@ the first usable product data set for future search and acquisition-path views.
   drop-table HTML and parses the `Relics` and `Missions` sections relevant to
   Void Relics and Prime Parts.
 - Parse relic reward tables into base relics, Prime Part reward items, reward
-  tiers, reward slots, and source-row context while deriving tier from Intact
-  relic chances.
+  tiers, and source-row context while deriving tier from Intact relic chances.
 - Parse mission reward tables into mission sources, optional rotations, reward
   rows, source rarity labels, and mission drop percentages, linking relic reward
   rows back to recognized base relics.

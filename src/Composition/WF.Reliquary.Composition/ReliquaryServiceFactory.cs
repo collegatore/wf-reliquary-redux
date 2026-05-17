@@ -16,4 +16,15 @@ public static class ReliquaryServiceFactory
             new HtmlDropTableMetadataReader(),
             new LocalDropTableSourceSettingsStore());
     }
+
+    public static IDropTableImportWorkflow CreateDropTableImportService()
+    {
+        var options = DropTableSourceOptions.CreateDefault();
+
+        return new DropTableImportService(
+            options,
+            new LocalDropTableSourceStore(),
+            new HtmlDropTableParser(),
+            new SqliteDropTableImportStore());
+    }
 }
