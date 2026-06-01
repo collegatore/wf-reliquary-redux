@@ -193,22 +193,14 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
 
     private static ParsedMissionSource CreateMissionSource(string displayLabel, int sourceOrder, List<string> warnings)
     {
-        string? qualifier = null;
-        var label = displayLabel;
-
-        var qualifierIndex = label.IndexOf(':', StringComparison.Ordinal);
-        if (qualifierIndex >= 0)
-        {
-            qualifier = label[..qualifierIndex].Trim();
-            label = label[(qualifierIndex + 1)..].Trim();
-        }
-
-        var match = MissionLabelRegex().Match(label);
+        var match = MissionLabelRegex().Match(displayLabel);
         if (!match.Success)
         {
             warnings.Add($"Mission label '{displayLabel}' could not be fully structured.");
-            return new ParsedMissionSource(displayLabel, null, null, null, qualifier, sourceOrder);
+            return new ParsedMissionSource(displayLabel, null, null, null, null, sourceOrder);
         }
+
+        var qualifier = EmptyToNull(match.Groups["qpre"].Value) ?? EmptyToNull(match.Groups["qpost"].Value);
 
         return new ParsedMissionSource(
             displayLabel,
@@ -396,6 +388,6 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
     [GeneratedRegex("^Rotation\\s+(?<label>.+)$", RegexOptions.IgnoreCase)]
     private static partial Regex RotationRegex();
 
-    [GeneratedRegex("^(?<region>[^/]+)/(?<node>.+?)\\s+\\((?<type>[^)]+)\\)$")]
+    [GeneratedRegex("^(?:(?<qpre>[^/:]+):\\s*)?(?<region>[^/]+)/(?<node>.+?)\\s+\\((?<type>[^)]+)\\)(?:\\s+(?<qpost>.+))?$")]
     private static partial Regex MissionLabelRegex();
 }
