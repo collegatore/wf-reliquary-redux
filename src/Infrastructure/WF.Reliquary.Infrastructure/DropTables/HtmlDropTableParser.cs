@@ -81,7 +81,7 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
                             match.Groups["code"].Value,
                             currentRelic,
                             currentRelic));
-                    AddRewardItem(rewardItems, currentRelic);
+                    AddRewardItem(rewardItems, currentRelic, isRelicReward: false);
                 }
 
                 continue;
@@ -101,7 +101,7 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
                 continue;
             }
 
-            AddRewardItem(rewardItems, rewardName);
+            AddRewardItem(rewardItems, rewardName, isRelicReward: true);
             rewards.Add(new ParsedRelicReward(
                 currentRelic,
                 rewardName,
@@ -175,7 +175,7 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
                 continue;
             }
 
-            AddRewardItem(rewardItems, rewardName);
+            AddRewardItem(rewardItems, rewardName, isRelicReward: false);
             var relicDisplayName = relicsByDisplayName.ContainsKey(rewardName) ? rewardName : null;
             rewards.Add(new ParsedMissionReward(
                 currentSource.DisplayLabel,
@@ -235,27 +235,33 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
         return decimal.TryParse(chanceMatch.Groups["chance"].Value, NumberStyles.Number, CultureInfo.InvariantCulture, out chancePercent);
     }
 
-    private static void AddRewardItem(Dictionary<string, ParsedRewardItem> rewardItems, string name)
+    private static void AddRewardItem(Dictionary<string, ParsedRewardItem> rewardItems, string name, bool isRelicReward)
     {
         var normalizedName = NormalizeName(name);
-        if (rewardItems.ContainsKey(normalizedName))
+        var kind = ItemKind(name, isRelicReward);
+
+        if (rewardItems.TryGetValue(normalizedName, out var existing))
         {
+            if (kind == "PrimePart" && existing.ItemKind != "PrimePart")
+            {
+                rewardItems[normalizedName] = existing with { ItemKind = "PrimePart" };
+            }
             return;
         }
 
-        var kind = ItemKind(name);
         rewardItems.Add(normalizedName, new ParsedRewardItem(name, normalizedName, kind));
     }
 
-    private static string ItemKind(string name)
+    private static string ItemKind(string name, bool isRelicReward)
     {
         if (RelicNameRegex().IsMatch(name))
         {
             return "Relic";
         }
 
-        if (name.Contains(" Prime ", StringComparison.OrdinalIgnoreCase)
-            || name.EndsWith(" Prime Blueprint", StringComparison.OrdinalIgnoreCase))
+        if (isRelicReward
+            && (name.Contains(" Prime ", StringComparison.OrdinalIgnoreCase)
+                || name.EndsWith(" Prime Blueprint", StringComparison.OrdinalIgnoreCase)))
         {
             return "PrimePart";
         }

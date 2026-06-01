@@ -206,6 +206,41 @@ public sealed class DropTableImportInfrastructureTests
         });
     }
 
+    [Test]
+    public void Parser_PrimeNamedMissionOnlyReward_IsClassifiedAsOther()
+    {
+        var parser = new HtmlDropTableParser();
+        var html = MissionOnlyPrimeHtml();
+
+        var import = parser.Parse(StoredSource(html), DateTimeOffset.UnixEpoch);
+
+        var sagek = import.RewardItems.Single(i => i.Name == "Sagek Prime");
+        Assert.That(sagek.ItemKind, Is.EqualTo("Other"));
+    }
+
+    [Test]
+    public void Parser_PrimeNamedItemInBothMissionAndRelicRewards_IsClassifiedAsPrimePart()
+    {
+        var parser = new HtmlDropTableParser();
+
+        // Mission section appears before relic section in the HTML
+        var import = parser.Parse(StoredSource(MissionAndRelicPrimeHtml()), DateTimeOffset.UnixEpoch);
+
+        var item = import.RewardItems.Single(i => i.Name == "Lex Prime Barrel");
+        Assert.That(item.ItemKind, Is.EqualTo("PrimePart"));
+    }
+
+    [Test]
+    public void Parser_PrimeNamedRelicOnlyReward_IsClassifiedAsPrimePart()
+    {
+        var parser = new HtmlDropTableParser();
+
+        var import = parser.Parse(StoredSource(FocusedHtml()), DateTimeOffset.UnixEpoch);
+
+        var item = import.RewardItems.Single(i => i.Name == "Cedo Prime Blueprint");
+        Assert.That(item.ItemKind, Is.EqualTo("PrimePart"));
+    }
+
     private static StoredDropTableSource StoredSource(string html, string filePath = "stored.html")
     {
         return new StoredDropTableSource(
@@ -278,6 +313,52 @@ public sealed class DropTableImportInfrastructureTests
             <tr><td>Kestrel Prime Blade</td><td>Uncommon (25.33%)</td></tr>
             <tr><td>Sevagoth Prime Systems Blueprint</td><td>Uncommon (25.33%)</td></tr>
             <tr><td>Forma Blueprint</td><td>Uncommon (25.33%)</td></tr>
+            <tr><th colspan="2">Meso D8 Relic (Intact)</th></tr>
+            <tr><td>Paris Prime Blueprint</td><td>Rare (2.00%)</td></tr>
+            <tr><td>Paris Prime String</td><td>Uncommon (11.00%)</td></tr>
+            <tr><td>Paris Prime Grip</td><td>Uncommon (11.00%)</td></tr>
+            <tr><td>Lex Prime Receiver</td><td>Uncommon (25.33%)</td></tr>
+            <tr><td>Lex Prime Barrel</td><td>Uncommon (25.33%)</td></tr>
+            <tr><td>Forma Blueprint</td><td>Uncommon (25.33%)</td></tr>
+            </table>
+            </html>
+            """;
+    }
+
+    private static string MissionOnlyPrimeHtml()
+    {
+        return """
+            <html>
+            <h3 id="missionRewards">Missions:</h3>
+            <table>
+            <tr><th colspan="2">Mercury/Apollodorus (Survival)</th></tr>
+            <tr><td>Sagek Prime</td><td>Rare (7.69%)</td></tr>
+            </table>
+            <h3 id="relicRewards">Relics:</h3>
+            <table>
+            <tr><th colspan="2">Lith C14 Relic (Intact)</th></tr>
+            <tr><td>Forma Blueprint</td><td>Uncommon (25.33%)</td></tr>
+            <tr><td>Forma Blueprint</td><td>Uncommon (25.33%)</td></tr>
+            <tr><td>Forma Blueprint</td><td>Uncommon (25.33%)</td></tr>
+            <tr><td>Forma Blueprint</td><td>Uncommon (11.00%)</td></tr>
+            <tr><td>Forma Blueprint</td><td>Uncommon (11.00%)</td></tr>
+            <tr><td>Forma Blueprint</td><td>Rare (2.00%)</td></tr>
+            </table>
+            </html>
+            """;
+    }
+
+    private static string MissionAndRelicPrimeHtml()
+    {
+        return """
+            <html>
+            <h3 id="missionRewards">Missions:</h3>
+            <table>
+            <tr><th colspan="2">Venus/Unda (Spy)</th></tr>
+            <tr><td>Lex Prime Barrel</td><td>Rare (7.69%)</td></tr>
+            </table>
+            <h3 id="relicRewards">Relics:</h3>
+            <table>
             <tr><th colspan="2">Meso D8 Relic (Intact)</th></tr>
             <tr><td>Paris Prime Blueprint</td><td>Rare (2.00%)</td></tr>
             <tr><td>Paris Prime String</td><td>Uncommon (11.00%)</td></tr>
