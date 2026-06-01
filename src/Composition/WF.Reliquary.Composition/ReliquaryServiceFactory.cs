@@ -1,4 +1,5 @@
 using WF.Reliquary.Application.DropTables;
+using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Infrastructure.DropTables;
 
 namespace WF.Reliquary.Composition;
@@ -26,5 +27,10 @@ public static class ReliquaryServiceFactory
             new LocalDropTableSourceStore(),
             new HtmlDropTableParser(),
             new SqliteDropTableImportStore());
+    }
+
+    public static IPrimeGearReader CreatePrimeGearReader()
+    {
+        return new SqlitePrimeGearReader();
     }
 }

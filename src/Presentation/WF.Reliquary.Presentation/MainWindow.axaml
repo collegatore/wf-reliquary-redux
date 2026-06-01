@@ -2,52 +2,107 @@
     x:Class="WF.Reliquary.Presentation.MainWindow"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation"
     Title="WF Reliquary Redux"
     Width="900"
     Height="600">
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="24">
-    <TextBlock
-        FontSize="24"
-        FontWeight="SemiBold"
-        Text="{Binding Title}" />
-    <TextBlock
-        Grid.Row="1"
-        Margin="0,16,0,0"
-        FontSize="16"
-        Text="{Binding StatusText}"
-        TextWrapping="Wrap" />
-    <StackPanel
-        Grid.Row="2"
-        Margin="0,20,0,0"
-        Spacing="8">
-      <TextBlock Text="Drop-table source URL" />
-      <TextBox
-          MinWidth="560"
-          Text="{Binding SourceUrlText, Mode=TwoWay}" />
-      <Button
-          Padding="14,8"
-          HorizontalAlignment="Left"
-          Command="{Binding SaveSourceUrlCommand}"
-          Content="Save URL" />
-    </StackPanel>
-    <StackPanel
-        Grid.Row="3"
-        Margin="0,20,0,0"
-        Orientation="Horizontal"
-        Spacing="12">
-      <Button
-          Padding="14,8"
-          Command="{Binding DownloadCommand}"
-          Content="Download drop tables" />
-      <Button
-          Padding="14,8"
-          Command="{Binding ImportCommand}"
-          Content="Import stored file" />
-    </StackPanel>
-    <TextBlock
-        Grid.Row="4"
-        Margin="0,16,0,0"
-        Text="{Binding OperationStatusText}"
-        TextWrapping="Wrap" />
-  </Grid>
+  <TabControl Margin="24">
+
+    <TabItem Header="Drop Tables">
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,12,0,0">
+        <TextBlock
+            FontSize="24"
+            FontWeight="SemiBold"
+            Text="{Binding DropTables.Title}" />
+        <TextBlock
+            Grid.Row="1"
+            Margin="0,16,0,0"
+            FontSize="16"
+            Text="{Binding DropTables.StatusText}"
+            TextWrapping="Wrap" />
+        <StackPanel
+            Grid.Row="2"
+            Margin="0,20,0,0"
+            Spacing="8">
+          <TextBlock Text="Drop-table source URL" />
+          <TextBox
+              MinWidth="560"
+              Text="{Binding DropTables.SourceUrlText, Mode=TwoWay}" />
+          <Button
+              Padding="14,8"
+              HorizontalAlignment="Left"
+              Command="{Binding DropTables.SaveSourceUrlCommand}"
+              Content="Save URL" />
+        </StackPanel>
+        <StackPanel
+            Grid.Row="3"
+            Margin="0,20,0,0"
+            Orientation="Horizontal"
+            Spacing="12">
+          <Button
+              Padding="14,8"
+              Command="{Binding DropTables.DownloadCommand}"
+              Content="Download drop tables" />
+          <Button
+              Padding="14,8"
+              Command="{Binding DropTables.ImportCommand}"
+              Content="Import stored file" />
+        </StackPanel>
+        <TextBlock
+            Grid.Row="4"
+            Margin="0,16,0,0"
+            Text="{Binding DropTables.OperationStatusText}"
+            TextWrapping="Wrap" />
+      </Grid>
+    </TabItem>
+
+    <TabItem Header="Prime Gear">
+      <ScrollViewer Margin="0,12,0,0">
+        <ItemsControl ItemsSource="{Binding PrimeGear.Cards}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
+              <Border
+                  Margin="8"
+                  Padding="12"
+                  BorderBrush="Gray"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Width="180">
+                <StackPanel Spacing="6">
+                  <TextBlock
+                      FontWeight="SemiBold"
+                      Text="{Binding GearName}"
+                      TextWrapping="Wrap" />
+                  <ItemsControl ItemsSource="{Binding Parts}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
+                        <Grid ColumnDefinitions="Auto,*">
+                          <CheckBox
+                              Grid.Column="0"
+                              IsChecked="{Binding IsChecked}"
+                              VerticalAlignment="Top" />
+                          <TextBlock
+                              Grid.Column="1"
+                              Margin="6,0,0,0"
+                              Text="{Binding PartName}"
+                              TextWrapping="Wrap"
+                              VerticalAlignment="Center" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </TabItem>
+
+  </TabControl>
 </Window>
