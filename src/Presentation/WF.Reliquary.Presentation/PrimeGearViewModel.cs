@@ -47,22 +47,40 @@ public sealed class PrimeGearCardViewModel
     public bool IsVaulted { get; }
 }
 
-public sealed class PrimeGearViewModel
+public sealed class PrimeGearViewModel : INotifyPropertyChanged
 {
     private readonly IPrimeGearReader reader;
+    private bool showVaulted;
 
     public PrimeGearViewModel(IPrimeGearReader reader)
     {
         this.reader = reader;
-        Cards = [];
+        ActiveCards = [];
+        VaultedCards = [];
         _ = LoadAsync();
     }
 
-    public ObservableCollection<PrimeGearCardViewModel> Cards { get; }
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public ObservableCollection<PrimeGearCardViewModel> ActiveCards { get; }
+
+    public ObservableCollection<PrimeGearCardViewModel> VaultedCards { get; }
+
+    public bool ShowVaulted
+    {
+        get => showVaulted;
+        set
+        {
+            if (showVaulted == value) return;
+            showVaulted = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowVaulted)));
+        }
+    }
 
     public async Task ReloadAsync()
     {
-        Cards.Clear();
+        ActiveCards.Clear();
+        VaultedCards.Clear();
         await LoadAsync();
     }
 
@@ -71,7 +89,11 @@ public sealed class PrimeGearViewModel
         var entries = await reader.GetAllAsync();
         foreach (var entry in entries)
         {
-            Cards.Add(new PrimeGearCardViewModel(entry.GearName, entry.Parts, entry.IsVaulted));
+            var card = new PrimeGearCardViewModel(entry.GearName, entry.Parts, entry.IsVaulted);
+            if (entry.IsVaulted)
+                VaultedCards.Add(card);
+            else
+                ActiveCards.Add(card);
         }
     }
 }

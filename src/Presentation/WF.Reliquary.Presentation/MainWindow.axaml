@@ -63,55 +63,118 @@
 
     <TabItem Header="Prime Gear">
       <ScrollViewer Margin="0,12,0,0">
-        <ItemsControl ItemsSource="{Binding PrimeGear.Cards}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <WrapPanel Orientation="Horizontal" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
-              <Border
-                  Margin="8"
-                  Padding="12"
-                  BorderBrush="Gray"
-                  BorderThickness="1"
-                  CornerRadius="4"
-                  Width="180"
-                  Classes.vaulted="{Binding IsVaulted}">
-                <StackPanel Spacing="6">
-                  <TextBlock
-                      FontWeight="SemiBold"
-                      Text="{Binding GearName}"
-                      TextWrapping="Wrap" />
-                  <TextBlock
-                      Text="Vaulted"
-                      FontSize="10"
-                      Foreground="Gray"
-                      IsVisible="{Binding IsVaulted}" />
-                  <ItemsControl ItemsSource="{Binding Parts}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
-                        <Grid ColumnDefinitions="Auto,*">
-                          <CheckBox
-                              Grid.Column="0"
-                              IsChecked="{Binding IsChecked}"
-                              VerticalAlignment="Top" />
-                          <TextBlock
-                              Grid.Column="1"
-                              Margin="6,0,0,0"
-                              Text="{Binding PartName}"
-                              TextWrapping="Wrap"
-                              VerticalAlignment="Center" />
-                        </Grid>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <StackPanel>
+
+          <!-- Active gear section -->
+          <ItemsControl ItemsSource="{Binding PrimeGear.ActiveCards}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
+                <Border
+                    Margin="8"
+                    Padding="12"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Width="180">
+                  <StackPanel Spacing="6">
+                    <TextBlock
+                        FontWeight="SemiBold"
+                        Text="{Binding GearName}"
+                        TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Parts}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
+                          <Grid ColumnDefinitions="Auto,*">
+                            <CheckBox
+                                Grid.Column="0"
+                                IsChecked="{Binding IsChecked}"
+                                VerticalAlignment="Top" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Margin="6,0,0,0"
+                                Text="{Binding PartName}"
+                                TextWrapping="Wrap"
+                                VerticalAlignment="Center" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Vaulted separator -->
+          <Border
+              Margin="8,8,8,0"
+              Padding="12,8"
+              Background="#1A808080"
+              CornerRadius="4">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <CheckBox
+                  IsChecked="{Binding PrimeGear.ShowVaulted}"
+                  VerticalAlignment="Center" />
+              <TextBlock
+                  Text="Show vaulted"
+                  VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Vaulted gear section -->
+          <ItemsControl
+              ItemsSource="{Binding PrimeGear.VaultedCards}"
+              IsVisible="{Binding PrimeGear.ShowVaulted}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
+                <Border
+                    Margin="8"
+                    Padding="12"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Width="180"
+                    Opacity="0.55">
+                  <StackPanel Spacing="6">
+                    <TextBlock
+                        FontWeight="SemiBold"
+                        Text="{Binding GearName}"
+                        TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Parts}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
+                          <Grid ColumnDefinitions="Auto,*">
+                            <CheckBox
+                                Grid.Column="0"
+                                IsChecked="{Binding IsChecked}"
+                                VerticalAlignment="Top" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Margin="6,0,0,0"
+                                Text="{Binding PartName}"
+                                TextWrapping="Wrap"
+                                VerticalAlignment="Center" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+        </StackPanel>
       </ScrollViewer>
     </TabItem>
 
