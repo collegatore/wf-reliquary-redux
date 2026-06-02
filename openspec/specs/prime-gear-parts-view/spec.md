@@ -4,7 +4,7 @@
 
 ### Requirement: Prime gear parts query
 
-The application SHALL expose a query that returns all prime gear entries, where each entry contains the gear name and an ordered list of its component part labels, derived from `reward_items` rows with `item_kind = 'PrimePart'`.
+The application SHALL expose a query that returns all prime gear entries, where each entry contains the gear name, an ordered list of its component part labels, and a vault status flag — all derived from `reward_items` rows with `item_kind = 'PrimePart'` and their associated relic/mission data.
 
 #### Scenario: Query returns grouped gear entries
 
@@ -37,7 +37,7 @@ The presentation SHALL include a **Prime Gear** tab in the main window alongside
 
 ### Requirement: Prime gear cards display
 
-The Prime Gear tab SHALL display one card per prime gear entry. Each card SHALL show the gear name as its title and a checkbox list of component part labels.
+The Prime Gear tab SHALL display one card per prime gear entry. Each card SHALL show the gear name as its title and a checkbox list of component part labels. The cards view SHALL reflect the current state of the database without requiring an application restart after a successful import.
 
 #### Scenario: Card is shown for each prime gear entry
 
@@ -53,6 +53,11 @@ The Prime Gear tab SHALL display one card per prime gear entry. Each card SHALL 
 
 - **WHEN** a card for `Afuris Prime` is displayed and the entry includes parts `Receiver`, `Barrel`, `Link`, `Blueprint`
 - **THEN** four checkboxes are shown with those labels
+
+#### Scenario: Cards view updates after successful import
+
+- **WHEN** the user triggers a successful drop-table import while the application is running
+- **THEN** the Prime Gear cards view reloads and displays the newly imported gear entries without requiring an application restart
 
 ### Requirement: Part checkbox state is ephemeral
 

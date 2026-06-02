@@ -6,6 +6,7 @@ public sealed class MainWindowShellViewModel
     {
         DropTables = dropTables;
         PrimeGear = primeGear;
+        dropTables.OnImportSucceeded = primeGear.ReloadAsync;
     }
 
     public MainWindowViewModel DropTables { get; }

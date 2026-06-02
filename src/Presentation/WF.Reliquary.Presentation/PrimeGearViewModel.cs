@@ -32,34 +32,46 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
 
 public sealed class PrimeGearCardViewModel
 {
-    public PrimeGearCardViewModel(string gearName, IEnumerable<string> parts)
+    public PrimeGearCardViewModel(string gearName, IEnumerable<string> parts, bool isVaulted)
     {
         GearName = gearName;
         Parts = new ObservableCollection<PrimePartViewModel>(
             parts.Select(p => new PrimePartViewModel(p)));
+        IsVaulted = isVaulted;
     }
 
     public string GearName { get; }
 
     public ObservableCollection<PrimePartViewModel> Parts { get; }
+
+    public bool IsVaulted { get; }
 }
 
 public sealed class PrimeGearViewModel
 {
+    private readonly IPrimeGearReader reader;
+
     public PrimeGearViewModel(IPrimeGearReader reader)
     {
+        this.reader = reader;
         Cards = [];
-        _ = LoadAsync(reader);
+        _ = LoadAsync();
     }
 
     public ObservableCollection<PrimeGearCardViewModel> Cards { get; }
 
-    private async Task LoadAsync(IPrimeGearReader reader)
+    public async Task ReloadAsync()
+    {
+        Cards.Clear();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
     {
         var entries = await reader.GetAllAsync();
         foreach (var entry in entries)
         {
-            Cards.Add(new PrimeGearCardViewModel(entry.GearName, entry.Parts));
+            Cards.Add(new PrimeGearCardViewModel(entry.GearName, entry.Parts, entry.IsVaulted));
         }
     }
 }

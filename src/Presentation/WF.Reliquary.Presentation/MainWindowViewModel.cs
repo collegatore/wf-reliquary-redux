@@ -26,6 +26,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         SaveSourceUrlCommand = new AsyncRelayCommand(SaveSourceUrlAsync, () => !IsBusy);
     }
 
+    public Func<Task>? OnImportSucceeded { get; set; }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public string Title => ApplicationInfo.Name;
@@ -115,6 +117,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             OperationStatusText = result.Succeeded
                 ? ImportSuccessText(result)
                 : $"Import failed: {result.ErrorMessage}";
+
+            if (result.Succeeded && OnImportSucceeded != null)
+            {
+                await OnImportSucceeded();
+            }
         }
         finally
         {
