@@ -37,7 +37,7 @@ The presentation SHALL include a **Prime Gear** tab in the main window alongside
 
 ### Requirement: Prime gear cards display
 
-The Prime Gear tab SHALL display cards in two spatially separate sections: an **Active** section at the top containing non-vaulted gear cards, and a **Vaulted** section below containing vaulted gear cards. A visually distinct separator row SHALL sit between the two sections. The separator SHALL contain a **Show vaulted** checkbox that controls visibility of the Vaulted section. The Vaulted section SHALL be hidden by default. Each card SHALL show the gear name as its title and a checkbox list of component part labels. The cards view SHALL reflect the current state of the database without requiring an application restart after a successful import.
+The Prime Gear tab SHALL display cards in two spatially separate sections: an **Active** section at the top containing non-vaulted gear cards, and a **Vaulted** section below containing vaulted gear cards. A visually distinct separator row SHALL sit between the two sections. The separator SHALL contain a **Show vaulted** checkbox that controls visibility of the Vaulted section. The Vaulted section SHALL be hidden by default. Each card SHALL show the gear name as its title and a checkbox list of component part labels. The card display set is the union of parts present in the current import and parts in the active wishlist that are absent from the current import (ghost items). The cards view SHALL reflect the current state of the database without requiring an application restart after a successful import.
 
 #### Scenario: Card is shown for each prime gear entry
 
@@ -84,21 +84,26 @@ The Prime Gear tab SHALL display cards in two spatially separate sections: an **
 - **WHEN** a card for `Afuris Prime` is displayed and the entry includes parts `Receiver`, `Barrel`, `Link`, `Blueprint`
 - **THEN** four checkboxes are shown with those labels
 
+#### Scenario: Ghost parts appear on card alongside import parts
+
+- **WHEN** the active wishlist contains a part for a gear that is still in the import, but that specific part is absent from the import
+- **THEN** the card for that gear shows the ghost part alongside the normally imported parts
+
 #### Scenario: Cards view updates after successful import
 
 - **WHEN** the user triggers a successful drop-table import while the application is running
 - **THEN** the Prime Gear cards view reloads and displays the newly imported gear entries without requiring an application restart
 
-### Requirement: Part checkbox state is ephemeral
+### Requirement: Part checkbox state reflects active wishlist
 
-Part checkboxes SHALL be interactive UI state only. Checked state SHALL NOT be persisted between application sessions.
+Part checkboxes SHALL reflect membership in the currently active wishlist. Checked state SHALL be persisted between application sessions. Checking or unchecking a part SHALL immediately update the active wishlist.
 
 #### Scenario: User checks a part checkbox
 
 - **WHEN** the user ticks a part checkbox
-- **THEN** the checkbox appears checked for the remainder of the session
+- **THEN** the part is added to the active wishlist and the checkbox remains checked
 
 #### Scenario: Application is restarted after checking parts
 
 - **WHEN** the user restarts the application after checking one or more part checkboxes
-- **THEN** all checkboxes appear unchecked
+- **THEN** previously checked parts remain checked, reflecting the persisted wishlist state

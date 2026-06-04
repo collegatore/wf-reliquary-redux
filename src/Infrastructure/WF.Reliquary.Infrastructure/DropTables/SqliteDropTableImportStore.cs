@@ -148,6 +148,27 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
                 gear_name TEXT PRIMARY KEY,
                 is_vaulted INTEGER NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS wishlists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS wishlist_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wishlist_id INTEGER NOT NULL REFERENCES wishlists(id) ON DELETE CASCADE,
+                part_normalized_name TEXT NOT NULL,
+                gear_name TEXT NOT NULL,
+                part_display_name TEXT NOT NULL,
+                added_at TEXT NOT NULL,
+                UNIQUE(wishlist_id, part_normalized_name)
+            );
+
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                last_wishlist_id INTEGER NULL REFERENCES wishlists(id) ON DELETE SET NULL
+            );
             """;
 
         await ExecuteNonQueryAsync(connection, transaction, sql, cancellationToken);
@@ -158,6 +179,10 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
         SqliteTransaction transaction,
         CancellationToken cancellationToken)
     {
+        // *** USER DATA TABLES — DO NOT ADD HERE ***
+        // wishlists, wishlist_items, and user_preferences are user-owned data
+        // that must survive every import. They are intentionally absent from
+        // this DELETE list. Adding them here will permanently destroy user wishlists.
         const string sql = """
             DELETE FROM gear_vault_status;
             DELETE FROM mission_rewards;

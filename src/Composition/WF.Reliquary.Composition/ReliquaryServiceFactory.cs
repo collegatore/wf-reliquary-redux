@@ -33,4 +33,9 @@ public static class ReliquaryServiceFactory
     {
         return new SqlitePrimeGearReader();
     }
+
+    public static IWishlistStore CreateWishlistStore()
+    {
+        return new SqliteWishlistStore();
+    }
 }
