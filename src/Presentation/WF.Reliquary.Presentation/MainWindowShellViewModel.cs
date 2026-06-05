@@ -24,6 +24,8 @@ public sealed class MainWindowShellViewModel
             await primeGear.ReloadAsync();
             await wishlistRelics.ReloadAsync();
         };
+
+        primeGear.OnWishlistChanged = () => wishlistRelics.ReloadAsync();
     }
 
     public MainWindowViewModel DropTables { get; }

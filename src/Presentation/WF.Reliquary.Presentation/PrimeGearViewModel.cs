@@ -10,6 +10,7 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
 {
     private readonly IWishlistStore wishlistStore;
     private readonly Func<long> getActiveWishlistId;
+    private readonly Func<Task>? onPersisted;
     private bool isChecked;
 
     public PrimePartViewModel(
@@ -19,7 +20,8 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
         bool isChecked,
         bool isGhost,
         IWishlistStore wishlistStore,
-        Func<long> getActiveWishlistId)
+        Func<long> getActiveWishlistId,
+        Func<Task>? onPersisted = null)
     {
         PartName = partName;
         NormalizedName = normalizedName;
@@ -28,6 +30,7 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
         IsGhost = isGhost;
         this.wishlistStore = wishlistStore;
         this.getActiveWishlistId = getActiveWishlistId;
+        this.onPersisted = onPersisted;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -56,6 +59,9 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
             await wishlistStore.AddItemAsync(wishlistId, NormalizedName, GearName, PartName);
         else
             await wishlistStore.RemoveItemAsync(wishlistId, NormalizedName);
+
+        if (onPersisted != null)
+            await onPersisted();
     }
 }
 
@@ -90,6 +96,8 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public Func<Task>? OnWishlistChanged { get; set; }
 
     public ObservableCollection<PrimeGearCardViewModel> ActiveCards { get; }
     public ObservableCollection<PrimeGearCardViewModel> VaultedCards { get; }
@@ -188,7 +196,8 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
                     isChecked: isChecked_,
                     isGhost: false,
                     wishlistStore: wishlistStore,
-                    getActiveWishlistId: () => activeWishlistId));
+                    getActiveWishlistId: () => activeWishlistId,
+                    onPersisted: () => OnWishlistChanged?.Invoke() ?? Task.CompletedTask));
             }
 
             foreach (var ghost in ghostParts.OrderBy(wi => wi.PartDisplayName))
@@ -200,7 +209,8 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
                     isChecked: true,
                     isGhost: true,
                     wishlistStore: wishlistStore,
-                    getActiveWishlistId: () => activeWishlistId));
+                    getActiveWishlistId: () => activeWishlistId,
+                    onPersisted: () => OnWishlistChanged?.Invoke() ?? Task.CompletedTask));
             }
 
             if (partVms.Count == 0) continue;

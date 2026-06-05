@@ -1,81 +1,77 @@
-using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using WF.Reliquary.Application.PrimeGear;
 using WF.Reliquary.Application.Ports;
+using WF.Reliquary.Infrastructure.Storage;
 
 namespace WF.Reliquary.Infrastructure.DropTables;
 
 public sealed class SqlitePrimeGearReader : IPrimeGearReader
 {
     private readonly string databasePath;
-    private readonly string connectionString;
+    private readonly DbContextOptions<ReliquaryDbContext> options;
+    private readonly string primeGearSql;
 
     public SqlitePrimeGearReader(string? databasePath = null)
     {
         this.databasePath = databasePath ?? SqliteDropTableImportStore.DefaultDatabasePath();
-        connectionString = new SqliteConnectionStringBuilder { DataSource = this.databasePath }.ConnectionString;
+        options = ReliquaryDbContext.BuildOptions(this.databasePath);
+        primeGearSql = SqlQueryLoader.Load("GetPrimeGear.sql");
     }
 
     public async Task<IReadOnlyList<PrimeGearEntry>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT
-                gvs.gear_name,
-                ri.name AS item_name,
-                gvs.is_vaulted
-            FROM gear_vault_status gvs
-            JOIN reward_items ri
-                ON ri.item_kind = 'PrimePart'
-                AND TRIM(SUBSTR(ri.name, 1, INSTR(ri.name, ' Prime ') + 5)) = gvs.gear_name
-            ORDER BY gvs.gear_name, ri.name
-            """;
-
         if (!File.Exists(databasePath))
         {
             return [];
         }
 
-        var entries = new List<PrimeGearEntry>();
-
         try
         {
-            await using var connection = new SqliteConnection(connectionString);
-            await connection.OpenAsync(cancellationToken);
-            await using var command = connection.CreateCommand();
-            command.CommandText = sql;
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            await using var context = new ReliquaryDbContext(options);
+            var rows = await context.Database
+                .SqlQueryRaw<PrimeGearRow>(primeGearSql)
+                .ToListAsync(cancellationToken);
 
-            string? currentGearName = null;
-            var currentIsVaulted = false;
-            var currentParts = new List<string>();
-
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var gearName = reader.GetString(0);
-                var itemName = reader.GetString(1);
-                var isVaulted = reader.GetInt32(2) == 1;
-
-                if (currentGearName != null && gearName != currentGearName)
-                {
-                    entries.Add(new PrimeGearEntry(currentGearName, currentParts, currentIsVaulted));
-                    currentParts = [];
-                }
-
-                currentGearName = gearName;
-                currentIsVaulted = isVaulted;
-                currentParts.Add(DeriveGearAndPart(itemName).PartName);
-            }
-
-            if (currentGearName != null)
-            {
-                entries.Add(new PrimeGearEntry(currentGearName, currentParts, currentIsVaulted));
-            }
+            return BuildEntries(rows);
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1) // SQLITE_ERROR: table may not exist yet
+        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1)
         {
             return [];
         }
+    }
+
+    private static IReadOnlyList<PrimeGearEntry> BuildEntries(List<PrimeGearRow> rows)
+    {
+        var entries = new List<PrimeGearEntry>();
+        string? currentGearName = null;
+        var currentIsVaulted = false;
+        var currentParts = new List<string>();
+
+        foreach (var row in rows)
+        {
+            if (currentGearName != null && row.GearName != currentGearName)
+            {
+                entries.Add(new PrimeGearEntry(currentGearName, currentParts, currentIsVaulted));
+                currentParts = [];
+            }
+
+            currentGearName = row.GearName;
+            currentIsVaulted = row.IsVaulted != 0;
+            currentParts.Add(DerivePartName(row.ItemName));
+        }
+
+        if (currentGearName != null)
+        {
+            entries.Add(new PrimeGearEntry(currentGearName, currentParts, currentIsVaulted));
+        }
 
         return entries;
+    }
+
+    private static string DerivePartName(string itemName)
+    {
+        var idx = itemName.IndexOf(" Prime ", StringComparison.OrdinalIgnoreCase);
+        return itemName[(idx + 7)..].Trim();
     }
 
     public static (string GearName, string PartName) DeriveGearAndPart(string itemName)
@@ -84,5 +80,12 @@ public sealed class SqlitePrimeGearReader : IPrimeGearReader
         var gearName = itemName[..(idx + 6)].Trim();
         var partName = itemName[(idx + 7)..].Trim();
         return (gearName, partName);
+    }
+
+    private sealed class PrimeGearRow
+    {
+        public string GearName { get; set; } = string.Empty;
+        public string ItemName { get; set; } = string.Empty;
+        public int IsVaulted { get; set; }
     }
 }
