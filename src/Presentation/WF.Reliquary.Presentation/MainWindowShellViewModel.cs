@@ -5,19 +5,29 @@ public sealed class MainWindowShellViewModel
     public MainWindowShellViewModel(
         MainWindowViewModel dropTables,
         PrimeGearViewModel primeGear,
-        WishlistViewModel wishlist)
+        WishlistViewModel wishlist,
+        WishlistRelicsViewModel wishlistRelics)
     {
         DropTables = dropTables;
         PrimeGear = primeGear;
         Wishlist = wishlist;
+        WishlistRelics = wishlistRelics;
 
-        dropTables.OnImportSucceeded = primeGear.ReloadAsync;
-        wishlist.OnActiveWishlistChanged = primeGear.ReloadAsync;
+        dropTables.OnImportSucceeded = async () =>
+        {
+            await primeGear.ReloadAsync();
+            await wishlistRelics.ReloadAsync();
+        };
+
+        wishlist.OnActiveWishlistChanged = async () =>
+        {
+            await primeGear.ReloadAsync();
+            await wishlistRelics.ReloadAsync();
+        };
     }
 
     public MainWindowViewModel DropTables { get; }
-
     public PrimeGearViewModel PrimeGear { get; }
-
     public WishlistViewModel Wishlist { get; }
+    public WishlistRelicsViewModel WishlistRelics { get; }
 }

@@ -27,12 +27,17 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreatePrimeGearReader(),
             wishlistStore);
 
+        var wishlistRelicsVm = new WishlistRelicsViewModel(
+            ReliquaryServiceFactory.CreateWishlistRelicsReader(),
+            wishlistStore);
+
         var shell = new MainWindowShellViewModel(
             new MainWindowViewModel(
                 ReliquaryServiceFactory.CreateDropTableSourceRefreshService(),
                 ReliquaryServiceFactory.CreateDropTableImportService()),
             primeGearVm,
-            wishlistVm);
+            wishlistVm,
+            wishlistRelicsVm);
 
         DataContext = shell;
         _ = shell.DropTables.LoadStatusAsync();

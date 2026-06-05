@@ -101,7 +101,8 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
                 era TEXT NOT NULL,
                 code TEXT NOT NULL,
                 display_name TEXT NOT NULL UNIQUE,
-                reward_item_id INTEGER NOT NULL
+                reward_item_id INTEGER NOT NULL,
+                is_vaulted INTEGER NOT NULL DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS relic_rewards (
@@ -172,6 +173,15 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
             """;
 
         await ExecuteNonQueryAsync(connection, transaction, sql, cancellationToken);
+
+        if (await RelicsTableMissingIsVaultedColumnAsync(connection, transaction, cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                connection,
+                transaction,
+                "ALTER TABLE relics ADD COLUMN is_vaulted INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken);
+        }
     }
 
     private static async Task ClearSnapshotAsync(
@@ -339,6 +349,18 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
             """;
 
         await ExecuteNonQueryAsync(connection, transaction, gearVaultSql, cancellationToken);
+
+        const string relicVaultSql = """
+            UPDATE relics
+            SET is_vaulted = 1
+            WHERE id NOT IN (
+                SELECT DISTINCT relic_id
+                FROM mission_rewards
+                WHERE relic_id IS NOT NULL
+            )
+            """;
+
+        await ExecuteNonQueryAsync(connection, transaction, relicVaultSql, cancellationToken);
     }
 
     private static async Task<long> InsertAndReturnIdAsync(
@@ -394,6 +416,27 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
         }
 
         return false;
+    }
+
+    private static async Task<bool> RelicsTableMissingIsVaultedColumnAsync(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "PRAGMA table_info('relics');";
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            if (string.Equals(reader.GetString(1), "is_vaulted", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static async Task<bool> MissionSourcesTableHasUniqueDisplayLabelAsync(

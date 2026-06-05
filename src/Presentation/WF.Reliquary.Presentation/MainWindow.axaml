@@ -14,6 +14,9 @@
       <Setter Property="Foreground" Value="#C0A000" />
       <Setter Property="FontStyle" Value="Italic" />
     </Style>
+    <Style Selector="TextBlock.wishlisted">
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
   </Window.Styles>
   <TabControl Margin="24">
 
@@ -260,6 +263,90 @@
                     </ItemsControl>
                   </StackPanel>
                 </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+
+    <TabItem Header="Wishlist Relics">
+      <ScrollViewer Margin="0,12,0,0">
+        <StackPanel>
+
+          <!-- Control panel -->
+          <Border
+              Margin="8,0,8,8"
+              Padding="12,8"
+              Background="#1A808080"
+              CornerRadius="4">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <CheckBox
+                  IsChecked="{Binding WishlistRelics.ShowVaulted}"
+                  VerticalAlignment="Center" />
+              <TextBlock
+                  Text="Show Vaulted Relics"
+                  VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Empty state -->
+          <TextBlock
+              Margin="8,16"
+              IsVisible="{Binding WishlistRelics.IsEmpty}"
+              Text="Add items to your wishlist to see relics here." />
+
+          <!-- Relic cards -->
+          <ItemsControl ItemsSource="{Binding WishlistRelics.Cards}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type local:WishlistRelicCardViewModel}">
+                        <Border
+                            Margin="8"
+                            Padding="12"
+                            BorderBrush="Gray"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Width="200"
+                            Classes.vaulted="{Binding IsVaulted}">
+                          <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,6"
+                                FontWeight="SemiBold"
+                                Text="{Binding RelicName}"
+                                TextWrapping="Wrap" />
+                            <Separator Margin="0,0,0,6" />
+                            <ItemsControl ItemsSource="{Binding TierGroups}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:WishlistRelicTierGroupViewModel}">
+                                  <StackPanel>
+                                    <TextBlock
+                                        Margin="0,0,0,2"
+                                        FontStyle="Italic"
+                                        Text="{Binding TierName}" />
+                                    <ItemsControl ItemsSource="{Binding Rewards}">
+                                      <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type local:WishlistRelicRewardViewModel}">
+                                          <TextBlock
+                                              Text="{Binding RewardName}"
+                                              TextWrapping="Wrap"
+                                              Classes.wishlisted="{Binding IsWishlisted}" />
+                                        </DataTemplate>
+                                      </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Separator Margin="0,6,0,6" />
+                                  </StackPanel>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </StackPanel>
+                        </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
