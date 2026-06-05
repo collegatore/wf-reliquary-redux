@@ -1,6 +1,7 @@
 using Moq;
 using NUnit.Framework;
 using WF.Reliquary.Application.DropTables;
+using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Presentation;
 
 namespace WF.Reliquary.IntegrationTests;
@@ -12,7 +13,7 @@ public sealed class MainWindowViewModelTests
     public async Task LoadStatusAsync_ShowsEmptyStateWhenNoFileExists()
     {
         var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object);
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object);
 
         await viewModel.LoadStatusAsync();
 
@@ -28,7 +29,7 @@ public sealed class MainWindowViewModelTests
     {
         var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
         var sourceUrl = new Uri("https://example.test/custom.html");
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object)
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object)
         {
             SourceUrlText = sourceUrl.ToString()
         };
@@ -47,7 +48,7 @@ public sealed class MainWindowViewModelTests
     public async Task SaveSourceUrlAsync_RejectsRelativeUrl()
     {
         var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object)
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object)
         {
             SourceUrlText = "/relative/path.html"
         };
@@ -65,11 +66,12 @@ public sealed class MainWindowViewModelTests
     {
         var viewModel = new MainWindowViewModel(
             CreateWorkflow(StatusWithLastUpdate("08 April, 2026")).Object,
-            CreateImportWorkflow().Object);
+            CreateImportWorkflow().Object,
+            CreateImportMetadataReader().Object);
 
         await viewModel.LoadStatusAsync();
 
-        Assert.That(viewModel.StatusText, Is.EqualTo("Last Update: 08 April, 2026"));
+        Assert.That(viewModel.StatusText, Is.EqualTo("Downloaded file version: 08 April, 2026"));
     }
 
     [Test]
@@ -80,13 +82,13 @@ public sealed class MainWindowViewModelTests
         workflow
             .Setup(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DropTableRefreshResult.Failure(status, "network unavailable"));
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object);
+        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object);
 
         await viewModel.RefreshAsync();
 
         Assert.Multiple(() =>
         {
-            Assert.That(viewModel.StatusText, Is.EqualTo("Last Update: 08 April, 2026"));
+            Assert.That(viewModel.StatusText, Is.EqualTo("Downloaded file version: 08 April, 2026"));
             Assert.That(viewModel.OperationStatusText, Is.EqualTo("Download failed: network unavailable"));
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.DownloadCommand.CanExecute(null), Is.True);
@@ -98,7 +100,7 @@ public sealed class MainWindowViewModelTests
     {
         var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"));
         var importWorkflow = CreateImportWorkflow(DropTableImportResult.Success(SampleParsedImport()));
-        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object);
+        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object, CreateImportMetadataReader().Object);
 
         await viewModel.ImportAsync();
 
@@ -118,7 +120,7 @@ public sealed class MainWindowViewModelTests
     {
         var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"));
         var importWorkflow = CreateImportWorkflow(DropTableImportResult.Failure("source file missing"));
-        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object);
+        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object, CreateImportMetadataReader().Object);
 
         await viewModel.ImportAsync();
 
@@ -155,6 +157,16 @@ public sealed class MainWindowViewModelTests
             .ReturnsAsync(result ?? DropTableImportResult.Failure("not configured"));
 
         return workflow;
+    }
+
+    private static Mock<IImportMetadataReader> CreateImportMetadataReader(string? version = null)
+    {
+        var reader = new Mock<IImportMetadataReader>();
+        reader
+            .Setup(r => r.GetImportedVersionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(version);
+
+        return reader;
     }
 
     private static ParsedDropTableImport SampleParsedImport()

@@ -43,4 +43,9 @@ public static class ReliquaryServiceFactory
     {
         return new SqliteWishlistRelicsReader();
     }
+
+    public static IImportMetadataReader CreateImportMetadataReader()
+    {
+        return new SqliteImportMetadataReader();
+    }
 }

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using WF.Reliquary.Application;
 using WF.Reliquary.Application.DropTables;
+using WF.Reliquary.Application.Ports;
 
 namespace WF.Reliquary.Presentation;
 
@@ -10,20 +11,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly IDropTableSourceRefreshWorkflow refreshWorkflow;
     private readonly IDropTableImportWorkflow importWorkflow;
+    private readonly IImportMetadataReader importMetadataReader;
     private string statusText = "Checking drop-table file status...";
     private string operationStatusText = string.Empty;
     private string sourceUrlText = DropTableSourceDefaults.SourceUrl;
+    private string savedSourceUrl = DropTableSourceDefaults.SourceUrl;
+    private string importStatusText = "No drop-table file imported yet";
     private bool isBusy;
 
     public MainWindowViewModel(
         IDropTableSourceRefreshWorkflow refreshWorkflow,
-        IDropTableImportWorkflow importWorkflow)
+        IDropTableImportWorkflow importWorkflow,
+        IImportMetadataReader importMetadataReader)
     {
         this.refreshWorkflow = refreshWorkflow;
         this.importWorkflow = importWorkflow;
+        this.importMetadataReader = importMetadataReader;
         DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
         ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy);
-        SaveSourceUrlCommand = new AsyncRelayCommand(SaveSourceUrlAsync, () => !IsBusy);
+        SaveSourceUrlCommand = new AsyncRelayCommand(SaveSourceUrlAsync, () => !IsBusy && CanSaveUrl);
     }
 
     public Func<Task>? OnImportSucceeded { get; set; }
@@ -61,7 +67,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public string SourceUrlText
     {
         get => sourceUrlText;
-        set => SetProperty(ref sourceUrlText, value);
+        set
+        {
+            if (SetProperty(ref sourceUrlText, value))
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanSaveUrl)));
+                SaveSourceUrlCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool CanSaveUrl => !string.Equals(sourceUrlText, savedSourceUrl, StringComparison.Ordinal);
+
+    public string ImportStatusText
+    {
+        get => importStatusText;
+        private set => SetProperty(ref importStatusText, value);
     }
 
     public AsyncRelayCommand DownloadCommand { get; }
@@ -73,8 +94,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public async Task LoadStatusAsync(CancellationToken cancellationToken = default)
     {
         var settings = await refreshWorkflow.GetSettingsAsync(cancellationToken);
-        SourceUrlText = settings.SourceUrl.ToString();
+        savedSourceUrl = settings.SourceUrl.ToString();
+        SourceUrlText = savedSourceUrl;
         ApplyStatus(await refreshWorkflow.GetStatusAsync(cancellationToken));
+        await RefreshImportStatusAsync(cancellationToken);
     }
 
     public async Task RefreshAsync()
@@ -118,9 +141,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 ? ImportSuccessText(result)
                 : $"Import failed: {result.ErrorMessage}";
 
-            if (result.Succeeded && OnImportSucceeded != null)
+            if (result.Succeeded)
             {
-                await OnImportSucceeded();
+                await RefreshImportStatusAsync();
+                if (OnImportSucceeded != null)
+                {
+                    await OnImportSucceeded();
+                }
             }
         }
         finally
@@ -138,8 +165,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         await refreshWorkflow.SaveSettingsAsync(new DropTableSourceSettings(sourceUrl));
+        savedSourceUrl = SourceUrlText;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanSaveUrl)));
+        SaveSourceUrlCommand.RaiseCanExecuteChanged();
         OperationStatusText = "Drop-table source URL saved.";
         ApplyStatus(await refreshWorkflow.GetStatusAsync());
+    }
+
+    private async Task RefreshImportStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var version = await importMetadataReader.GetImportedVersionAsync(cancellationToken);
+        ImportStatusText = version is null
+            ? "No drop-table file imported yet"
+            : $"Imported file version: {version}";
     }
 
     private void ApplyStatus(DropTableSourceStatus status)
@@ -151,8 +189,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         StatusText = string.IsNullOrWhiteSpace(status.LastUpdate)
-            ? "Drop-table file exists. Last Update unavailable."
-            : $"Last Update: {status.LastUpdate}";
+            ? "Drop-table file exists. Downloaded file version unavailable."
+            : $"Downloaded file version: {status.LastUpdate}";
     }
 
     private static string ImportSuccessText(DropTableImportResult result)

@@ -21,22 +21,11 @@
   <TabControl Margin="24">
 
     <TabItem Header="Drop Tables">
-      <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,12,0,0">
-        <TextBlock
-            FontSize="24"
-            FontWeight="SemiBold"
-            Text="{Binding DropTables.Title}" />
-        <TextBlock
-            Grid.Row="1"
-            Margin="0,16,0,0"
-            FontSize="16"
-            Text="{Binding DropTables.StatusText}"
-            TextWrapping="Wrap" />
-        <StackPanel
-            Grid.Row="2"
-            Margin="0,20,0,0"
-            Spacing="8">
-          <TextBlock Text="Drop-table source URL" />
+      <StackPanel Margin="0,12,0,0" Spacing="16">
+
+        <!-- Section 1: Drop-table source URL -->
+        <StackPanel Spacing="8">
+          <TextBlock FontWeight="SemiBold" Text="Drop-table source URL" />
           <TextBox
               MinWidth="560"
               Text="{Binding DropTables.SourceUrlText, Mode=TwoWay}" />
@@ -44,28 +33,46 @@
               Padding="14,8"
               HorizontalAlignment="Left"
               Command="{Binding DropTables.SaveSourceUrlCommand}"
+              IsEnabled="{Binding DropTables.CanSaveUrl}"
               Content="Save URL" />
         </StackPanel>
-        <StackPanel
-            Grid.Row="3"
-            Margin="0,20,0,0"
-            Orientation="Horizontal"
-            Spacing="12">
+
+        <Separator />
+
+        <!-- Section 2: File download -->
+        <StackPanel Spacing="8">
+          <TextBlock FontWeight="SemiBold" Text="File download" />
+          <TextBlock
+              Text="{Binding DropTables.StatusText}"
+              TextWrapping="Wrap" />
           <Button
               Padding="14,8"
+              HorizontalAlignment="Left"
               Command="{Binding DropTables.DownloadCommand}"
               Content="Download drop tables" />
+        </StackPanel>
+
+        <Separator />
+
+        <!-- Section 3: File import -->
+        <StackPanel Spacing="8">
+          <TextBlock FontWeight="SemiBold" Text="File import" />
+          <TextBlock
+              Text="{Binding DropTables.ImportStatusText}"
+              TextWrapping="Wrap" />
           <Button
               Padding="14,8"
+              HorizontalAlignment="Left"
               Command="{Binding DropTables.ImportCommand}"
               Content="Import stored file" />
         </StackPanel>
+
+        <!-- Operation status (feedback for last action) -->
         <TextBlock
-            Grid.Row="4"
-            Margin="0,16,0,0"
             Text="{Binding DropTables.OperationStatusText}"
             TextWrapping="Wrap" />
-      </Grid>
+
+      </StackPanel>
     </TabItem>
 
     <TabItem Header="Prime Gear">
@@ -139,6 +146,11 @@
                   </Flyout>
                 </Button.Flyout>
               </Button>
+              <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <CheckBox IsChecked="{Binding PrimeGear.ShowVaulted}" VerticalAlignment="Center" />
+                <TextBlock Text="Show vaulted gear" VerticalAlignment="Center" />
+              </StackPanel>
             </StackPanel>
           </Border>
 
@@ -195,20 +207,14 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <!-- Vaulted separator -->
+          <!-- Vaulted section header -->
           <Border
               Margin="8,8,8,0"
               Padding="12,8"
               Background="#1A808080"
-              CornerRadius="4">
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <CheckBox
-                  IsChecked="{Binding PrimeGear.ShowVaulted}"
-                  VerticalAlignment="Center" />
-              <TextBlock
-                  Text="Show vaulted"
-                  VerticalAlignment="Center" />
-            </StackPanel>
+              CornerRadius="4"
+              IsVisible="{Binding PrimeGear.ShowVaulted}">
+            <TextBlock FontWeight="SemiBold" Text="Vaulted" />
           </Border>
 
           <!-- Vaulted gear section -->
@@ -283,12 +289,15 @@
               Background="#1A808080"
               CornerRadius="4">
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <CheckBox
-                  IsChecked="{Binding WishlistRelics.ShowVaulted}"
-                  VerticalAlignment="Center" />
-              <TextBlock
-                  Text="Show Vaulted Relics"
-                  VerticalAlignment="Center" />
+              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <CheckBox IsChecked="{Binding WishlistRelics.ShowVaulted}" VerticalAlignment="Center" />
+                <TextBlock Text="Show vaulted relics" VerticalAlignment="Center" />
+              </StackPanel>
+              <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <CheckBox IsChecked="{Binding WishlistRelics.ShowAllRewards}" VerticalAlignment="Center" />
+                <TextBlock Text="Show all rewards" VerticalAlignment="Center" />
+              </StackPanel>
             </StackPanel>
           </Border>
 

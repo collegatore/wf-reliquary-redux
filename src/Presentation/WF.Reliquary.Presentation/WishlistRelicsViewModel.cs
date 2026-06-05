@@ -43,7 +43,8 @@ public sealed class WishlistRelicCardViewModel
         string era,
         bool isVaulted,
         IEnumerable<WishlistRelicRewardViewModel> rewards,
-        IEnumerable<string> rewardTiers)
+        IEnumerable<string> rewardTiers,
+        bool showAllRewards = true)
     {
         RelicName = relicName;
         Era = era;
@@ -52,9 +53,14 @@ public sealed class WishlistRelicCardViewModel
         var rewardList = rewards.ToList();
         var tierList = rewardTiers.ToList();
 
+        var pairs = rewardList.Zip(tierList, (r, t) => (Reward: r, Tier: t));
+        if (!showAllRewards)
+        {
+            pairs = pairs.Where(x => x.Reward.IsWishlisted);
+        }
+
         TierGroups = new ObservableCollection<WishlistRelicTierGroupViewModel>(
-            rewardList
-                .Zip(tierList, (r, t) => (Reward: r, Tier: t))
+            pairs
                 .GroupBy(x => x.Tier, StringComparer.OrdinalIgnoreCase)
                 .OrderBy(g => TierOrder.TryGetValue(g.Key, out var o) ? o : 99)
                 .Select(g => new WishlistRelicTierGroupViewModel(g.Key, g.Select(x => x.Reward))));
@@ -72,6 +78,7 @@ public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
     private readonly IWishlistStore wishlistStore;
     private IReadOnlyList<WishlistRelicEntry> allEntries = [];
     private bool showVaulted;
+    private bool showAllRewards;
     private bool isEmpty = true;
 
     public WishlistRelicsViewModel(IWishlistRelicsReader reader, IWishlistStore wishlistStore)
@@ -109,6 +116,18 @@ public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool ShowAllRewards
+    {
+        get => showAllRewards;
+        set
+        {
+            if (showAllRewards == value) return;
+            showAllRewards = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowAllRewards)));
+            RebuildCards();
+        }
+    }
+
     public async Task ReloadAsync()
     {
         var activeWishlist = await wishlistStore.GetActiveAsync();
@@ -136,7 +155,8 @@ public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
             e.Era,
             e.IsVaulted,
             e.Rewards.Select(r => new WishlistRelicRewardViewModel(r.RewardName, r.IsWishlisted)),
-            e.Rewards.Select(r => r.RewardTier)));
+            e.Rewards.Select(r => r.RewardTier),
+            showAllRewards));
 
         foreach (var card in cards)
             Cards.Add(card);

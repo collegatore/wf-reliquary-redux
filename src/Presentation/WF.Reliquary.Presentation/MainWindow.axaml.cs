@@ -34,7 +34,8 @@ public sealed partial class MainWindow : Window
         var shell = new MainWindowShellViewModel(
             new MainWindowViewModel(
                 ReliquaryServiceFactory.CreateDropTableSourceRefreshService(),
-                ReliquaryServiceFactory.CreateDropTableImportService()),
+                ReliquaryServiceFactory.CreateDropTableImportService(),
+                ReliquaryServiceFactory.CreateImportMetadataReader()),
             primeGearVm,
             wishlistVm,
             wishlistRelicsVm);
