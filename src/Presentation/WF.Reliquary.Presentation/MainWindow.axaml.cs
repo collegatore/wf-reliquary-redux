@@ -31,6 +31,10 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreateWishlistRelicsReader(),
             wishlistStore);
 
+        var wishlistFarmingVm = new WishlistFarmingMissionsViewModel(
+            ReliquaryServiceFactory.CreateWishlistFarmingMissionsReader(),
+            wishlistStore);
+
         var shell = new MainWindowShellViewModel(
             new MainWindowViewModel(
                 ReliquaryServiceFactory.CreateDropTableSourceRefreshService(),
@@ -38,7 +42,8 @@ public sealed partial class MainWindow : Window
                 ReliquaryServiceFactory.CreateImportMetadataReader()),
             primeGearVm,
             wishlistVm,
-            wishlistRelicsVm);
+            wishlistRelicsVm,
+            wishlistFarmingVm);
 
         DataContext = shell;
         _ = shell.DropTables.LoadStatusAsync();

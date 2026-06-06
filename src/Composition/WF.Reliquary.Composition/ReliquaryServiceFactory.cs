@@ -2,6 +2,7 @@ using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Infrastructure.DropTables;
 
+
 namespace WF.Reliquary.Composition;
 
 public static class ReliquaryServiceFactory
@@ -47,5 +48,10 @@ public static class ReliquaryServiceFactory
     public static IImportMetadataReader CreateImportMetadataReader()
     {
         return new SqliteImportMetadataReader();
+    }
+
+    public static IWishlistFarmingMissionsReader CreateWishlistFarmingMissionsReader()
+    {
+        return new SqliteWishlistFarmingMissionsReader();
     }
 }
