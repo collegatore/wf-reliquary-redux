@@ -1,5 +1,2 @@
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read
-`specs/002-app-layer-boilerplate/plan.md`.
-<!-- SPECKIT END -->
+See [README](README.md) for project overview.
+See [docs/technical-reference.md](docs/technical-reference.md) for commands, architecture, database design, testing approach, and code conventions.
