@@ -1,22 +1,30 @@
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Infrastructure.DropTables;
+using WF.Reliquary.Infrastructure.Settings;
 
 
 namespace WF.Reliquary.Composition;
 
 public static class ReliquaryServiceFactory
 {
-    public static IDropTableSourceRefreshWorkflow CreateDropTableSourceRefreshService()
+    public static IUserSettingsStore CreateUserSettingsStore()
+    {
+        return new LocalUserSettingsStore();
+    }
+
+    public static IDropTableSourceRefreshWorkflow CreateDropTableSourceRefreshService(IUserSettingsStore? userSettingsStore = null)
     {
         var options = DropTableSourceOptions.CreateDefault();
+        var settingsStore = (userSettingsStore as IDropTableSourceSettingsStore)
+            ?? new LocalUserSettingsStore();
 
         return new DropTableSourceRefreshService(
             options,
             new HttpDropTableSourceClient(new HttpClient()),
             new LocalDropTableSourceStore(),
             new HtmlDropTableMetadataReader(),
-            new LocalDropTableSourceSettingsStore());
+            settingsStore);
     }
 
     public static IDropTableImportWorkflow CreateDropTableImportService()

@@ -1,24 +1,54 @@
+using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Composition;
 
 namespace WF.Reliquary.Presentation;
 
 public sealed partial class MainWindow : Window
 {
-    /// <summary>
-    /// Production constructor. Builds the full composition root and seeds user data.
-    /// </summary>
+    private MainWindowShellViewModel? shell;
+
+    // True once the Relics/Missions grid rows have been converted to pixel sizing.
+    // This is deferred until the grid is first measured (tab must be visible).
+    private bool splitterInitialized;
+
+    // Tracks the tab index as seen by the Settings-guard logic so we know when
+    // we are leaving the Settings tab.  Updated after every guarded transition.
+    private int guardedTabIndex;
+
+    // Re-entrancy guard: set while we are programmatically reverting a tab
+    // switch so we don't recursively intercept our own correction.
+    private bool suppressTabGuard;
+
+    // ── Constructors ────────────────────────────────────────────────────────
+
+    /// <summary>Production constructor.</summary>
     public MainWindow()
     {
+        var userSettingsStore = ReliquaryServiceFactory.CreateUserSettingsStore();
+
+        // Run on a thread-pool thread to avoid deadlocking Avalonia's UI
+        // SynchronizationContext when blocking with .GetResult().
+        var initialSettings = Task.Run(() => userSettingsStore.LoadAsync()).GetAwaiter().GetResult();
+
         InitializeComponent();
 
-        var wishlistStore = ReliquaryServiceFactory.CreateWishlistStore();
+        // Apply saved window size after InitializeComponent (styled properties
+        // are fully wired up at this point).
+        Width = initialSettings.WindowWidth;
+        Height = initialSettings.WindowHeight;
 
-        // Ensure "Default" wishlist exists before any VM tries to read wishlists.
+        // Apply font size to Application resources.
+        SettingsViewModel.ApplyFontSize(initialSettings.FontSize);
+
+        var wishlistStore = ReliquaryServiceFactory.CreateWishlistStore();
         wishlistStore.SeedDefaultAsync().GetAwaiter().GetResult();
 
-        // The prompt delegate captures `this`; it is only invoked after the window
-        // is shown, so the reference is valid when the dialog is opened.
         var wishlistVm = new WishlistViewModel(
             wishlistStore,
             prefill => WishlistNameDialog.ShowAsync(this, prefill));
@@ -35,29 +65,273 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreateWishlistFarmingMissionsReader(),
             wishlistStore);
 
-        var shell = new MainWindowShellViewModel(
+        var settingsVm = new SettingsViewModel(userSettingsStore, initialSettings);
+        settingsVm.ConfirmDiscard = () => ConfirmDiscardDialog.ShowAsync(this);
+
+        shell = new MainWindowShellViewModel(
             new MainWindowViewModel(
-                ReliquaryServiceFactory.CreateDropTableSourceRefreshService(),
+                ReliquaryServiceFactory.CreateDropTableSourceRefreshService(userSettingsStore),
                 ReliquaryServiceFactory.CreateDropTableImportService(),
                 ReliquaryServiceFactory.CreateImportMetadataReader()),
             primeGearVm,
             wishlistVm,
             wishlistRelicsVm,
-            wishlistFarmingVm);
+            wishlistFarmingVm,
+            settingsVm);
+
+        // Sync saved relics panel height into the shell so the grid initializer
+        // can read it when the Relics tab is first shown.
+        shell.RelicsPanelHeight = initialSettings.RelicsPanelHeight;
 
         DataContext = shell;
         _ = shell.DropTables.LoadStatusAsync();
 
         wishlistVm.FlyoutCloseRequested = () => WishlistDropdownButton.Flyout?.Hide();
+
+        Wire();
     }
 
-    /// <summary>
-    /// Test / design-time constructor allowing an externally constructed view-model.
-    /// </summary>
+    /// <summary>Test / design-time constructor.</summary>
     public MainWindow(MainWindowShellViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
+        shell = viewModel;
         _ = viewModel.DropTables.LoadStatusAsync();
+        Wire();
     }
+
+    // ── Wiring ──────────────────────────────────────────────────────────────
+
+    private void Wire()
+    {
+        // Grid initialisation: one-shot — unsubscribed as soon as the grid has
+        // a measurable height so there is zero SizeChanged overhead after that.
+        RelicsMissionsGrid.SizeChanged += OnRelicsGridFirstMeasured;
+
+        // Splitter drag end: capture pixel height and push to shell.
+        RelicsSplitter.DragCompleted += OnSplitterDragCompleted;
+
+        // When shell propagates a new saved relics height (from Settings Save
+        // or Reset), apply it to the grid immediately.
+        if (shell is not null)
+        {
+            shell.PropertyChanged += OnShellPropertyChanged;
+            shell.WishlistRelics.PropertyChanged += OnWishlistRelicsPropertyChanged;
+        }
+
+        // Guard: treat clicking any tab as equivalent to the Back button when
+        // on the Settings tab (prompt if unsaved changes, revert font preview).
+        MainTabControl.SelectionChanged += OnTabSelectionChanged;
+
+        // Wrap OnNavigateBack so that Back-button-initiated tab transitions
+        // bypass the tab guard (NavigateBackAsync changes SelectedTabIndex,
+        // which fires SelectionChanged; the guard must not intercept that).
+        if (shell is not null)
+        {
+            var innerBack = shell.Settings.OnNavigateBack;
+            shell.Settings.OnNavigateBack = async () =>
+            {
+                suppressTabGuard = true;
+                try { if (innerBack is not null) await innerBack(); }
+                finally
+                {
+                    suppressTabGuard = false;
+                    guardedTabIndex = shell.SelectedTabIndex;
+                }
+            };
+        }
+
+        // Save window dimensions on close.
+        Closing += OnWindowClosing;
+    }
+
+    // ── Event handlers ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// One-shot: fires until the grid first has a non-zero height (i.e. the
+    /// Relics tab becomes visible and is laid out), converts the star rows to
+    /// pixel rows, seeds the initial min-height, then unsubscribes itself so
+    /// it never runs again during horizontal resize.
+    /// </summary>
+    private void OnRelicsGridFirstMeasured(object? sender, SizeChangedEventArgs e)
+    {
+        var available = AvailableRelicsHeight();
+        if (available <= 0) return;   // not yet measured — wait for next event
+
+        // Done — unsubscribe before touching layout to avoid re-entrancy.
+        RelicsMissionsGrid.SizeChanged -= OnRelicsGridFirstMeasured;
+
+        var relicsHeight = shell?.RelicsPanelHeight is { } saved && saved > 0
+            ? Math.Min(saved, available - 10)
+            : available / 3.0; // default 1:2
+
+        SetRelicsRowHeight(relicsHeight);
+        splitterInitialized = true;
+
+        UpdateRelicsMinHeight();
+    }
+
+    private void OnSplitterDragCompleted(object? sender, VectorEventArgs e)
+    {
+        if (shell is null) return;
+
+        var height = RelicsMissionsGrid.RowDefinitions[1].ActualHeight;
+        shell.RelicsPanelHeight = height > 0 ? height : null;
+    }
+
+    private void OnShellPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowShellViewModel.RelicsPanelHeight))
+        {
+            Dispatcher.UIThread.Post(ApplyRelicsPanelHeight);
+        }
+    }
+
+    private void OnWishlistRelicsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(WishlistRelicsViewModel.ShowAllRewards))
+        {
+            // Cards re-render after ShowAllRewards changes; wait for the next
+            // layout pass so Bounds.Height values are fresh.
+            Dispatcher.UIThread.Post(UpdateRelicsMinHeight, DispatcherPriority.Render);
+        }
+    }
+
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (shell is null) return;
+        try
+        {
+            var store = ReliquaryServiceFactory.CreateUserSettingsStore();
+            var current = Task.Run(() => store.LoadAsync()).GetAwaiter().GetResult();
+            var size = ClientSize;
+            var relicsHeight = shell?.RelicsPanelHeight;
+            Task.Run(() => store.SaveAsync(current with
+            {
+                WindowWidth = size.Width,
+                WindowHeight = size.Height,
+                RelicsPanelHeight = relicsHeight,
+            })).GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // Best-effort; never block the close.
+        }
+    }
+
+    /// <summary>
+    /// Intercepts tab switches while the Settings tab is active so that
+    /// clicking another tab behaves identically to pressing Back — including
+    /// the unsaved-changes confirmation and font-size revert.
+    /// </summary>
+    private async void OnTabSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (suppressTabGuard || shell is null) return;
+
+        const int SettingsTabIndex = 3;
+
+        // Not leaving the Settings tab — just record the new index.
+        if (guardedTabIndex != SettingsTabIndex)
+        {
+            guardedTabIndex = shell.SelectedTabIndex;
+            return;
+        }
+
+        // We were on Settings.  If the destination IS Settings (e.g. File→Settings
+        // fired while already there), nothing to guard.
+        var destination = shell.SelectedTabIndex;
+        if (destination == SettingsTabIndex) return;
+
+        // Revert the visual switch so the user stays on Settings while the
+        // async confirmation dialog runs.
+        suppressTabGuard = true;
+        shell.SelectedTabIndex = SettingsTabIndex;
+        suppressTabGuard = false;
+
+        // Check unsaved changes (shows dialog if needed, reverts on discard).
+        // Unlike the Back button, we go to the tab the user actually clicked —
+        // not the last-visited tab stored in the shell.
+        if (!await shell.Settings.TryDiscardAsync())
+        {
+            guardedTabIndex = SettingsTabIndex;
+            return;
+        }
+
+        suppressTabGuard = true;
+        shell.SelectedTabIndex = destination;
+        suppressTabGuard = false;
+        guardedTabIndex = destination;
+    }
+
+    // ── Grid row helpers ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Applies a (possibly updated) relics panel height from the shell — called
+    /// when Settings are saved or the Reset button is pressed.
+    /// </summary>
+    private void ApplyRelicsPanelHeight()
+    {
+        if (!splitterInitialized) return;
+
+        var available = AvailableRelicsHeight();
+        if (available <= 0) return;
+
+        var relicsHeight = shell?.RelicsPanelHeight is { } h && h > 0
+            ? Math.Min(h, available - 10)
+            : available / 3.0; // default after reset
+
+        SetRelicsRowHeight(relicsHeight);
+    }
+
+    private void SetRelicsRowHeight(double relicsHeight)
+    {
+        var grid = RelicsMissionsGrid;
+        grid.RowDefinitions[1].Height = new GridLength(relicsHeight, GridUnitType.Pixel);
+        // Row 3 stays as 1* so the missions panel fills the remaining space.
+        grid.RowDefinitions[3].Height = new GridLength(1, GridUnitType.Star);
+    }
+
+    private double AvailableRelicsHeight()
+    {
+        var grid = RelicsMissionsGrid;
+        return grid.Bounds.Height
+            - grid.RowDefinitions[0].ActualHeight
+            - grid.RowDefinitions[2].ActualHeight;
+    }
+
+    // ── Min-height enforcement ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Sets the minimum allowed height for the relics row to the tallest card
+    /// currently visible in the relics panel. Re-evaluated after ShowAllRewards
+    /// toggles and on every grid resize.
+    /// </summary>
+    private void UpdateRelicsMinHeight()
+    {
+        if (!splitterInitialized) return;
+
+        // Find the WrapPanel that holds the relic cards.
+        var wrapPanel = RelicsScrollViewer
+            .GetVisualDescendants()
+            .OfType<WrapPanel>()
+            .FirstOrDefault();
+
+        if (wrapPanel is null) return;
+
+        var maxCardHeight = wrapPanel.Children
+            .OfType<Control>()
+            .Where(c => c.IsVisible && c.Bounds.Height > 0)
+            .Select(c => c.Bounds.Height)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        if (maxCardHeight > 0)
+        {
+            // Row 1 is the relics scroller only — the control bar lives in row 0
+            // and must not be included in this minimum.
+            RelicsMissionsGrid.RowDefinitions[1].MinHeight = maxCardHeight + 8;
+        }
+    }
+
 }

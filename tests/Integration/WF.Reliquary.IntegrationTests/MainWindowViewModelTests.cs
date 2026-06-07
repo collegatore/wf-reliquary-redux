@@ -17,48 +17,7 @@ public sealed class MainWindowViewModelTests
 
         await viewModel.LoadStatusAsync();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(viewModel.StatusText, Is.EqualTo("No drop-table file downloaded yet."));
-            Assert.That(viewModel.SourceUrlText, Is.EqualTo(DropTableSourceDefaults.SourceUrl));
-        });
-    }
-
-    [Test]
-    public async Task SaveSourceUrlAsync_PersistsAbsoluteUrl()
-    {
-        var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
-        var sourceUrl = new Uri("https://example.test/custom.html");
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object)
-        {
-            SourceUrlText = sourceUrl.ToString()
-        };
-
-        await viewModel.SaveSourceUrlAsync();
-
-        Assert.That(viewModel.OperationStatusText, Is.EqualTo("Drop-table source URL saved."));
-        workflow.Verify(
-            workflow => workflow.SaveSettingsAsync(
-                It.Is<DropTableSourceSettings>(settings => settings.SourceUrl == sourceUrl),
-                It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Test]
-    public async Task SaveSourceUrlAsync_RejectsRelativeUrl()
-    {
-        var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object)
-        {
-            SourceUrlText = "/relative/path.html"
-        };
-
-        await viewModel.SaveSourceUrlAsync();
-
-        Assert.That(viewModel.OperationStatusText, Is.EqualTo("Source URL must be an absolute URL."));
-        workflow.Verify(
-            workflow => workflow.SaveSettingsAsync(It.IsAny<DropTableSourceSettings>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        Assert.That(viewModel.StatusText, Is.EqualTo("No drop-table file downloaded yet."));
     }
 
     [Test]

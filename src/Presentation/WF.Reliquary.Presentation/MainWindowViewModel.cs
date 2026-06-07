@@ -14,8 +14,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private readonly IImportMetadataReader importMetadataReader;
     private string statusText = "Checking drop-table file status...";
     private string operationStatusText = string.Empty;
-    private string sourceUrlText = DropTableSourceDefaults.SourceUrl;
-    private string savedSourceUrl = DropTableSourceDefaults.SourceUrl;
     private string importStatusText = "No drop-table file imported yet";
     private bool isBusy;
 
@@ -29,7 +27,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         this.importMetadataReader = importMetadataReader;
         DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
         ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy);
-        SaveSourceUrlCommand = new AsyncRelayCommand(SaveSourceUrlAsync, () => !IsBusy && CanSaveUrl);
     }
 
     public Func<Task>? OnImportSucceeded { get; set; }
@@ -59,25 +56,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             {
                 DownloadCommand.RaiseCanExecuteChanged();
                 ImportCommand.RaiseCanExecuteChanged();
-                SaveSourceUrlCommand.RaiseCanExecuteChanged();
             }
         }
     }
-
-    public string SourceUrlText
-    {
-        get => sourceUrlText;
-        set
-        {
-            if (SetProperty(ref sourceUrlText, value))
-            {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanSaveUrl)));
-                SaveSourceUrlCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
-
-    public bool CanSaveUrl => !string.Equals(sourceUrlText, savedSourceUrl, StringComparison.Ordinal);
 
     public string ImportStatusText
     {
@@ -89,13 +70,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public AsyncRelayCommand ImportCommand { get; }
 
-    public AsyncRelayCommand SaveSourceUrlCommand { get; }
-
     public async Task LoadStatusAsync(CancellationToken cancellationToken = default)
     {
-        var settings = await refreshWorkflow.GetSettingsAsync(cancellationToken);
-        savedSourceUrl = settings.SourceUrl.ToString();
-        SourceUrlText = savedSourceUrl;
         ApplyStatus(await refreshWorkflow.GetStatusAsync(cancellationToken));
         await RefreshImportStatusAsync(cancellationToken);
     }
@@ -154,22 +130,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             IsBusy = false;
         }
-    }
-
-    public async Task SaveSourceUrlAsync()
-    {
-        if (!Uri.TryCreate(SourceUrlText, UriKind.Absolute, out var sourceUrl))
-        {
-            OperationStatusText = "Source URL must be an absolute URL.";
-            return;
-        }
-
-        await refreshWorkflow.SaveSettingsAsync(new DropTableSourceSettings(sourceUrl));
-        savedSourceUrl = SourceUrlText;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanSaveUrl)));
-        SaveSourceUrlCommand.RaiseCanExecuteChanged();
-        OperationStatusText = "Drop-table source URL saved.";
-        ApplyStatus(await refreshWorkflow.GetStatusAsync());
     }
 
     private async Task RefreshImportStatusAsync(CancellationToken cancellationToken = default)
@@ -237,6 +197,9 @@ public sealed class AsyncRelayCommand : ICommand
     {
         await execute();
     }
+
+    /// <summary>Awaitable version for use in tests.</summary>
+    public Task ExecuteTaskAsync() => execute();
 
     public void RaiseCanExecuteChanged()
     {

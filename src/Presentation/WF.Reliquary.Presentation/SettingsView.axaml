@@ -1,0 +1,73 @@
+<UserControl
+    x:Class="WF.Reliquary.Presentation.SettingsView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation">
+
+  <StackPanel Margin="0,12,0,0" Spacing="20" MaxWidth="600" HorizontalAlignment="Left">
+
+    <!-- Font size -->
+    <StackPanel Spacing="8">
+      <TextBlock FontWeight="SemiBold" Text="Font size" />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <RadioButton
+            Content="Small"
+            IsChecked="{Binding Settings.SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Small}"
+            GroupName="FontSize" />
+        <RadioButton
+            Content="Medium"
+            IsChecked="{Binding Settings.SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Medium}"
+            GroupName="FontSize" />
+        <RadioButton
+            Content="Large"
+            IsChecked="{Binding Settings.SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Large}"
+            GroupName="FontSize" />
+      </StackPanel>
+    </StackPanel>
+
+    <Separator />
+
+    <!-- Relics panel height -->
+    <StackPanel Spacing="8">
+      <TextBlock FontWeight="SemiBold" Text="Relics panel height" />
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <TextBlock
+            Text="{Binding Settings.RelicsPanelHeightDisplay}"
+            VerticalAlignment="Center" />
+        <Button
+            Padding="10,6"
+            Command="{Binding Settings.ResetSplitCommand}"
+            Content="Reset to default" />
+      </StackPanel>
+    </StackPanel>
+
+    <Separator />
+
+    <!-- Drop-tables source URL -->
+    <StackPanel Spacing="8">
+      <TextBlock FontWeight="SemiBold" Text="Drop-table source URL" />
+      <TextBox
+          MinWidth="480"
+          Text="{Binding Settings.SourceUrlText, Mode=TwoWay}" />
+      <TextBlock
+          Foreground="OrangeRed"
+          IsVisible="{Binding Settings.UrlValidationError, Converter={x:Static local:NonEmptyStringToBoolConverter.Instance}}"
+          Text="{Binding Settings.UrlValidationError}" />
+    </StackPanel>
+
+    <Separator />
+
+    <!-- Save / Back -->
+    <StackPanel Orientation="Horizontal" Spacing="10">
+      <Button
+          Padding="14,8"
+          Command="{Binding Settings.SaveCommand}"
+          Content="Save" />
+      <Button
+          Padding="14,8"
+          Command="{Binding Settings.BackCommand}"
+          Content="Back" />
+    </StackPanel>
+
+  </StackPanel>
+</UserControl>

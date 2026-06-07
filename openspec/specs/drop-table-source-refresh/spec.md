@@ -90,25 +90,22 @@ the drop-table download operation.
 
 ### Requirement: Drop Table Source URL UI Configuration
 
-The Avalonia UI SHALL show the configured drop-table source URL and SHALL allow
-the user to edit and save that URL as application-level user settings. The Save URL control SHALL be disabled when the current field value is identical to the already-saved URL.
+The Avalonia UI SHALL show the configured drop-table source URL and SHALL allow the user to edit and save that URL as part of the unified application-level user settings via the Settings tab. The Settings tab's Save button persists the URL along with all other settings. There is no separate Save URL button on the Drop Tables tab.
 
 #### Scenario: User views configured URL
-- **WHEN** the UI loads
-- **THEN** the source URL field displays the saved application setting or the
-  default source URL when no setting exists
+
+- **WHEN** the user opens the Settings tab
+- **THEN** the source URL field displays the saved application setting or the default source URL when no setting exists
 
 #### Scenario: User saves configured URL
-- **WHEN** the user enters a valid absolute URL and saves it
+
+- **WHEN** the user enters a valid absolute URL in the Settings tab and clicks Save
 - **THEN** the application persists the URL for future refresh operations
 
-#### Scenario: Save URL is disabled when value is unchanged
-- **WHEN** the source URL field contains the same value as the currently saved URL
-- **THEN** the Save URL control is disabled
+#### Scenario: Invalid URL is rejected on save
 
-#### Scenario: Save URL is enabled when value differs
-- **WHEN** the user edits the source URL field to a value that differs from the saved URL
-- **THEN** the Save URL control is enabled
+- **WHEN** the user enters a value that is not an absolute URL in the Settings tab and clicks Save
+- **THEN** the application rejects the value, keeps the previously configured URL, and notifies the user of the validation error
 
 ### Requirement: Drop Table Status Field
 
@@ -130,18 +127,6 @@ SHALL display the downloaded file's version (the source page Last Update value) 
   unavailable
 - **THEN** the status field indicates that the file exists but Last Update is
   unavailable
-
-### Requirement: Drop Tables tab layout
-
-The Drop Tables tab SHALL present its content in three clearly labelled sections separated by horizontal dividers: **Drop-table source URL**, **File download**, and **File import**. The app title heading SHALL NOT appear within the tab content.
-
-#### Scenario: Tab shows three sections
-- **WHEN** the user opens the Drop Tables tab
-- **THEN** three sections are visible: "Drop-table source URL", "File download", and "File import", each preceded by its label with a separator line between sections
-
-#### Scenario: App title is not shown in tab content
-- **WHEN** the user opens the Drop Tables tab
-- **THEN** no heading showing the application name appears within the tab content area
 
 ### Requirement: Layered Refresh Architecture
 
