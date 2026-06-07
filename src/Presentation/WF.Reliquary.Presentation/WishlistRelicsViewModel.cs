@@ -7,14 +7,16 @@ namespace WF.Reliquary.Presentation;
 
 public sealed class WishlistRelicRewardViewModel
 {
-    public WishlistRelicRewardViewModel(string rewardName, bool isWishlisted)
+    public WishlistRelicRewardViewModel(string rewardName, bool isWishlisted, bool showAllRewards)
     {
         RewardName = rewardName;
         IsWishlisted = isWishlisted;
+        ShowWishlistedStyle = isWishlisted && showAllRewards;
     }
 
     public string RewardName { get; }
     public bool IsWishlisted { get; }
+    public bool ShowWishlistedStyle { get; }
 }
 
 public sealed class WishlistRelicTierGroupViewModel
@@ -27,6 +29,7 @@ public sealed class WishlistRelicTierGroupViewModel
 
     public string TierName { get; }
     public ObservableCollection<WishlistRelicRewardViewModel> Rewards { get; }
+    public bool IsLast { get; internal set; }
 }
 
 public sealed class WishlistRelicCardViewModel
@@ -59,11 +62,16 @@ public sealed class WishlistRelicCardViewModel
             pairs = pairs.Where(x => x.Reward.IsWishlisted);
         }
 
-        TierGroups = new ObservableCollection<WishlistRelicTierGroupViewModel>(
-            pairs
-                .GroupBy(x => x.Tier, StringComparer.OrdinalIgnoreCase)
-                .OrderBy(g => TierOrder.TryGetValue(g.Key, out var o) ? o : 99)
-                .Select(g => new WishlistRelicTierGroupViewModel(g.Key, g.Select(x => x.Reward))));
+        var groups = pairs
+            .GroupBy(x => x.Tier, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => TierOrder.TryGetValue(g.Key, out var o) ? o : 99)
+            .Select(g => new WishlistRelicTierGroupViewModel(g.Key, g.Select(x => x.Reward)))
+            .ToList();
+
+        if (groups.Count > 0)
+            groups[^1].IsLast = true;
+
+        TierGroups = new ObservableCollection<WishlistRelicTierGroupViewModel>(groups);
     }
 
     public string RelicName { get; }
@@ -154,7 +162,7 @@ public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
             e.DisplayName,
             e.Era,
             e.IsVaulted,
-            e.Rewards.Select(r => new WishlistRelicRewardViewModel(r.RewardName, r.IsWishlisted)),
+            e.Rewards.Select(r => new WishlistRelicRewardViewModel(r.RewardName, r.IsWishlisted, showAllRewards)),
             e.Rewards.Select(r => r.RewardTier),
             showAllRewards));
 

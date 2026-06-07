@@ -351,11 +351,11 @@
                                       <TextBlock
                                           Text="{Binding RewardName}"
                                           TextWrapping="Wrap"
-                                          Classes.wishlisted="{Binding IsWishlisted}" />
+                                          Classes.wishlisted="{Binding ShowWishlistedStyle}" />
                                     </DataTemplate>
                                   </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <Separator Margin="0,6,0,6" />
+                                <Separator Margin="0,6,0,6" IsVisible="{Binding !IsLast}" />
                               </StackPanel>
                             </DataTemplate>
                           </ItemsControl.ItemTemplate>
