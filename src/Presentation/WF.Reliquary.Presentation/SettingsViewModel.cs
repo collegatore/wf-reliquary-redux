@@ -221,6 +221,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         if (size is double d)
         {
             resources["ContentFontSize"] = d;
+
+            // Card widths scale with the font so the per-line character budget stays
+            // roughly constant across sizes. Each card's current width is its Medium
+            // anchor; scale by the ratio to the Medium font size.
+            if (resources["FontSizeMedium"] is double medium && medium > 0)
+            {
+                var ratio = d / medium;
+                resources["RelicCardWidth"] = 300 * ratio;
+                resources["MissionCardWidth"] = 300 * ratio;
+            }
         }
     }
 

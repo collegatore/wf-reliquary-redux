@@ -17,5 +17,20 @@
     <x:Double x:Key="FontSizeLarge">18</x:Double>
     <!-- ContentFontSize is overwritten at runtime; Medium is the startup default -->
     <x:Double x:Key="ContentFontSize">14</x:Double>
+
+    <!-- Card widths track the font size at runtime (see SettingsViewModel.ApplyFontSize);
+         these are the Medium-font anchors. Relic cards are wide enough for the longest
+         reward name to fit on a single line. -->
+    <x:Double x:Key="RelicCardWidth">300</x:Double>
+    <x:Double x:Key="MissionCardWidth">300</x:Double>
+
+    <!-- Relic-card tier colors. Light-theme values; a future dark theme should swap
+         these via Application.Resources ThemeDictionaries rather than changing markup.
+         Tier identity lives in the per-tier bar color; the tier label is uniform
+         (default text color, semi-bold — see the TextBlock.tier-label style). -->
+    <SolidColorBrush x:Key="TierLabelBrush" Color="#000000" />
+    <SolidColorBrush x:Key="TierCommonBrush" Color="#C0772E" />
+    <SolidColorBrush x:Key="TierUncommonBrush" Color="#7C8A9A" />
+    <SolidColorBrush x:Key="TierRareBrush" Color="#D4A017" />
   </Application.Resources>
 </Application>

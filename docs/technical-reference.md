@@ -123,6 +123,10 @@ For the EF Core schema, EF migrations are exempt from this rule. All schema and 
 - **Unit tests** — cover Application-layer logic only. One test class per service class. All ports are mocked with Moq.
 - **Integration tests** — exercise the real SQLite stack end-to-end, ViewModel wiring, and project structure. `ReadmeGuidanceTests` and `VsCodeWorkflowTests` enforce documentation and build-tooling compliance; keep README and VS Code tasks consistent with them.
 
+## UI Design
+
+- **Card display** — the rationale behind the relic and farming-mission cards (the ~5–10s reward-match use case, verbatim names, tier accent bars, the light-theme palette, and font-scaled card widths) is documented in [card-display-design.md](card-display-design.md).
+
 ## Code Conventions
 
 - All I/O methods are `async` and accept `CancellationToken`.

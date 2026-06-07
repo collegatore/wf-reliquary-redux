@@ -18,8 +18,25 @@
       <Setter Property="Foreground" Value="#C0A000" />
       <Setter Property="FontStyle" Value="Italic" />
     </Style>
-    <Style Selector="TextBlock.wishlisted">
-      <Setter Property="FontWeight" Value="Bold" />
+    <!-- Relic tier label: uniform accent color across all tiers (tier identity is
+         carried by the accent bar, not the label). -->
+    <Style Selector="TextBlock.tier-label">
+      <Setter Property="Foreground" Value="{DynamicResource TierLabelBrush}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+    </Style>
+    <!-- Non-wishlisted rewards dimmed when "Show all rewards" is on. -->
+    <Style Selector="TextBlock.dimmed">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <!-- Per-tier accent bar color (left border of each tier group). -->
+    <Style Selector="Border.tier-common">
+      <Setter Property="BorderBrush" Value="{DynamicResource TierCommonBrush}" />
+    </Style>
+    <Style Selector="Border.tier-uncommon">
+      <Setter Property="BorderBrush" Value="{DynamicResource TierUncommonBrush}" />
+    </Style>
+    <Style Selector="Border.tier-rare">
+      <Setter Property="BorderBrush" Value="{DynamicResource TierRareBrush}" />
     </Style>
   </Window.Styles>
 
@@ -328,7 +345,7 @@
                         BorderBrush="Gray"
                         BorderThickness="1"
                         CornerRadius="4"
-                        Width="200"
+                        Width="{DynamicResource RelicCardWidth}"
                         Classes.vaulted="{Binding IsVaulted}">
                       <StackPanel>
                         <TextBlock
@@ -340,23 +357,35 @@
                         <ItemsControl ItemsSource="{Binding TierGroups}">
                           <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:WishlistRelicTierGroupViewModel}">
-                              <StackPanel>
-                                <TextBlock
-                                    Margin="0,0,0,2"
-                                    FontStyle="Italic"
-                                    Text="{Binding TierName}" />
-                                <ItemsControl ItemsSource="{Binding Rewards}">
-                                  <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type local:WishlistRelicRewardViewModel}">
-                                      <TextBlock
-                                          Text="{Binding RewardName}"
-                                          TextWrapping="Wrap"
-                                          Classes.wishlisted="{Binding ShowWishlistedStyle}" />
-                                    </DataTemplate>
-                                  </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <Separator Margin="0,6,0,6" IsVisible="{Binding !IsLast}" />
-                              </StackPanel>
+                              <!-- Per-tier accent bar in the left gutter; color encodes the
+                                   tier and the bar spans the whole group (label + wrapped
+                                   reward lines), replacing per-group separators. -->
+                              <Border
+                                  Margin="0,0,0,8"
+                                  Padding="6,0,0,0"
+                                  BorderThickness="3,0,0,0"
+                                  Classes.tier-common="{Binding IsCommon}"
+                                  Classes.tier-uncommon="{Binding IsUncommon}"
+                                  Classes.tier-rare="{Binding IsRare}">
+                                <StackPanel>
+                                  <TextBlock
+                                      Margin="0,0,0,2"
+                                      Classes="tier-label"
+                                      Text="{Binding TierName}" />
+                                  <!-- Reward names indented beneath the tier label so the
+                                       label stands out and the rewards read as its list. -->
+                                  <ItemsControl ItemsSource="{Binding Rewards}" Margin="12,0,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                      <DataTemplate DataType="{x:Type local:WishlistRelicRewardViewModel}">
+                                        <TextBlock
+                                            Text="{Binding RewardName}"
+                                            TextWrapping="Wrap"
+                                            Classes.dimmed="{Binding IsDimmed}" />
+                                      </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                  </ItemsControl>
+                                </StackPanel>
+                              </Border>
                             </DataTemplate>
                           </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -412,7 +441,7 @@
                         BorderBrush="Gray"
                         BorderThickness="1"
                         CornerRadius="4"
-                        Width="300">
+                        Width="{DynamicResource MissionCardWidth}">
                       <StackPanel>
 
                         <!-- Card header: mission label + effective chance -->

@@ -11,25 +11,32 @@ public sealed class WishlistRelicRewardViewModel
     {
         RewardName = rewardName;
         IsWishlisted = isWishlisted;
-        ShowWishlistedStyle = isWishlisted && showAllRewards;
+        // When all rewards are shown, dim the ones that are not wishlisted so the
+        // wishlisted reward is the only crisp text on the card.
+        IsDimmed = showAllRewards && !isWishlisted;
     }
 
     public string RewardName { get; }
     public bool IsWishlisted { get; }
-    public bool ShowWishlistedStyle { get; }
+    public bool IsDimmed { get; }
 }
 
 public sealed class WishlistRelicTierGroupViewModel
 {
     public WishlistRelicTierGroupViewModel(string tierName, IEnumerable<WishlistRelicRewardViewModel> rewards)
     {
-        TierName = tierName + ":";
+        TierName = tierName;
+        IsCommon = string.Equals(tierName, "Common", StringComparison.OrdinalIgnoreCase);
+        IsUncommon = string.Equals(tierName, "Uncommon", StringComparison.OrdinalIgnoreCase);
+        IsRare = string.Equals(tierName, "Rare", StringComparison.OrdinalIgnoreCase);
         Rewards = new ObservableCollection<WishlistRelicRewardViewModel>(rewards);
     }
 
     public string TierName { get; }
+    public bool IsCommon { get; }
+    public bool IsUncommon { get; }
+    public bool IsRare { get; }
     public ObservableCollection<WishlistRelicRewardViewModel> Rewards { get; }
-    public bool IsLast { get; internal set; }
 }
 
 public sealed class WishlistRelicCardViewModel
@@ -67,9 +74,6 @@ public sealed class WishlistRelicCardViewModel
             .OrderBy(g => TierOrder.TryGetValue(g.Key, out var o) ? o : 99)
             .Select(g => new WishlistRelicTierGroupViewModel(g.Key, g.Select(x => x.Reward)))
             .ToList();
-
-        if (groups.Count > 0)
-            groups[^1].IsLast = true;
 
         TierGroups = new ObservableCollection<WishlistRelicTierGroupViewModel>(groups);
     }
