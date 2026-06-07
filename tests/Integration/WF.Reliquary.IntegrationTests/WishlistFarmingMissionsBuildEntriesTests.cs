@@ -177,6 +177,58 @@ public sealed class WishlistFarmingMissionsBuildEntriesTests
         Assert.That(entries, Is.Empty);
     }
 
+    // ── Grouping (BuildGroups) ────────────────────────────────────────────────
+
+    [Test]
+    public void SameTypeSameRewards_MergedIntoOneGroupWithTwoNodes()
+    {
+        var rows = new List<FarmingRow>
+        {
+            // Two missions: same MissionType "Defense", same relic at same chance
+            RowWithType(missionId: 1, missionLabel: "Io (Jupiter) / Defense",  missionType: "Defense", node: "Io",     relicName: "Lith A1 Relic", chance: 11.11),
+            RowWithType(missionId: 2, missionLabel: "Hydron (Sedna) / Defense", missionType: "Defense", node: "Hydron", relicName: "Lith A1 Relic", chance: 11.11),
+        };
+
+        var groups = BuildGroups(rows);
+
+        Assert.That(groups, Has.Count.EqualTo(1));
+        Assert.That(groups[0].GroupTitle, Is.EqualTo("Defense"));
+        Assert.That(groups[0].Nodes, Has.Count.EqualTo(2));
+        Assert.That(groups[0].Nodes, Has.Some.EqualTo("Io"));
+        Assert.That(groups[0].Nodes, Has.Some.EqualTo("Hydron"));
+    }
+
+    [Test]
+    public void SameTypeDifferentRewards_RemainSeparateGroups()
+    {
+        var rows = new List<FarmingRow>
+        {
+            RowWithType(missionId: 1, missionLabel: "Io (Jupiter) / Defense",  missionType: "Defense", node: "Io",     relicName: "Lith A1 Relic", chance: 11.11),
+            RowWithType(missionId: 2, missionLabel: "Hydron (Sedna) / Defense", missionType: "Defense", node: "Hydron", relicName: "Lith B2 Relic", chance: 11.11),
+        };
+
+        var groups = BuildGroups(rows);
+
+        Assert.That(groups, Has.Count.EqualTo(2));
+    }
+
+    [Test]
+    public void NullMissionType_FormsSingletonGroupWithDisplayLabelAsTitle()
+    {
+        var rows = new List<FarmingRow>
+        {
+            // Mission with null MissionType
+            RowWithType(missionId: 1, missionLabel: "Hepit (Void) / Capture", missionType: null, node: "Hepit", relicName: "Lith A1 Relic", chance: 11.11),
+        };
+
+        var groups = BuildGroups(rows);
+
+        Assert.That(groups, Has.Count.EqualTo(1));
+        Assert.That(groups[0].GroupTitle, Is.EqualTo("Hepit (Void) / Capture"));
+        Assert.That(groups[0].Nodes, Has.Count.EqualTo(1));
+        Assert.That(groups[0].Nodes[0], Is.EqualTo("Hepit"));
+    }
+
     // ── Row factory helpers ───────────────────────────────────────────────────
 
     private static FarmingRow Row(
@@ -193,6 +245,21 @@ public sealed class WishlistFarmingMissionsBuildEntriesTests
         RelicName = relicName,
         RelicChancePercent = chance,
         RewardSourceOrder = rewardOrder
+    };
+
+    private static FarmingRow RowWithType(
+        long missionId, string missionLabel, string? missionType, string? node,
+        string? relicName, double? chance) => new()
+    {
+        MissionSourceId = missionId,
+        MissionDisplayLabel = missionLabel,
+        MissionSourceOrder = (int)missionId,
+        MissionType = missionType,
+        MissionNode = node,
+        RotationId = null,
+        RelicName = relicName,
+        RelicChancePercent = chance,
+        RewardSourceOrder = relicName is null ? null : 0
     };
 
     private static List<FarmingRow> RotationRows(

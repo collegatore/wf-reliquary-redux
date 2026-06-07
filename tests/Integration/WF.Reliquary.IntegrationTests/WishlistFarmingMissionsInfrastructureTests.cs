@@ -26,7 +26,7 @@ public sealed class WishlistFarmingMissionsInfrastructureTests
         var reader = new SqliteWishlistFarmingMissionsReader(dbPath);
         var missions = await reader.GetMissionsForWishlistAsync(wishlist.Id);
 
-        var hepit = missions.Single(m => m.DisplayLabel.Contains("Hepit", StringComparison.OrdinalIgnoreCase));
+        var hepit = missions.Single(m => m.Nodes.Any(n => n.Contains("Hepit", StringComparison.OrdinalIgnoreCase)));
         Assert.That(hepit.HasRotations, Is.False);
         Assert.That(hepit.EffectiveChance, Is.EqualTo(11.11 + 7.41).Within(0.001));
     }
@@ -47,7 +47,7 @@ public sealed class WishlistFarmingMissionsInfrastructureTests
         var reader = new SqliteWishlistFarmingMissionsReader(dbPath);
         var missions = await reader.GetMissionsForWishlistAsync(wishlist.Id);
 
-        var mot = missions.Single(m => m.DisplayLabel.Contains("Mot", StringComparison.OrdinalIgnoreCase));
+        var mot = missions.Single(m => m.Nodes.Any(n => n.Contains("Mot", StringComparison.OrdinalIgnoreCase)));
         Assert.That(mot.HasRotations, Is.True);
 
         // avg(18, 0, 0) = 6
@@ -68,7 +68,7 @@ public sealed class WishlistFarmingMissionsInfrastructureTests
         var reader = new SqliteWishlistFarmingMissionsReader(dbPath);
         var missions = await reader.GetMissionsForWishlistAsync(wishlist.Id);
 
-        var mot = missions.Single(m => m.DisplayLabel.Contains("Mot", StringComparison.OrdinalIgnoreCase));
+        var mot = missions.Single(m => m.Nodes.Any(n => n.Contains("Mot", StringComparison.OrdinalIgnoreCase)));
         Assert.That(mot.Rotations, Has.Count.EqualTo(3));
 
         var rotA = mot.Rotations.Single(r => r.RotationDisplayLabel == "Rotation A");
@@ -104,8 +104,8 @@ public sealed class WishlistFarmingMissionsInfrastructureTests
         var missions = await reader.GetMissionsForWishlistAsync(wishlist.Id);
 
         Assert.That(missions, Has.Count.EqualTo(2));
-        Assert.That(missions[0].DisplayLabel, Does.Contain("Hepit"));
-        Assert.That(missions[1].DisplayLabel, Does.Contain("Mot"));
+        Assert.That(missions[0].Nodes, Has.Some.Contains("Hepit"));
+        Assert.That(missions[1].Nodes, Has.Some.Contains("Mot"));
         Assert.That(missions[0].EffectiveChance, Is.GreaterThan(missions[1].EffectiveChance));
     }
 

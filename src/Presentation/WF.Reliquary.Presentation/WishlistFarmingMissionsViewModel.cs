@@ -17,8 +17,10 @@ public sealed class WishlistFarmingMissionRelicViewModel
     public string FormattedChance { get; }
 }
 
-public sealed class WishlistFarmingRotationViewModel
+public sealed class WishlistFarmingRotationViewModel : INotifyPropertyChanged
 {
+    private bool showExactDropChances = true;
+
     public WishlistFarmingRotationViewModel(
         string rotationLabel,
         double cumulativeChance,
@@ -27,18 +29,36 @@ public sealed class WishlistFarmingRotationViewModel
         RotationLabel = rotationLabel;
         FormattedCumulativeChance = $"{cumulativeChance:F2}%";
         Relics = new ObservableCollection<WishlistFarmingMissionRelicViewModel>(relics);
+        CompactRelicNames = string.Join(", ", Relics.Select(r => r.RelicName));
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public string RotationLabel { get; }
     public string FormattedCumulativeChance { get; }
     public ObservableCollection<WishlistFarmingMissionRelicViewModel> Relics { get; }
+    public string CompactRelicNames { get; }
+
+    public bool ShowExactDropChances
+    {
+        get => showExactDropChances;
+        set
+        {
+            if (showExactDropChances == value) return;
+            showExactDropChances = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowExactDropChances)));
+        }
+    }
 }
 
-public sealed class WishlistFarmingMissionCardViewModel
+public sealed class WishlistFarmingMissionGroupCardViewModel : INotifyPropertyChanged
 {
-    public WishlistFarmingMissionCardViewModel(WishlistFarmingMissionEntry entry)
+    private bool showExactDropChances = true;
+
+    public WishlistFarmingMissionGroupCardViewModel(WishlistFarmingMissionGroupEntry entry)
     {
-        DisplayLabel = entry.DisplayLabel;
+        GroupTitle = entry.GroupTitle;
+        NodesLabel = string.Join(", ", entry.Nodes);
         FormattedEffectiveChance = entry.HasRotations
             ? $"avg {entry.EffectiveChance:F2}%"
             : $"{entry.EffectiveChance:F2}%";
@@ -52,13 +72,32 @@ public sealed class WishlistFarmingMissionCardViewModel
 
         Relics = new ObservableCollection<WishlistFarmingMissionRelicViewModel>(
             entry.Relics.Select(r => new WishlistFarmingMissionRelicViewModel(r.RelicName, r.ChancePercent)));
+
+        CompactRelicNames = string.Join(", ", entry.Relics.Select(r => r.RelicName));
     }
 
-    public string DisplayLabel { get; }
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string GroupTitle { get; }
+    public string NodesLabel { get; }
     public string FormattedEffectiveChance { get; }
     public bool HasRotations { get; }
     public ObservableCollection<WishlistFarmingRotationViewModel> Rotations { get; }
     public ObservableCollection<WishlistFarmingMissionRelicViewModel> Relics { get; }
+    public string CompactRelicNames { get; }
+
+    public bool ShowExactDropChances
+    {
+        get => showExactDropChances;
+        set
+        {
+            if (showExactDropChances == value) return;
+            showExactDropChances = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowExactDropChances)));
+            foreach (var rotation in Rotations)
+                rotation.ShowExactDropChances = value;
+        }
+    }
 }
 
 public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
@@ -66,6 +105,7 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
     private readonly IWishlistFarmingMissionsReader reader;
     private readonly IWishlistStore wishlistStore;
     private bool isEmpty = true;
+    private bool showExactDropChances = true;
 
     public WishlistFarmingMissionsViewModel(
         IWishlistFarmingMissionsReader reader,
@@ -79,7 +119,7 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public ObservableCollection<WishlistFarmingMissionCardViewModel> Cards { get; }
+    public ObservableCollection<WishlistFarmingMissionGroupCardViewModel> Cards { get; }
 
     public bool IsEmpty
     {
@@ -89,6 +129,19 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
             if (isEmpty == value) return;
             isEmpty = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEmpty)));
+        }
+    }
+
+    public bool ShowExactDropChances
+    {
+        get => showExactDropChances;
+        set
+        {
+            if (showExactDropChances == value) return;
+            showExactDropChances = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowExactDropChances)));
+            foreach (var card in Cards)
+                card.ShowExactDropChances = value;
         }
     }
 
@@ -105,7 +158,13 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
         var entries = await reader.GetMissionsForWishlistAsync(activeWishlist.Id);
         Cards.Clear();
         foreach (var entry in entries)
-            Cards.Add(new WishlistFarmingMissionCardViewModel(entry));
+        {
+            var card = new WishlistFarmingMissionGroupCardViewModel(entry)
+            {
+                ShowExactDropChances = showExactDropChances
+            };
+            Cards.Add(card);
+        }
         IsEmpty = Cards.Count == 0;
     }
 }

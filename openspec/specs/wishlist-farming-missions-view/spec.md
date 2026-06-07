@@ -1,11 +1,11 @@
 ## Requirements
 
 ### Requirement: Farming missions panel shows missions that reward wishlisted relics
-The "Relics and Missions" tab SHALL include a farming missions panel displayed below the relic cards panel, separated from it by a divider. The panel SHALL display every mission that rewards at least one relic containing a wishlisted part. Missions SHALL be ordered by effective wishlist-relic drop chance descending.
+The "Relics and Missions" tab SHALL include a farming missions panel displayed below the relic cards panel, separated from it by a divider. The panel SHALL display every mission that rewards at least one relic containing a wishlisted part, grouped into cards by mission type and identical reward table. Groups SHALL be ordered by effective wishlist-relic drop chance descending.
 
 #### Scenario: Panel populated when wishlist has matching relics
 - **WHEN** the active wishlist contains parts that are found in relics rewarded by one or more missions
-- **THEN** those missions are shown in the farming missions panel, ordered by effective chance descending
+- **THEN** those missions are shown in the farming missions panel as grouped cards, ordered by effective chance descending
 
 #### Scenario: Panel is empty when no missions match
 - **WHEN** the active wishlist is empty, or no mission rewards a relic containing a wishlisted part
@@ -18,37 +18,45 @@ The "Relics and Missions" tab SHALL include a farming missions panel displayed b
 ---
 
 ### Requirement: Non-rotation mission card shows contributing relics
-A mission card for a non-rotation mission SHALL display the mission display label, the effective wishlist chance as a percentage, and a flat list of the wishlisted relics available in the pool with their individual drop chance percentages.
+A mission card for a non-rotation group SHALL display the group title (mission type or display label), the effective wishlist chance as a percentage, a nodes section listing member missions, and the wishlisted relics available in the pool. Relic display format is controlled by the "Show exact drop chances" toggle: per-relic rows with chances when on, a single compact row of names when off.
 
-#### Scenario: Mission card header shows label and effective chance
-- **WHEN** a non-rotation mission card is displayed
-- **THEN** the card header shows the mission's display label and its cumulative wishlist chance formatted as a percentage
+#### Scenario: Card header shows group title and effective chance
+- **WHEN** a non-rotation group card is displayed
+- **THEN** the card header shows the mission type (or display label for ungrouped missions) and the cumulative wishlist chance formatted as a percentage
 
-#### Scenario: Contributing relics listed on card
-- **WHEN** a non-rotation mission card is displayed
+#### Scenario: Contributing relics listed per-row with chances when toggle is on
+- **WHEN** a non-rotation group card is displayed and "Show exact drop chances" is checked
 - **THEN** each relic that contributes to the wishlist chance is listed with its name and individual chance percentage
+
+#### Scenario: Relics shown compact when toggle is off
+- **WHEN** a non-rotation group card is displayed and "Show exact drop chances" is unchecked
+- **THEN** all contributing relics are shown as a single comma-separated row with no chance text
 
 ---
 
 ### Requirement: Rotation mission card shows per-rotation breakdown
-A mission card for a rotation-based mission SHALL display the mission display label, the effective chance (average across all rotations) as a percentage, and a section for each rotation. Each rotation section SHALL show the rotation display label and cumulative wishlist chance for that rotation, and SHALL list the contributing relics with their individual chances. Rotations with no wishlisted relics SHALL be shown explicitly at 0%.
+A mission card for a rotation-based group SHALL display the group title, the effective chance (average across all rotations), a nodes section, and a section for each rotation. Each rotation section SHALL show the rotation display label and cumulative wishlist chance for that rotation, and SHALL list contributing relics in the format controlled by the "Show exact drop chances" toggle. Rotations with no wishlisted relics SHALL be shown explicitly at 0%.
 
-#### Scenario: Rotation mission card header shows label and average chance
-- **WHEN** a rotation mission card is displayed
-- **THEN** the card header shows the mission's display label and the average wishlist chance across all rotations, formatted as a percentage
+#### Scenario: Rotation card header shows group title and average chance
+- **WHEN** a rotation group card is displayed
+- **THEN** the card header shows the group title and the average wishlist chance across all rotations, formatted as a percentage
 
 #### Scenario: Each rotation is shown including zero-chance rotations
-- **WHEN** a rotation mission card is displayed
-- **THEN** every rotation for that mission is listed; rotations with no wishlisted relics show 0%
+- **WHEN** a rotation group card is displayed
+- **THEN** every rotation for the group is listed; rotations with no wishlisted relics show 0%
 
-#### Scenario: Rotation sections list contributing relics
-- **WHEN** a rotation has at least one wishlisted relic reward
+#### Scenario: Rotation sections list relics per-row with chances when toggle is on
+- **WHEN** a rotation has at least one wishlisted relic reward and "Show exact drop chances" is checked
 - **THEN** that rotation's section lists each contributing relic with its name and chance percentage
+
+#### Scenario: Rotation sections show compact relics when toggle is off
+- **WHEN** a rotation has at least one wishlisted relic reward and "Show exact drop chances" is unchecked
+- **THEN** that rotation's section shows all contributing relics as a single comma-separated row with no chance text
 
 ---
 
 ### Requirement: Effective chance is computed correctly per mission structure
-For non-rotation missions the effective chance SHALL equal the sum of drop chances for all wishlisted relics in the pool. For rotation missions the effective chance SHALL equal the arithmetic mean of cumulative wishlist chances across **all** rotations, including rotations with a cumulative chance of 0%.
+For non-rotation missions the effective chance SHALL equal the sum of drop chances for all wishlisted relics in the pool. For rotation missions the effective chance SHALL equal the arithmetic mean of cumulative wishlist chances across **all** rotations, including rotations with a cumulative chance of 0%. When multiple missions are grouped, their shared reward structure yields a single shared effective chance.
 
 #### Scenario: Non-rotation effective chance is a pool sum
 - **WHEN** a non-rotation mission rewards two wishlisted relics at 11.11% and 7.41%

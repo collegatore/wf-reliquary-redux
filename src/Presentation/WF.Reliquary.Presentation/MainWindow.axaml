@@ -317,6 +317,11 @@
                 <CheckBox IsChecked="{Binding WishlistRelics.ShowAllRewards}" VerticalAlignment="Center" />
                 <TextBlock Text="Show all rewards" VerticalAlignment="Center" />
               </StackPanel>
+              <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <CheckBox IsChecked="{Binding WishlistFarming.ShowExactDropChances}" VerticalAlignment="Center" />
+                <TextBlock Text="Show exact drop chances" VerticalAlignment="Center" />
+              </StackPanel>
             </StackPanel>
           </Border>
 
@@ -434,7 +439,7 @@
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="{x:Type local:WishlistFarmingMissionCardViewModel}">
+                  <DataTemplate DataType="{x:Type local:WishlistFarmingMissionGroupCardViewModel}">
                     <Border
                         Margin="8"
                         Padding="12"
@@ -444,12 +449,12 @@
                         Width="{DynamicResource MissionCardWidth}">
                       <StackPanel>
 
-                        <!-- Card header: mission label + effective chance -->
+                        <!-- Card header: mission type title + effective chance -->
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                           <TextBlock
                               Grid.Column="0"
                               FontWeight="SemiBold"
-                              Text="{Binding DisplayLabel}"
+                              Text="{Binding GroupTitle}"
                               TextWrapping="Wrap" />
                           <TextBlock
                               Grid.Column="1"
@@ -460,25 +465,39 @@
                         </Grid>
                         <Separator Margin="0,0,0,6" />
 
-                        <!-- Non-rotation: flat relic list -->
-                        <ItemsControl
-                            ItemsSource="{Binding Relics}"
-                            IsVisible="{Binding !HasRotations}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type local:WishlistFarmingMissionRelicViewModel}">
-                              <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock
-                                    Grid.Column="0"
-                                    Text="{Binding RelicName}"
-                                    TextWrapping="Wrap" />
-                                <TextBlock
-                                    Grid.Column="1"
-                                    Margin="8,0,0,0"
-                                    Text="{Binding FormattedChance}" />
-                              </Grid>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <!-- Nodes: member mission labels -->
+                        <TextBlock
+                            Margin="0,0,0,6"
+                            FontStyle="Italic"
+                            Opacity="0.7"
+                            Text="{Binding NodesLabel}"
+                            TextWrapping="Wrap" />
+
+                        <!-- Non-rotation: flat relic list (detailed) or compact row -->
+                        <StackPanel IsVisible="{Binding !HasRotations}">
+                          <ItemsControl
+                              ItemsSource="{Binding Relics}"
+                              IsVisible="{Binding ShowExactDropChances}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate DataType="{x:Type local:WishlistFarmingMissionRelicViewModel}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock
+                                      Grid.Column="0"
+                                      Text="{Binding RelicName}"
+                                      TextWrapping="Wrap" />
+                                  <TextBlock
+                                      Grid.Column="1"
+                                      Margin="8,0,0,0"
+                                      Text="{Binding FormattedChance}" />
+                                </Grid>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <TextBlock
+                              Text="{Binding CompactRelicNames}"
+                              TextWrapping="Wrap"
+                              IsVisible="{Binding !ShowExactDropChances}" />
+                        </StackPanel>
 
                         <!-- Rotation missions: per-rotation sections -->
                         <ItemsControl
@@ -487,7 +506,7 @@
                           <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:WishlistFarmingRotationViewModel}">
                               <StackPanel Margin="0,0,0,4">
-                                <!-- Rotation header -->
+                                <!-- Rotation header: label + cumulative chance (always visible) -->
                                 <Grid ColumnDefinitions="*,Auto">
                                   <TextBlock
                                       Grid.Column="0"
@@ -499,8 +518,11 @@
                                       FontStyle="Italic"
                                       Text="{Binding FormattedCumulativeChance}" />
                                 </Grid>
-                                <!-- Relics within this rotation -->
-                                <ItemsControl ItemsSource="{Binding Relics}" Margin="12,2,0,0">
+                                <!-- Relics within this rotation: detailed rows -->
+                                <ItemsControl
+                                    ItemsSource="{Binding Relics}"
+                                    Margin="12,2,0,0"
+                                    IsVisible="{Binding ShowExactDropChances}">
                                   <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type local:WishlistFarmingMissionRelicViewModel}">
                                       <Grid ColumnDefinitions="*,Auto">
@@ -516,6 +538,12 @@
                                     </DataTemplate>
                                   </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                <!-- Relics within this rotation: compact row -->
+                                <TextBlock
+                                    Margin="12,2,0,0"
+                                    Text="{Binding CompactRelicNames}"
+                                    TextWrapping="Wrap"
+                                    IsVisible="{Binding !ShowExactDropChances}" />
                               </StackPanel>
                             </DataTemplate>
                           </ItemsControl.ItemTemplate>

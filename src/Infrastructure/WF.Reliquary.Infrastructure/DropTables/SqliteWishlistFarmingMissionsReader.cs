@@ -19,7 +19,7 @@ public sealed class SqliteWishlistFarmingMissionsReader : IWishlistFarmingMissio
         sql = SqlQueryLoader.Load("GetWishlistFarmingMissions.sql");
     }
 
-    public async Task<IReadOnlyList<WishlistFarmingMissionEntry>> GetMissionsForWishlistAsync(
+    public async Task<IReadOnlyList<WishlistFarmingMissionGroupEntry>> GetMissionsForWishlistAsync(
         long wishlistId, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(databasePath))
@@ -34,12 +34,18 @@ public sealed class SqliteWishlistFarmingMissionsReader : IWishlistFarmingMissio
                 .SqlQueryRaw<FarmingRow>(sql, new SqliteParameter("@wishlist_id", wishlistId))
                 .ToListAsync(cancellationToken);
 
-            return BuildEntries(rows);
+            return BuildGroups(rows);
         }
         catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1)
         {
             return [];
         }
+    }
+
+    internal static IReadOnlyList<WishlistFarmingMissionGroupEntry> BuildGroups(List<FarmingRow> rows)
+    {
+        var entries = BuildEntries(rows);
+        return GroupEntries(entries);
     }
 
     internal static IReadOnlyList<WishlistFarmingMissionEntry> BuildEntries(List<FarmingRow> rows)
@@ -64,22 +70,120 @@ public sealed class SqliteWishlistFarmingMissionsReader : IWishlistFarmingMissio
         {
             var missionRows = seenMissions[missionId];
             var displayLabel = missionRows[0].MissionDisplayLabel;
+            var missionType = missionRows[0].MissionType;
+            var node = missionRows[0].MissionNode;
+            var region = missionRows[0].MissionRegion;
             var hasRotations = missionRows.Any(r => r.RotationId.HasValue);
 
             if (hasRotations)
             {
-                entries.Add(BuildRotationMission(displayLabel, missionRows));
+                entries.Add(BuildRotationMission(displayLabel, missionType, node, region, missionRows));
             }
             else
             {
-                entries.Add(BuildNonRotationMission(displayLabel, missionRows));
+                entries.Add(BuildNonRotationMission(displayLabel, missionType, node, region, missionRows));
             }
         }
 
         return entries.OrderByDescending(e => e.EffectiveChance).ToList();
     }
 
-    private static WishlistFarmingMissionEntry BuildRotationMission(string displayLabel, List<FarmingRow> rows)
+    internal static IReadOnlyList<WishlistFarmingMissionGroupEntry> GroupEntries(
+        IReadOnlyList<WishlistFarmingMissionEntry> entries)
+    {
+        // Missions with null MissionType become singleton groups.
+        // Typed missions are grouped by (MissionType, reward fingerprint).
+        var typedGroups = new Dictionary<(string type, string fingerprint), List<WishlistFarmingMissionEntry>>();
+        var typedGroupOrder = new List<(string type, string fingerprint)>();
+        var singletons = new List<WishlistFarmingMissionEntry>();
+
+        foreach (var entry in entries)
+        {
+            if (entry.MissionType is null)
+            {
+                singletons.Add(entry);
+                continue;
+            }
+
+            var fp = ComputeFingerprint(entry);
+            var key = (entry.MissionType, fp);
+            if (!typedGroups.TryGetValue(key, out var group))
+            {
+                group = [];
+                typedGroups[key] = group;
+                typedGroupOrder.Add(key);
+            }
+            group.Add(entry);
+        }
+
+        var allGroups = new List<WishlistFarmingMissionGroupEntry>();
+
+        // Emit typed groups in the order their first member appeared (already sorted by chance).
+        foreach (var key in typedGroupOrder)
+        {
+            var group = typedGroups[key];
+            var representative = group[0];
+            var nodes = group
+                .Select(NodeLabel)
+                .ToList();
+            allGroups.Add(new WishlistFarmingMissionGroupEntry(
+                GroupTitle: representative.MissionType!,
+                Nodes: nodes,
+                EffectiveChance: representative.EffectiveChance,
+                HasRotations: representative.HasRotations,
+                Rotations: representative.Rotations,
+                Relics: representative.Relics));
+        }
+
+        // Emit singleton groups.
+        foreach (var entry in singletons)
+        {
+            allGroups.Add(new WishlistFarmingMissionGroupEntry(
+                GroupTitle: entry.DisplayLabel,
+                Nodes: [NodeLabel(entry)],
+                EffectiveChance: entry.EffectiveChance,
+                HasRotations: entry.HasRotations,
+                Rotations: entry.Rotations,
+                Relics: entry.Relics));
+        }
+
+        // Re-sort the combined list by effective chance descending.
+        return allGroups.OrderByDescending(g => g.EffectiveChance).ToList();
+    }
+
+    private static string NodeLabel(WishlistFarmingMissionEntry entry)
+    {
+        if (entry.Node is null) return entry.DisplayLabel;
+        if (entry.Region is null) return entry.Node;
+        return $"{entry.Region}/{entry.Node}";
+    }
+
+    private static string ComputeFingerprint(WishlistFarmingMissionEntry entry)
+    {
+        if (entry.HasRotations)
+        {
+            var rotParts = entry.Rotations
+                .OrderBy(r => r.RotationDisplayLabel)
+                .Select(r =>
+                {
+                    var relicParts = r.Relics
+                        .Select(rel => $"{rel.RelicName}:{rel.ChancePercent:R}")
+                        .OrderBy(s => s);
+                    return $"{r.RotationDisplayLabel}:[{string.Join("|", relicParts)}]";
+                });
+            return string.Join(";", rotParts);
+        }
+        else
+        {
+            var relicParts = entry.Relics
+                .Select(r => $"{r.RelicName}:{r.ChancePercent:R}")
+                .OrderBy(s => s);
+            return string.Join("|", relicParts);
+        }
+    }
+
+    private static WishlistFarmingMissionEntry BuildRotationMission(
+        string displayLabel, string? missionType, string? node, string? region, List<FarmingRow> rows)
     {
         var seenRotations = new Dictionary<long, List<FarmingRow>>();
         var rotationOrder = new List<long>();
@@ -115,17 +219,18 @@ public sealed class SqliteWishlistFarmingMissionsReader : IWishlistFarmingMissio
             ? rotations.Average(r => r.CumulativeChance)
             : 0.0;
 
-        return new WishlistFarmingMissionEntry(displayLabel, effectiveChance, true, rotations, []);
+        return new WishlistFarmingMissionEntry(displayLabel, missionType, node, region, effectiveChance, true, rotations, []);
     }
 
-    private static WishlistFarmingMissionEntry BuildNonRotationMission(string displayLabel, List<FarmingRow> rows)
+    private static WishlistFarmingMissionEntry BuildNonRotationMission(
+        string displayLabel, string? missionType, string? node, string? region, List<FarmingRow> rows)
     {
         var relics = rows
             .Where(r => r.RelicName != null)
             .Select(r => new WishlistFarmingRelicEntry(r.RelicName!, r.RelicChancePercent!.Value))
             .ToList();
         var effectiveChance = relics.Sum(r => r.ChancePercent);
-        return new WishlistFarmingMissionEntry(displayLabel, effectiveChance, false, [], relics);
+        return new WishlistFarmingMissionEntry(displayLabel, missionType, node, region, effectiveChance, false, [], relics);
     }
 
     internal sealed class FarmingRow
@@ -133,6 +238,9 @@ public sealed class SqliteWishlistFarmingMissionsReader : IWishlistFarmingMissio
         public long MissionSourceId { get; set; }
         public string MissionDisplayLabel { get; set; } = string.Empty;
         public int MissionSourceOrder { get; set; }
+        public string? MissionType { get; set; }
+        public string? MissionNode { get; set; }
+        public string? MissionRegion { get; set; }
         public long? RotationId { get; set; }
         public string? RotationDisplayLabel { get; set; }
         public int? RotationSourceOrder { get; set; }

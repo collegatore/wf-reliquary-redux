@@ -4,6 +4,6 @@ namespace WF.Reliquary.Application.Ports;
 
 public interface IWishlistFarmingMissionsReader
 {
-    Task<IReadOnlyList<WishlistFarmingMissionEntry>> GetMissionsForWishlistAsync(
+    Task<IReadOnlyList<WishlistFarmingMissionGroupEntry>> GetMissionsForWishlistAsync(
         long wishlistId, CancellationToken cancellationToken = default);
 }
