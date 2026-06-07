@@ -279,32 +279,33 @@
 
 
     <TabItem Header="Relics and Missions">
-      <Grid ColumnDefinitions="*,*" Margin="0,12,0,0">
+      <Grid Margin="0,12,0,0" RowDefinitions="Auto,*,Auto,*">
 
-        <!-- Left column: Wishlist Relics -->
-        <ScrollViewer Grid.Column="0" Margin="0,0,6,0">
+        <!-- Row 0: Control panel -->
+        <Border
+            Grid.Row="0"
+            Margin="8,0,8,8"
+            Padding="12,8"
+            Background="#1A808080"
+            CornerRadius="4">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+              <CheckBox IsChecked="{Binding WishlistRelics.ShowVaulted}" VerticalAlignment="Center" />
+              <TextBlock Text="Show vaulted relics" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+              <CheckBox IsChecked="{Binding WishlistRelics.ShowAllRewards}" VerticalAlignment="Center" />
+              <TextBlock Text="Show all rewards" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Row 1: Relics scroll -->
+        <ScrollViewer Grid.Row="1">
           <StackPanel>
 
-            <!-- Control panel -->
-            <Border
-                Margin="8,0,8,8"
-                Padding="12,8"
-                Background="#1A808080"
-                CornerRadius="4">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                  <CheckBox IsChecked="{Binding WishlistRelics.ShowVaulted}" VerticalAlignment="Center" />
-                  <TextBlock Text="Show vaulted relics" VerticalAlignment="Center" />
-                </StackPanel>
-                <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                  <CheckBox IsChecked="{Binding WishlistRelics.ShowAllRewards}" VerticalAlignment="Center" />
-                  <TextBlock Text="Show all rewards" VerticalAlignment="Center" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
-
-            <!-- Empty state -->
+            <!-- Relics empty state -->
             <TextBlock
                 Margin="8,16"
                 IsVisible="{Binding WishlistRelics.IsEmpty}"
@@ -366,11 +367,14 @@
           </StackPanel>
         </ScrollViewer>
 
-        <!-- Right column: Farming Missions -->
-        <ScrollViewer Grid.Column="1" Margin="6,0,0,0">
+        <!-- Row 2: Separator -->
+        <Separator Grid.Row="2" Margin="8,4" />
+
+        <!-- Row 3: Missions scroll -->
+        <ScrollViewer Grid.Row="3">
           <StackPanel>
 
-            <!-- Empty state -->
+            <!-- Missions empty state -->
             <TextBlock
                 Margin="8,16"
                 IsVisible="{Binding WishlistFarming.IsEmpty}"
@@ -378,6 +382,11 @@
 
             <!-- Mission cards -->
             <ItemsControl ItemsSource="{Binding WishlistFarming.Cards}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type local:WishlistFarmingMissionCardViewModel}">
                   <Border
@@ -385,7 +394,8 @@
                       Padding="12"
                       BorderBrush="Gray"
                       BorderThickness="1"
-                      CornerRadius="4">
+                      CornerRadius="4"
+                      MinWidth="240">
                     <StackPanel>
 
                       <!-- Card header: mission label + effective chance -->

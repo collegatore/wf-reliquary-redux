@@ -1,7 +1,7 @@
 ## Requirements
 
 ### Requirement: Wishlist Relics tab exists in main navigation
-The application SHALL display a tab labeled **"Relics and Missions"** in the main tab bar alongside the existing "Drop Tables" and "Prime Gear" tabs, replacing the former "Wishlist Relics" label. The tab SHALL contain two side-by-side panels: the existing relic cards panel on the left and the new farming missions panel on the right. Each panel SHALL scroll independently.
+The application SHALL display a tab labeled **"Relics and Missions"** in the main tab bar alongside the existing "Drop Tables" and "Prime Gear" tabs, replacing the former "Wishlist Relics" label. The tab SHALL contain two stacked panels: the relic cards panel on top and the farming missions panel below, separated by a divider. A shared control panel (ShowVaulted, ShowAllRewards) appears above the relic cards panel. Each panel SHALL scroll independently within its own scrollable area; the two panels share the available tab height equally.
 
 #### Scenario: Tab is visible in main window
 - **WHEN** the application is open
@@ -9,7 +9,7 @@ The application SHALL display a tab labeled **"Relics and Missions"** in the mai
 
 #### Scenario: Tab displays both panels when selected
 - **WHEN** the user selects the "Relics and Missions" tab
-- **THEN** the relic cards panel is visible on the left and the farming missions panel is visible on the right
+- **THEN** the relic cards panel is visible in the upper half and the farming missions panel is visible in the lower half
 
 #### Scenario: Panels scroll independently
 - **WHEN** the user scrolls in the relic cards panel

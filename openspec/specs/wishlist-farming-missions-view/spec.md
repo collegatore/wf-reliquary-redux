@@ -1,7 +1,7 @@
 ## Requirements
 
 ### Requirement: Farming missions panel shows missions that reward wishlisted relics
-The Wishlist tab SHALL include a farming missions panel displaying every mission that rewards at least one relic containing a wishlisted part. Missions SHALL be ordered by effective wishlist-relic drop chance descending.
+The "Relics and Missions" tab SHALL include a farming missions panel displayed below the relic cards panel, separated from it by a divider. The panel SHALL display every mission that rewards at least one relic containing a wishlisted part. Missions SHALL be ordered by effective wishlist-relic drop chance descending.
 
 #### Scenario: Panel populated when wishlist has matching relics
 - **WHEN** the active wishlist contains parts that are found in relics rewarded by one or more missions
