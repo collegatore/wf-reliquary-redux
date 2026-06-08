@@ -111,12 +111,14 @@ The snapshot import (replace everything on each drop-table import) does not fit 
 
 ## Pre-V1 Persistence Rule
 
-Applies to **all persistent state**: database data, settings files, config files, and any other stored format. 
+Applies to **all persistent state**: database data, settings files, config files, and any other stored format.
 
-Evolve formats in place rather than writing migration or upgrade code.
-Notify the developer when breaking change happens and manual cleanup or re-init is expected.
-For the EF Core schema, EF migrations are exempt from this rule. All schema and format changes must be squashed into a single clean init before V1. 
-**This rule lifts at V1.**
+- **Non-schema formats evolve in place.** Do not write migration, upgrade, or backwards-compatibility code for settings, config, data files, or other stored formats — change the format directly.
+- **EF Core schema migrations are allowed.** Schema changes use the normal EF Core migration workflow; incremental migrations accrue in the migrations folder throughout development. (At present there happens to be only the one init migration because the schema has changed only once.)
+- **Notify on re-initialization.** Whenever a change requires the developer to wipe and re-initialize persisted state (database, settings, etc.) — typically a non-schema format change, since those are not migrated — say so explicitly at the point the change is made.
+- **Squash to a single init at V1.** Squashing all accumulated migrations into one clean init migration is a **one-time** mandatory step of V1 release preparation, performed on the verge of release — *not* an ongoing pre-V1 activity.
+
+**This rule lifts at V1.** After V1, migrations are kept incrementally and stored formats migrate forward rather than re-initializing.
 
 ## Testing
 
