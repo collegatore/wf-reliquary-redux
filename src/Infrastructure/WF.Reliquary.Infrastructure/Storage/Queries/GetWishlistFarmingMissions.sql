@@ -7,7 +7,7 @@ WITH wishlisted_relic_ids AS (
 ),
 missions_with_wishlist AS (
     SELECT DISTINCT mr.mission_source_id
-    FROM mission_rewards mr
+    FROM mission_rewards_merged mr
     WHERE mr.relic_id IN (SELECT relic_id FROM wishlisted_relic_ids)
 )
 -- Rotation missions: one row per rotation × wishlisted relic (LEFT JOIN keeps zero-chance rotations)
@@ -27,7 +27,7 @@ SELECT
 FROM missions_with_wishlist mww
 JOIN mission_sources ms ON ms.id = mww.mission_source_id
 JOIN reward_rotations rot ON rot.mission_source_id = ms.id
-LEFT JOIN mission_rewards mr
+LEFT JOIN mission_rewards_merged mr
     ON mr.mission_source_id = ms.id
     AND mr.rotation_id = rot.id
     AND mr.relic_id IN (SELECT relic_id FROM wishlisted_relic_ids)
@@ -51,7 +51,7 @@ SELECT
     mr.source_order     AS RewardSourceOrder
 FROM missions_with_wishlist mww
 JOIN mission_sources ms ON ms.id = mww.mission_source_id
-JOIN mission_rewards mr
+JOIN mission_rewards_merged mr
     ON mr.mission_source_id = ms.id
     AND mr.relic_id IN (SELECT relic_id FROM wishlisted_relic_ids)
     AND mr.rotation_id IS NULL
