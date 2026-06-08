@@ -186,10 +186,8 @@ public sealed class DropTableImportInfrastructureTests
     {
         var parser = new HtmlDropTableParser();
         var samplePath = Path.Combine(
-            RepositoryPaths.Root,
-            "specs",
-            "001-drop-table-schema",
-            "artifacts",
+            AppContext.BaseDirectory,
+            "TestData",
             "warframe-drop-tables-sample.html");
         var html = File.ReadAllText(samplePath);
 
