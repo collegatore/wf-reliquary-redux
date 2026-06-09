@@ -52,17 +52,3 @@ The Relics panel SHALL enforce a minimum height equal to the rendered height of 
 
 - **WHEN** the user toggles "Show all rewards" (changing the card height)
 - **THEN** the Relics panel minimum height is recalculated to match the new card height
-
-### Requirement: Relics Panel Height Visible and Resettable in Settings Tab
-
-The Settings tab SHALL display the current saved Relics panel height in pixels under the label **"Relics panel height"** and SHALL provide an action to clear it, causing the 1:2 default to be used on next launch.
-
-#### Scenario: Current height is shown
-
-- **WHEN** the Settings tab is open
-- **THEN** the Relics panel height value (in pixels) is displayed under the label "Relics panel height"
-
-#### Scenario: Reset to default
-
-- **WHEN** the user activates the reset action in the Settings tab
-- **THEN** the stored height is cleared and treated as an unsaved change until saved; on next launch the 1:2 default split is used

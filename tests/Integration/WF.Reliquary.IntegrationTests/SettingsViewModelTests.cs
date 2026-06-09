@@ -45,38 +45,17 @@ public sealed class SettingsViewModelTests
     }
 
     [Test]
-    public void ResetSplit_SetsRelicsPanelHeightToNull_AndMarksUnsaved()
-    {
-        var settings = DefaultSettings with { RelicsPanelHeight = 300 };
-        var vm = CreateViewModel(settings);
-
-        vm.ResetSplitCommand.Execute(null);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(vm.RelicsPanelHeight, Is.Null);
-            Assert.That(vm.HasUnsavedChanges, Is.True);
-        });
-    }
-
-    [Test]
-    public void ResetSplit_WhenAlreadyNull_HasNoUnsavedChanges()
-    {
-        var vm = CreateViewModel(DefaultSettings with { RelicsPanelHeight = null });
-
-        vm.ResetSplitCommand.Execute(null);
-
-        Assert.That(vm.HasUnsavedChanges, Is.False);
-    }
-
-    [Test]
-    public void SyncRelicsPanelHeight_UpdatesDisplayedHeight()
+    public void SyncRelicsPanelHeight_UpdatesRelicsPanelHeight_AndMarksUnsaved()
     {
         var vm = CreateViewModel(DefaultSettings);
 
         vm.SyncRelicsPanelHeight(250);
 
-        Assert.That(vm.RelicsPanelHeight, Is.EqualTo(250));
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.RelicsPanelHeight, Is.EqualTo(250));
+            Assert.That(vm.HasUnsavedChanges, Is.True);
+        });
     }
 
     [Test]

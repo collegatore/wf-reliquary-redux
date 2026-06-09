@@ -37,7 +37,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => HasUnsavedChanges);
         BackCommand = new AsyncRelayCommand(BackAsync, () => true);
-        ResetSplitCommand = new RelayCommand(ResetSplit);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -89,16 +88,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (SetProperty(ref relicsPanelHeight, value))
             {
-                OnPropertyChanged(nameof(RelicsPanelHeightDisplay));
                 NotifyHasUnsavedChanges();
             }
         }
     }
-
-    public string RelicsPanelHeightDisplay =>
-        relicsPanelHeight.HasValue
-            ? $"{(int)relicsPanelHeight.Value} px"
-            : "Default (1:2 split)";
 
     public bool HasUnsavedChanges =>
         !string.Equals(sourceUrlText, savedSourceUrl, StringComparison.Ordinal) ||
@@ -113,12 +106,11 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public AsyncRelayCommand SaveCommand { get; }
     public AsyncRelayCommand BackCommand { get; }
-    public ICommand ResetSplitCommand { get; }
 
     // ── Called by shell to sync live splitter position ──────────────────────
 
-    /// <summary>Updates the displayed relics panel height to match the current
-    /// live splitter position. Called by the shell before navigating to Settings.</summary>
+    /// <summary>Records the current live splitter position so an explicit Save
+    /// persists it. Called by the shell before navigating to Settings.</summary>
     public void SyncRelicsPanelHeight(double? currentHeight)
     {
         RelicsPanelHeight = currentHeight;
@@ -190,16 +182,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SourceUrlText));
         OnPropertyChanged(nameof(SelectedFontSize));
         OnPropertyChanged(nameof(RelicsPanelHeight));
-        OnPropertyChanged(nameof(RelicsPanelHeightDisplay));
         NotifyHasUnsavedChanges();
         OnPropertyChanged(nameof(UrlValidationError));
 
         return true;
-    }
-
-    private void ResetSplit()
-    {
-        RelicsPanelHeight = null;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

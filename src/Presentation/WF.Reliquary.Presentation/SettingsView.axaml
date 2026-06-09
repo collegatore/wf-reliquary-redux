@@ -27,22 +27,6 @@
 
     <Separator />
 
-    <!-- Relics panel height -->
-    <StackPanel Spacing="8">
-      <TextBlock FontWeight="SemiBold" Text="Relics panel height" />
-      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-        <TextBlock
-            Text="{Binding Settings.RelicsPanelHeightDisplay}"
-            VerticalAlignment="Center" />
-        <Button
-            Padding="10,6"
-            Command="{Binding Settings.ResetSplitCommand}"
-            Content="Reset to default" />
-      </StackPanel>
-    </StackPanel>
-
-    <Separator />
-
     <!-- Drop-tables source URL -->
     <StackPanel Spacing="8">
       <TextBlock FontWeight="SemiBold" Text="Drop-table source URL" />
