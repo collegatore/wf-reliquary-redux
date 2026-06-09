@@ -43,6 +43,11 @@ public static class ReliquaryServiceFactory
         return new SqlitePrimeGearReader();
     }
 
+    public static IProfileStore CreateProfileStore()
+    {
+        return new SqliteProfileStore();
+    }
+
     public static IWishlistStore CreateWishlistStore()
     {
         return new SqliteWishlistStore();

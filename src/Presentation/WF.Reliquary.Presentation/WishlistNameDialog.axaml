@@ -2,7 +2,6 @@
     x:Class="WF.Reliquary.Presentation.WishlistNameDialog"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Wishlist Name"
     Width="360"
     Height="140"
     CanResize="False"
@@ -10,7 +9,7 @@
     WindowStartupLocation="CenterOwner">
   <Grid RowDefinitions="*,Auto" Margin="20">
     <StackPanel Spacing="8">
-      <TextBlock Text="Wishlist name:" />
+      <TextBlock x:Name="PromptLabel" Text="Wishlist name:" />
       <TextBox x:Name="NameBox" />
     </StackPanel>
     <StackPanel

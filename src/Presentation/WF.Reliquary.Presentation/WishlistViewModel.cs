@@ -24,7 +24,7 @@ public sealed class WishlistViewModel : INotifyPropertyChanged
         CreateCommand = new AsyncRelayCommand(async () => await CreateAsync(promptForNameAsync), () => true);
         RenameCommand = new AsyncRelayCommand(async () => await RenameAsync(promptForNameAsync), () => ActiveEntry is not null);
         DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => CanDelete);
-        _ = LoadAsync();
+        _ = ReloadAsync();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -71,7 +71,9 @@ public sealed class WishlistViewModel : INotifyPropertyChanged
         if (OnActiveWishlistChanged is not null) await OnActiveWishlistChanged();
     }
 
-    private async Task LoadAsync()
+    /// <summary>Reloads the wishlist list and active entry from the store. Called on
+    /// construction and again whenever the active profile changes.</summary>
+    public async Task ReloadAsync()
     {
         var all = await store.GetAllAsync();
         var active = await store.GetActiveAsync();

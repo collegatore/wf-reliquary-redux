@@ -46,12 +46,25 @@ public sealed partial class MainWindow : Window
         // Apply font size to Application resources.
         SettingsViewModel.ApplyFontSize(initialSettings.FontSize);
 
+        // Seed the default profile before the default wishlist, so the wishlist
+        // seeding has an active profile to attach to.
+        var profileStore = ReliquaryServiceFactory.CreateProfileStore();
+        profileStore.SeedDefaultAsync().GetAwaiter().GetResult();
+
         var wishlistStore = ReliquaryServiceFactory.CreateWishlistStore();
         wishlistStore.SeedDefaultAsync().GetAwaiter().GetResult();
 
         var wishlistVm = new WishlistViewModel(
             wishlistStore,
             prefill => WishlistNameDialog.ShowAsync(this, prefill));
+
+        var profileVm = new ProfileViewModel(
+            profileStore,
+            prefill => WishlistNameDialog.ShowAsync(this, prefill, "Profile name"))
+        {
+            // A freshly created profile gets its own Default wishlist (one-time).
+            SeedDefaultWishlist = () => wishlistStore.SeedDefaultAsync(),
+        };
 
         var primeGearVm = new PrimeGearViewModel(
             ReliquaryServiceFactory.CreatePrimeGearReader(),
@@ -77,6 +90,7 @@ public sealed partial class MainWindow : Window
             wishlistVm,
             wishlistRelicsVm,
             wishlistFarmingVm,
+            profileVm,
             settingsVm);
 
         // Sync saved relics panel height into the shell so the grid initializer

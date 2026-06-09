@@ -16,6 +16,7 @@ internal sealed class ReliquaryDbContext : DbContext
     public DbSet<MissionRewardEntity> MissionRewards => Set<MissionRewardEntity>();
     public DbSet<GearVaultStatusEntity> GearVaultStatuses => Set<GearVaultStatusEntity>();
     public DbSet<ImportMetadataEntity> ImportMetadata => Set<ImportMetadataEntity>();
+    public DbSet<ProfileEntity> Profiles => Set<ProfileEntity>();
     public DbSet<WishlistEntity> Wishlists => Set<WishlistEntity>();
     public DbSet<WishlistItemEntity> WishlistItems => Set<WishlistItemEntity>();
     public DbSet<UserPreferencesEntity> UserPreferences => Set<UserPreferencesEntity>();
@@ -151,14 +152,36 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.Property(e => e.ImportedAt).HasColumnName("imported_at").IsRequired();
         });
 
+        // ── profiles ──────────────────────────────────────────────────────────────
+        modelBuilder.Entity<ProfileEntity>(entity =>
+        {
+            entity.ToTable("profiles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).HasColumnName("name").IsRequired();
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
+            entity.Property(e => e.ActiveWishlistId).HasColumnName("active_wishlist_id");
+            entity.HasOne<WishlistEntity>()
+                  .WithMany()
+                  .HasForeignKey(e => e.ActiveWishlistId)
+                  .OnDelete(DeleteBehavior.SetNull)
+                  .IsRequired(false);
+        });
+
         // ── wishlists ─────────────────────────────────────────────────────────────
         modelBuilder.Entity<WishlistEntity>(entity =>
         {
             entity.ToTable("wishlists");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.ProfileId).HasColumnName("profile_id");
             entity.Property(e => e.Name).HasColumnName("name").IsRequired();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
+            entity.HasIndex(e => e.ProfileId);
+            entity.HasOne<ProfileEntity>()
+                  .WithMany()
+                  .HasForeignKey(e => e.ProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ── wishlist_items ────────────────────────────────────────────────────────
@@ -185,10 +208,10 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.ToTable("user_preferences", t => t.HasCheckConstraint("CK_user_preferences_singleton", "id = 1"));
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
-            entity.Property(e => e.LastWishlistId).HasColumnName("last_wishlist_id");
-            entity.HasOne<WishlistEntity>()
+            entity.Property(e => e.LastProfileId).HasColumnName("last_profile_id");
+            entity.HasOne<ProfileEntity>()
                   .WithMany()
-                  .HasForeignKey(e => e.LastWishlistId)
+                  .HasForeignKey(e => e.LastProfileId)
                   .OnDelete(DeleteBehavior.SetNull)
                   .IsRequired(false);
         });

@@ -62,11 +62,13 @@ Presentation  →  Application  ←  Infrastructure
 
 **Location:** `%LOCALAPPDATA%\WF Reliquary Redux\DropTables\drop-table-import.sqlite`
 
-**Migrations:** `src/Infrastructure/Storage/Migrations/`. There is currently one migration (`20260605172101_InitialSchema`); see the pre-V1 persistence rule below.
+**Migrations:** `src/Infrastructure/Storage/Migrations/`; see the pre-V1 persistence rule below.
 
 **Queries:** complex joins (prime gear, wishlist relics, farming missions) use embedded `.sql` files in `src/Infrastructure/Storage/Queries/`, loaded by `SqlQueryLoader`. Prefer embedded SQL over LINQ when it is stylistically or functionally clearer.
 
 **Soft references:** `wishlist_items` stores `part_normalized_name` as a plain string with no FK to `reward_items`, so wishlist entries survive drop-table re-imports.
+
+**Profiles & wishlist scoping:** `profiles` is a container one level above `wishlists` so players can track multiple accounts separately. Each `wishlists` row carries a `profile_id` (FK → `profiles`, `ON DELETE CASCADE`), so deleting a profile removes its wishlists and their items. Each profile remembers its own last-active wishlist via `profiles.active_wishlist_id` (FK → `wishlists`, `ON DELETE SET NULL`). The singleton `user_preferences` row holds `last_profile_id` (the active profile). `IWishlistStore` keeps no-`profileId` method signatures but internally scopes every query to the active profile resolved from `last_profile_id` (falling back to the earliest profile), so the Prime Gear / Relics / Farming views need no profile awareness. `IProfileStore` owns profile CRUD; its control surface lives in the **Settings** tab, not the Prime Gear tab. `DefaultProfileSeeder` seeds the "Default" profile and is shared by both stores so wishlist seeding is never order-dependent on the profile store.
 
 ## EF Core Data Layer
 

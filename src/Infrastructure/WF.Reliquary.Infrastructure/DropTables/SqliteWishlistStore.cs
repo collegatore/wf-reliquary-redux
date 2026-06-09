@@ -22,26 +22,36 @@ public sealed class SqliteWishlistStore : IWishlistStore
         await using var context = new ReliquaryDbContext(options);
         await context.Database.MigrateAsync(cancellationToken);
 
-        if (!await context.Wishlists.AnyAsync(cancellationToken))
+        // Ensure a profile exists so seeding is not order-dependent on the profile store,
+        // then seed the default wishlist into the *active* profile specifically.
+        await DefaultProfileSeeder.EnsureAsync(context, cancellationToken);
+        var profileId = await ResolveActiveProfileIdAsync(context, cancellationToken);
+        if (profileId is null) return;
+
+        if (!await context.Wishlists.AnyAsync(w => w.ProfileId == profileId, cancellationToken))
         {
             var wishlist = new WishlistEntity
             {
+                ProfileId = profileId.Value,
                 Name = "Default",
                 CreatedAt = DateTimeOffset.UtcNow.ToString("O")
             };
             context.Wishlists.Add(wishlist);
             await context.SaveChangesAsync(cancellationToken);
 
-            context.UserPreferences.Add(new UserPreferencesEntity { Id = 1, LastWishlistId = wishlist.Id });
-            await context.SaveChangesAsync(cancellationToken);
+            await SetProfileActiveWishlistAsync(context, profileId.Value, wishlist.Id, cancellationToken);
         }
     }
 
     public async Task<IReadOnlyList<WishlistEntry>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         await using var context = new ReliquaryDbContext(options);
+        var profileId = await ResolveActiveProfileIdAsync(context, cancellationToken);
+        if (profileId is null) return [];
+
         var rows = await context.Wishlists
             .AsNoTracking()
+            .Where(w => w.ProfileId == profileId)
             .OrderBy(w => w.CreatedAt)
             .ToListAsync(cancellationToken);
         return rows.Select(ToEntry).ToList();
@@ -51,20 +61,24 @@ public sealed class SqliteWishlistStore : IWishlistStore
     {
         await using var context = new ReliquaryDbContext(options);
 
-        var prefs = await context.UserPreferences
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == 1, cancellationToken);
+        var profileId = await ResolveActiveProfileIdAsync(context, cancellationToken);
+        if (profileId is null) return null;
 
-        if (prefs?.LastWishlistId is long wishlistId)
+        var profile = await context.Profiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == profileId, cancellationToken);
+
+        if (profile?.ActiveWishlistId is long wishlistId)
         {
             var stored = await context.Wishlists
                 .AsNoTracking()
-                .FirstOrDefaultAsync(w => w.Id == wishlistId, cancellationToken);
+                .FirstOrDefaultAsync(w => w.Id == wishlistId && w.ProfileId == profileId, cancellationToken);
             if (stored != null) return ToEntry(stored);
         }
 
         var fallback = await context.Wishlists
             .AsNoTracking()
+            .Where(w => w.ProfileId == profileId)
             .OrderBy(w => w.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
         return fallback is null ? null : ToEntry(fallback);
@@ -73,23 +87,25 @@ public sealed class SqliteWishlistStore : IWishlistStore
     public async Task SetActiveAsync(long wishlistId, CancellationToken cancellationToken = default)
     {
         await using var context = new ReliquaryDbContext(options);
-        var prefs = await context.UserPreferences.FindAsync([1L], cancellationToken);
-        if (prefs is null)
-        {
-            context.UserPreferences.Add(new UserPreferencesEntity { Id = 1, LastWishlistId = wishlistId });
-        }
-        else
-        {
-            prefs.LastWishlistId = wishlistId;
-        }
-        await context.SaveChangesAsync(cancellationToken);
+        var profileId = await ResolveActiveProfileIdAsync(context, cancellationToken);
+        if (profileId is null) return;
+
+        await SetProfileActiveWishlistAsync(context, profileId.Value, wishlistId, cancellationToken);
     }
 
     public async Task<WishlistEntry> CreateAsync(string name, CancellationToken cancellationToken = default)
     {
         await using var context = new ReliquaryDbContext(options);
+        var profileId = await ResolveActiveProfileIdAsync(context, cancellationToken)
+            ?? throw new InvalidOperationException("Cannot create a wishlist when no profile exists.");
+
         var createdAt = DateTimeOffset.UtcNow;
-        var entity = new WishlistEntity { Name = name, CreatedAt = createdAt.ToString("O") };
+        var entity = new WishlistEntity
+        {
+            ProfileId = profileId,
+            Name = name,
+            CreatedAt = createdAt.ToString("O")
+        };
         context.Wishlists.Add(entity);
         await context.SaveChangesAsync(cancellationToken);
         return new WishlistEntry(entity.Id, name, createdAt);
@@ -176,4 +192,37 @@ public sealed class SqliteWishlistStore : IWishlistStore
 
     private static WishlistEntry ToEntry(WishlistEntity e)
         => new(e.Id, e.Name, DateTimeOffset.Parse(e.CreatedAt));
+
+    /// <summary>
+    /// Resolves the active profile id from the persisted preference, falling back to
+    /// the earliest-created profile when the preference is null or dangling. Returns
+    /// null only when no profiles exist at all.
+    /// </summary>
+    private static async Task<long?> ResolveActiveProfileIdAsync(
+        ReliquaryDbContext context, CancellationToken cancellationToken)
+    {
+        var prefs = await context.UserPreferences
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == 1, cancellationToken);
+
+        if (prefs?.LastProfileId is long profileId
+            && await context.Profiles.AnyAsync(p => p.Id == profileId, cancellationToken))
+        {
+            return profileId;
+        }
+
+        var fallback = await context.Profiles
+            .AsNoTracking()
+            .OrderBy(p => p.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        return fallback?.Id;
+    }
+
+    private static async Task SetProfileActiveWishlistAsync(
+        ReliquaryDbContext context, long profileId, long wishlistId, CancellationToken cancellationToken)
+    {
+        await context.Profiles
+            .Where(p => p.Id == profileId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.ActiveWishlistId, wishlistId), cancellationToken);
+    }
 }

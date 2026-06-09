@@ -22,6 +22,7 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         WishlistViewModel wishlist,
         WishlistRelicsViewModel wishlistRelics,
         WishlistFarmingMissionsViewModel wishlistFarming,
+        ProfileViewModel profiles,
         SettingsViewModel settings)
     {
         DropTables = dropTables;
@@ -29,6 +30,7 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         Wishlist = wishlist;
         WishlistRelics = wishlistRelics;
         WishlistFarming = wishlistFarming;
+        Profiles = profiles;
         Settings = settings;
 
         NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
@@ -42,6 +44,16 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
 
         wishlist.OnActiveWishlistChanged = async () =>
         {
+            await primeGear.ReloadAsync();
+            await wishlistRelics.ReloadAsync();
+            await wishlistFarming.ReloadAsync();
+        };
+
+        // Switching the active profile re-scopes which wishlists exist: reload the
+        // selector first, then the wishlist-dependent views.
+        profiles.OnActiveProfileChanged = async () =>
+        {
+            await wishlist.ReloadAsync();
             await primeGear.ReloadAsync();
             await wishlistRelics.ReloadAsync();
             await wishlistFarming.ReloadAsync();
@@ -64,6 +76,7 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
     public WishlistViewModel Wishlist { get; }
     public WishlistRelicsViewModel WishlistRelics { get; }
     public WishlistFarmingMissionsViewModel WishlistFarming { get; }
+    public ProfileViewModel Profiles { get; }
     public SettingsViewModel Settings { get; }
 
     public ICommand NavigateToSettingsCommand { get; }

@@ -147,6 +147,34 @@ namespace WF.Reliquary.Infrastructure.Migrations
                     b.ToTable("mission_sources", (string)null);
                 });
 
+            modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.ProfileEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<long?>("ActiveWishlistId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("active_wishlist_id");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActiveWishlistId");
+
+                    b.ToTable("profiles", (string)null);
+                });
+
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.RelicEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -296,13 +324,13 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("id");
 
-                    b.Property<long?>("LastWishlistId")
+                    b.Property<long?>("LastProfileId")
                         .HasColumnType("INTEGER")
-                        .HasColumnName("last_wishlist_id");
+                        .HasColumnName("last_profile_id");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LastWishlistId");
+                    b.HasIndex("LastProfileId");
 
                     b.ToTable("user_preferences", null, t =>
                         {
@@ -327,7 +355,13 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("name");
 
+                    b.Property<long>("ProfileId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("profile_id");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
 
                     b.ToTable("wishlists", (string)null);
                 });
@@ -380,6 +414,14 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.ProfileEntity", b =>
+                {
+                    b.HasOne("WF.Reliquary.Infrastructure.Storage.Entities.WishlistEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ActiveWishlistId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.RelicRewardEntity", b =>
                 {
                     b.HasOne("WF.Reliquary.Infrastructure.Storage.Entities.RelicEntity", null)
@@ -400,10 +442,19 @@ namespace WF.Reliquary.Infrastructure.Migrations
 
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.UserPreferencesEntity", b =>
                 {
-                    b.HasOne("WF.Reliquary.Infrastructure.Storage.Entities.WishlistEntity", null)
+                    b.HasOne("WF.Reliquary.Infrastructure.Storage.Entities.ProfileEntity", null)
                         .WithMany()
-                        .HasForeignKey("LastWishlistId")
+                        .HasForeignKey("LastProfileId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.WishlistEntity", b =>
+                {
+                    b.HasOne("WF.Reliquary.Infrastructure.Storage.Entities.ProfileEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.WishlistItemEntity", b =>

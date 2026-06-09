@@ -52,6 +52,17 @@
       </MenuItem>
     </Menu>
 
+    <!-- Footer: active profile -->
+    <Border
+        DockPanel.Dock="Bottom"
+        Padding="12,6"
+        Background="#1A808080">
+      <TextBlock
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          Text="{Binding Profiles.ActiveProfileName, StringFormat='Profile: {0}'}" />
+    </Border>
+
     <!-- Main tab control -->
     <TabControl x:Name="MainTabControl" Margin="24" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
 

@@ -1,8 +1,20 @@
 namespace WF.Reliquary.Infrastructure.Storage.Entities;
 
+internal sealed class ProfileEntity
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string CreatedAt { get; set; } = string.Empty;
+
+    // Nullable soft pointer to the wishlist that was last active in this profile.
+    // FK with SetNull so deleting a wishlist clears the pointer automatically.
+    public long? ActiveWishlistId { get; set; }
+}
+
 internal sealed class WishlistEntity
 {
     public long Id { get; set; }
+    public long ProfileId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
 }
@@ -22,5 +34,5 @@ internal sealed class WishlistItemEntity
 internal sealed class UserPreferencesEntity
 {
     public long Id { get; set; }
-    public long? LastWishlistId { get; set; }
+    public long? LastProfileId { get; set; }
 }

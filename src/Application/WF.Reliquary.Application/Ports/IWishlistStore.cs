@@ -2,28 +2,32 @@ using WF.Reliquary.Application.Wishlist;
 
 namespace WF.Reliquary.Application.Ports;
 
+// Wishlists are scoped to the active profile. SeedDefaultAsync, GetAllAsync,
+// GetActiveAsync, CreateAsync, and SetActiveAsync all resolve the active profile
+// internally (from the persisted last-profile preference) and operate within it.
 public interface IWishlistStore
 {
     /// <summary>
-    /// If no wishlists exist, creates a "Default" wishlist and sets it as active.
-    /// Safe to call on every startup; no-ops when wishlists already exist.
+    /// If the active profile has no wishlists, creates a "Default" wishlist within it
+    /// and sets it as active. Safe to call on every startup; no-ops when the active
+    /// profile already has wishlists.
     /// </summary>
     Task SeedDefaultAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Returns all wishlists ordered by creation date.</summary>
+    /// <summary>Returns all wishlists in the active profile ordered by creation date.</summary>
     Task<IReadOnlyList<WishlistEntry>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns the currently active wishlist, or falls back to the first available
-    /// wishlist if the stored preference points to a deleted wishlist.
-    /// Returns null only when no wishlists exist at all.
+    /// Returns the active profile's currently active wishlist, or falls back to the
+    /// profile's earliest-created wishlist if the stored preference points to a deleted
+    /// wishlist. Returns null only when the active profile has no wishlists at all.
     /// </summary>
     Task<WishlistEntry?> GetActiveAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Persists the active wishlist preference.</summary>
+    /// <summary>Persists the active wishlist preference for the active profile.</summary>
     Task SetActiveAsync(long wishlistId, CancellationToken cancellationToken = default);
 
-    /// <summary>Creates a new wishlist with the given name and returns it.</summary>
+    /// <summary>Creates a new wishlist in the active profile with the given name and returns it.</summary>
     Task<WishlistEntry> CreateAsync(string name, CancellationToken cancellationToken = default);
 
     /// <summary>Renames the specified wishlist.</summary>
