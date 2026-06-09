@@ -1,7 +1,7 @@
 ## Requirements
 
 ### Requirement: "Show exact drop chances" toggle controls relic detail level
-The "Relics and Missions" tab control panel SHALL include a "Show exact drop chances" checkbox. When checked (default), relic entries in farming mission cards render as they do currently — one line per relic with the relic name and its chance percentage. When unchecked, all relics for a given section SHALL be shown as a single compact row containing only relic names (comma-separated), with no chance percentages visible.
+The "Relics and Missions" tab control panel SHALL include a "Show exact drop chances" checkbox. When checked, relic entries in farming mission cards render one line per relic with the relic name and its chance percentage. When unchecked (default), all relics for a given section SHALL be shown as a single compact row containing only relic names (comma-separated), with no chance percentages visible.
 
 #### Scenario: Toggle on shows per-relic rows with chances
 - **WHEN** "Show exact drop chances" is checked
@@ -19,9 +19,9 @@ The "Relics and Missions" tab control panel SHALL include a "Show exact drop cha
 - **WHEN** "Show exact drop chances" is unchecked and a rotation mission card is displayed
 - **THEN** each rotation's relic list is replaced by a single compact row of comma-separated relic names, while the rotation label and cumulative chance remain visible
 
-#### Scenario: Toggle default state is checked
+#### Scenario: Toggle default state is unchecked
 - **WHEN** the "Relics and Missions" tab is first displayed in a session
-- **THEN** the "Show exact drop chances" checkbox is checked
+- **THEN** the "Show exact drop chances" checkbox is unchecked and each card's relic section shows the compact comma-separated relic names
 
 #### Scenario: Toggle state applies to all visible cards simultaneously
 - **WHEN** the user changes the "Show exact drop chances" toggle

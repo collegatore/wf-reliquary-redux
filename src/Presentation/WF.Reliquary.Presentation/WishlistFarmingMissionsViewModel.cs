@@ -19,7 +19,7 @@ public sealed class WishlistFarmingMissionRelicViewModel
 
 public sealed class WishlistFarmingRotationViewModel : INotifyPropertyChanged
 {
-    private bool showExactDropChances = true;
+    private bool showExactDropChances = false;
 
     public WishlistFarmingRotationViewModel(
         string rotationLabel,
@@ -53,7 +53,7 @@ public sealed class WishlistFarmingRotationViewModel : INotifyPropertyChanged
 
 public sealed class WishlistFarmingMissionGroupCardViewModel : INotifyPropertyChanged
 {
-    private bool showExactDropChances = true;
+    private bool showExactDropChances = false;
 
     public WishlistFarmingMissionGroupCardViewModel(WishlistFarmingMissionGroupEntry entry)
     {
@@ -105,7 +105,7 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
     private readonly IWishlistFarmingMissionsReader reader;
     private readonly IWishlistStore wishlistStore;
     private bool isEmpty = true;
-    private bool showExactDropChances = true;
+    private bool showExactDropChances = false;
 
     public WishlistFarmingMissionsViewModel(
         IWishlistFarmingMissionsReader reader,
