@@ -70,10 +70,17 @@
         DockPanel.Dock="Bottom"
         Padding="12,6"
         Background="#1A808080">
-      <TextBlock
+      <StackPanel
           HorizontalAlignment="Left"
           VerticalAlignment="Center"
-          Text="{Binding Profiles.ActiveProfileName, StringFormat='Profile: {0}'}" />
+          Orientation="Horizontal">
+        <TextBlock Text="Profile: " />
+        <TextBlock
+            MaxWidth="{StaticResource NameDisplayMaxWidth}"
+            Text="{Binding Profiles.ActiveProfileName}"
+            TextTrimming="CharacterEllipsis"
+            ToolTip.Tip="{Binding Profiles.ActiveProfileName}" />
+      </StackPanel>
     </Border>
 
     <!-- Main tab control -->
@@ -136,8 +143,12 @@
                     Padding="10,6"
                     Background="Transparent"
                     BorderBrush="Gray"
-                    BorderThickness="1"
-                    Content="{Binding Wishlist.ActiveWishlistName}">
+                    BorderThickness="1">
+                  <TextBlock
+                      MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                      Text="{Binding Wishlist.ActiveWishlistName}"
+                      TextTrimming="CharacterEllipsis"
+                      ToolTip.Tip="{Binding Wishlist.ActiveWishlistName}" />
                   <Button.Flyout>
                     <Flyout Placement="Bottom">
                       <StackPanel MinWidth="200" Spacing="0">

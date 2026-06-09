@@ -19,7 +19,7 @@ public sealed class ProfileViewModel : INotifyPropertyChanged
     private readonly IProfileStore store;
     private ProfileEntryViewModel? activeEntry;
 
-    public ProfileViewModel(IProfileStore store, Func<string?, Task<string?>> promptForNameAsync)
+    public ProfileViewModel(IProfileStore store, Func<NameDialogRequest, Task<string?>> promptForNameAsync)
     {
         this.store = store;
         Profiles = [];
@@ -97,10 +97,15 @@ public sealed class ProfileViewModel : INotifyPropertyChanged
         ((AsyncRelayCommand)DeleteCommand).RaiseCanExecuteChanged();
     }
 
-    private async Task CreateAsync(Func<string?, Task<string?>> prompt)
+    private async Task CreateAsync(Func<NameDialogRequest, Task<string?>> prompt)
     {
-        var name = await prompt(null);
+        var taken = Profiles.Select(p => p.Name).ToList();
+        var name = await prompt(new NameDialogRequest(null, taken));
         if (string.IsNullOrWhiteSpace(name)) return;
+
+        // Authoritative guard: ignore a name the dialog should already have blocked.
+        if (NameRules.Validate(name, taken) is not null) return;
+        name = name.Trim();
 
         var entry = await store.CreateAsync(name);
         var vm = new ProfileEntryViewModel(entry, this);
@@ -118,12 +123,16 @@ public sealed class ProfileViewModel : INotifyPropertyChanged
         if (OnActiveProfileChanged is not null) await OnActiveProfileChanged();
     }
 
-    private async Task RenameAsync(Func<string?, Task<string?>> prompt)
+    private async Task RenameAsync(Func<NameDialogRequest, Task<string?>> prompt)
     {
         if (ActiveEntry is null) return;
 
-        var newName = await prompt(ActiveEntry.Name);
+        var taken = Profiles.Where(p => p != ActiveEntry).Select(p => p.Name).ToList();
+        var newName = await prompt(new NameDialogRequest(ActiveEntry.Name, taken));
         if (string.IsNullOrWhiteSpace(newName)) return;
+
+        if (NameRules.Validate(newName, taken) is not null) return;
+        newName = newName.Trim();
 
         await store.RenameAsync(ActiveEntry.Id, newName);
         ActiveEntry.Name = newName;

@@ -24,6 +24,11 @@
     <x:Double x:Key="RelicCardWidth">300</x:Double>
     <x:Double x:Key="MissionCardWidth">300</x:Double>
 
+    <!-- Max display width for the profile/wishlist selector buttons and the footer
+         profile name. Over-long names truncate with an ellipsis (and a hover tooltip);
+         the footer reuses this so its name column matches the Settings selector width. -->
+    <x:Double x:Key="NameDisplayMaxWidth">220</x:Double>
+
     <!-- Relic-card tier colors. Light-theme values; a future dark theme should swap
          these via Application.Resources ThemeDictionaries rather than changing markup.
          Tier identity lives in the per-tier bar color; the tier label is uniform

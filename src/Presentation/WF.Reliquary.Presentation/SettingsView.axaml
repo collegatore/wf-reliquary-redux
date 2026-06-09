@@ -21,8 +21,12 @@
             Padding="10,6"
             Background="Transparent"
             BorderBrush="Gray"
-            BorderThickness="1"
-            Content="{Binding Profiles.ActiveProfileName}">
+            BorderThickness="1">
+          <TextBlock
+              MaxWidth="{StaticResource NameDisplayMaxWidth}"
+              Text="{Binding Profiles.ActiveProfileName}"
+              TextTrimming="CharacterEllipsis"
+              ToolTip.Tip="{Binding Profiles.ActiveProfileName}" />
           <Button.Flyout>
             <Flyout Placement="Bottom">
               <StackPanel MinWidth="200" Spacing="0">

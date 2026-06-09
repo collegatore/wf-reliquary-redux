@@ -114,6 +114,72 @@ public sealed class WishlistViewModelTests
         store.Verify(s => s.CreateAsync(It.IsAny<string>(), default), Times.Never);
     }
 
+    [Test]
+    public async Task CreateCommand_DoesNothing_WhenNameDuplicatesExistingWishlist()
+    {
+        var store = StoreWithWishlists([DefaultEntry, SecondEntry], DefaultEntry);
+        // A duplicate name the dialog should have blocked; the view-model guard must
+        // ignore it (case-insensitive match against "Second").
+        var vm = new WishlistViewModel(store.Object, _ => Task.FromResult<string?>("second"));
+        await SettleAsync(vm);
+
+        vm.CreateCommand.Execute(null);
+        await SettleAsync(vm);
+
+        store.Verify(s => s.CreateAsync(It.IsAny<string>(), default), Times.Never);
+        Assert.That(vm.Wishlists, Has.Count.EqualTo(2));
+    }
+
+    [Test]
+    public async Task CreateCommand_AddsWishlist_WhenNameNotUsedInProfile()
+    {
+        // Taken names are scoped to the active profile's list, so a name not present
+        // here is allowed even if another profile uses it.
+        var newEntry = new WishlistEntry(3, "Second", DateTimeOffset.UtcNow);
+        var store = StoreWithWishlists([DefaultEntry], DefaultEntry);
+        store.Setup(s => s.CreateAsync("Second", default)).ReturnsAsync(newEntry);
+
+        var vm = new WishlistViewModel(store.Object, _ => Task.FromResult<string?>("Second"));
+        await SettleAsync(vm);
+
+        vm.CreateCommand.Execute(null);
+        await SettleAsync(vm);
+
+        Assert.That(vm.Wishlists.Any(w => w.Name == "Second"), Is.True);
+    }
+
+    // ── RenameCommand ─────────────────────────────────────────────────────────
+
+    [Test]
+    public async Task RenameCommand_AllowsRenamingToSameName()
+    {
+        var store = StoreWithWishlists([DefaultEntry, SecondEntry], DefaultEntry);
+        // Re-confirming the current name (taken names exclude the active entry) is a
+        // valid no-op rename.
+        var vm = new WishlistViewModel(store.Object, _ => Task.FromResult<string?>("Default"));
+        await SettleAsync(vm);
+
+        vm.RenameCommand.Execute(null);
+        await SettleAsync(vm);
+
+        store.Verify(s => s.RenameAsync(DefaultEntry.Id, "Default", default), Times.Once);
+        Assert.That(vm.ActiveEntry!.Name, Is.EqualTo("Default"));
+    }
+
+    [Test]
+    public async Task RenameCommand_DoesNothing_WhenNameDuplicatesAnotherWishlist()
+    {
+        var store = StoreWithWishlists([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new WishlistViewModel(store.Object, _ => Task.FromResult<string?>("Second"));
+        await SettleAsync(vm);
+
+        vm.RenameCommand.Execute(null);
+        await SettleAsync(vm);
+
+        store.Verify(s => s.RenameAsync(It.IsAny<long>(), It.IsAny<string>(), default), Times.Never);
+        Assert.That(vm.ActiveEntry!.Name, Is.EqualTo("Default"));
+    }
+
     // ── DeleteCommand ─────────────────────────────────────────────────────────
 
     [Test]
@@ -169,5 +235,5 @@ public sealed class WishlistViewModelTests
         _ = vm; // suppress warning
     }
 
-    private static Task<string?> NullPrompt(string? _) => Task.FromResult<string?>(null);
+    private static Task<string?> NullPrompt(NameDialogRequest _) => Task.FromResult<string?>(null);
 }

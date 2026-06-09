@@ -56,11 +56,11 @@ public sealed partial class MainWindow : Window
 
         var wishlistVm = new WishlistViewModel(
             wishlistStore,
-            prefill => WishlistNameDialog.ShowAsync(this, prefill));
+            request => WishlistNameDialog.ShowAsync(this, request));
 
         var profileVm = new ProfileViewModel(
             profileStore,
-            prefill => WishlistNameDialog.ShowAsync(this, prefill, "Profile name"))
+            request => WishlistNameDialog.ShowAsync(this, request, "Profile name"))
         {
             // A freshly created profile gets its own Default wishlist (one-time).
             SeedDefaultWishlist = () => wishlistStore.SeedDefaultAsync(),

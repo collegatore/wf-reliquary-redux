@@ -162,6 +162,9 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.Property(e => e.Name).HasColumnName("name").IsRequired();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
             entity.Property(e => e.ActiveWishlistId).HasColumnName("active_wishlist_id");
+            // Profile names are unique. Case-insensitive uniqueness is enforced by the
+            // name modal/view-model guard; this index is a best-effort exact-case backstop.
+            entity.HasIndex(e => e.Name).IsUnique();
             entity.HasOne<WishlistEntity>()
                   .WithMany()
                   .HasForeignKey(e => e.ActiveWishlistId)
@@ -179,6 +182,9 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.Property(e => e.Name).HasColumnName("name").IsRequired();
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
             entity.HasIndex(e => e.ProfileId);
+            // Wishlist names are unique within their profile (exact-case backstop; the
+            // case-insensitive rule is enforced by the name modal/view-model guard).
+            entity.HasIndex(e => new { e.ProfileId, e.Name }).IsUnique();
             entity.HasOne<ProfileEntity>()
                   .WithMany()
                   .HasForeignKey(e => e.ProfileId)

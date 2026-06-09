@@ -196,6 +196,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
 
                     b.HasIndex("ActiveWishlistId");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("profiles", (string)null);
                 });
 
@@ -386,6 +389,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProfileId");
+
+                    b.HasIndex("ProfileId", "Name")
+                        .IsUnique();
 
                     b.ToTable("wishlists", (string)null);
                 });

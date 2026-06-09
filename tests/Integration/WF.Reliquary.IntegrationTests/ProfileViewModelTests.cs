@@ -149,6 +149,51 @@ public sealed class ProfileViewModelTests
         store.Verify(s => s.CreateAsync(It.IsAny<string>(), default), Times.Never);
     }
 
+    [Test]
+    public async Task CreateCommand_DoesNothing_WhenNameDuplicatesExistingProfile()
+    {
+        var store = StoreWithProfiles([DefaultEntry, SecondEntry], DefaultEntry);
+        // Duplicate (case-insensitive) of "Second"; the view-model guard must ignore it.
+        var vm = new ProfileViewModel(store.Object, _ => Task.FromResult<string?>("SECOND"));
+        await SettleAsync();
+
+        vm.CreateCommand.Execute(null);
+        await SettleAsync();
+
+        store.Verify(s => s.CreateAsync(It.IsAny<string>(), default), Times.Never);
+        Assert.That(vm.Profiles, Has.Count.EqualTo(2));
+    }
+
+    // ── RenameCommand ─────────────────────────────────────────────────────────
+
+    [Test]
+    public async Task RenameCommand_AllowsRenamingToSameName()
+    {
+        var store = StoreWithProfiles([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new ProfileViewModel(store.Object, _ => Task.FromResult<string?>("Default"));
+        await SettleAsync();
+
+        vm.RenameCommand.Execute(null);
+        await SettleAsync();
+
+        store.Verify(s => s.RenameAsync(DefaultEntry.Id, "Default", default), Times.Once);
+        Assert.That(vm.ActiveEntry!.Name, Is.EqualTo("Default"));
+    }
+
+    [Test]
+    public async Task RenameCommand_DoesNothing_WhenNameDuplicatesAnotherProfile()
+    {
+        var store = StoreWithProfiles([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new ProfileViewModel(store.Object, _ => Task.FromResult<string?>("Second"));
+        await SettleAsync();
+
+        vm.RenameCommand.Execute(null);
+        await SettleAsync();
+
+        store.Verify(s => s.RenameAsync(It.IsAny<long>(), It.IsAny<string>(), default), Times.Never);
+        Assert.That(vm.ActiveEntry!.Name, Is.EqualTo("Default"));
+    }
+
     // ── DeleteCommand ─────────────────────────────────────────────────────────
 
     [Test]
@@ -198,5 +243,5 @@ public sealed class ProfileViewModelTests
         await Task.Yield();
     }
 
-    private static Task<string?> NullPrompt(string? _) => Task.FromResult<string?>(null);
+    private static Task<string?> NullPrompt(NameDialogRequest _) => Task.FromResult<string?>(null);
 }
