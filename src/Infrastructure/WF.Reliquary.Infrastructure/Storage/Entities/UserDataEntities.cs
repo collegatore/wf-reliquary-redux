@@ -31,6 +31,15 @@ internal sealed class WishlistItemEntity
     public string AddedAt { get; set; } = string.Empty;
 }
 
+// gear_name is a soft reference to a prime gear name — no FK to import tables so
+// owned marks survive drop-table re-imports that truncate reward_items.
+internal sealed class OwnedGearEntity
+{
+    public long Id { get; set; }
+    public long ProfileId { get; set; }
+    public string GearName { get; set; } = string.Empty;
+}
+
 internal sealed class UserPreferencesEntity
 {
     public long Id { get; set; }

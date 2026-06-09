@@ -1,0 +1,40 @@
+<Window
+    x:Class="WF.Reliquary.Presentation.OwnedGearTrackingDialog"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Mark gear as owned?"
+    Width="460"
+    Height="135"
+    CanResize="False"
+    ShowInTaskbar="False"
+    WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="*,Auto" Margin="20">
+    <TextBlock
+        x:Name="MessageText"
+        TextWrapping="Wrap"
+        VerticalAlignment="Center"
+        Text="This gear has parts you are still tracking in your wishlist. What should happen to them?" />
+    <StackPanel
+        Grid.Row="1"
+        Margin="0,16,0,0"
+        HorizontalAlignment="Right"
+        Orientation="Horizontal"
+        Spacing="8">
+      <Button
+          x:Name="KeepTrackingButton"
+          Padding="14,6"
+          Content="Keep tracking"
+          ToolTip.Tip="Hide the card but keep its parts in your wishlist" />
+      <Button
+          x:Name="ReleaseTrackingButton"
+          Padding="14,6"
+          Content="Release tracking"
+          ToolTip.Tip="Hide the card and remove its parts from your wishlist" />
+      <Button
+          x:Name="CancelButton"
+          Padding="14,6"
+          Content="Cancel"
+          ToolTip.Tip="Don't hide — it was a misclick" />
+    </StackPanel>
+  </Grid>
+</Window>

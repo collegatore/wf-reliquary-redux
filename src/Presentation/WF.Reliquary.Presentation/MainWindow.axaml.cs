@@ -68,7 +68,10 @@ public sealed partial class MainWindow : Window
 
         var primeGearVm = new PrimeGearViewModel(
             ReliquaryServiceFactory.CreatePrimeGearReader(),
-            wishlistStore);
+            wishlistStore,
+            ReliquaryServiceFactory.CreateOwnedGearStore());
+        primeGearVm.ConfirmOwnedTracking = gearName => OwnedGearTrackingDialog.ShowAsync(this, gearName);
+        primeGearVm.OwnedHideFadeDuration = TimeSpan.FromMilliseconds(180);
 
         var wishlistRelicsVm = new WishlistRelicsViewModel(
             ReliquaryServiceFactory.CreateWishlistRelicsReader(),

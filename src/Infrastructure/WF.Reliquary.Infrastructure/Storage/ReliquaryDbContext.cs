@@ -19,6 +19,7 @@ internal sealed class ReliquaryDbContext : DbContext
     public DbSet<ProfileEntity> Profiles => Set<ProfileEntity>();
     public DbSet<WishlistEntity> Wishlists => Set<WishlistEntity>();
     public DbSet<WishlistItemEntity> WishlistItems => Set<WishlistItemEntity>();
+    public DbSet<OwnedGearEntity> OwnedGear => Set<OwnedGearEntity>();
     public DbSet<UserPreferencesEntity> UserPreferences => Set<UserPreferencesEntity>();
 
     internal static DbContextOptions<ReliquaryDbContext> BuildOptions(string databasePath)
@@ -199,6 +200,21 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.HasOne<WishlistEntity>()
                   .WithMany()
                   .HasForeignKey(e => e.WishlistId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── owned_gear ────────────────────────────────────────────────────────────
+        modelBuilder.Entity<OwnedGearEntity>(entity =>
+        {
+            entity.ToTable("owned_gear");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.ProfileId).HasColumnName("profile_id");
+            entity.Property(e => e.GearName).HasColumnName("gear_name").IsRequired();
+            entity.HasIndex(e => new { e.ProfileId, e.GearName }).IsUnique();
+            entity.HasOne<ProfileEntity>()
+                  .WithMany()
+                  .HasForeignKey(e => e.ProfileId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 

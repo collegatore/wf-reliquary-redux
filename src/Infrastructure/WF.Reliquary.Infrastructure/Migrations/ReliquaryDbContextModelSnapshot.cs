@@ -147,6 +147,30 @@ namespace WF.Reliquary.Infrastructure.Migrations
                     b.ToTable("mission_sources", (string)null);
                 });
 
+            modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.OwnedGearEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<string>("GearName")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("gear_name");
+
+                    b.Property<long>("ProfileId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("profile_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId", "GearName")
+                        .IsUnique();
+
+                    b.ToTable("owned_gear", (string)null);
+                });
+
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.ProfileEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -411,6 +435,15 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .WithMany("MissionRewards")
                         .HasForeignKey("MissionSourceId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.OwnedGearEntity", b =>
+                {
+                    b.HasOne("WF.Reliquary.Infrastructure.Storage.Entities.ProfileEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

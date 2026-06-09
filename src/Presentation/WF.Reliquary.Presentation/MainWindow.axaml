@@ -14,6 +14,19 @@
     <Style Selector="Border.vaulted">
       <Setter Property="Opacity" Value="0.45" />
     </Style>
+    <!-- Owned gear cards (visible only when "Show owned gear" is on) are muted. -->
+    <Style Selector="Border.owned">
+      <Setter Property="Opacity" Value="0.55" />
+    </Style>
+    <!-- Vaulted prime gear cards are muted (class-driven so the fade can override it). -->
+    <Style Selector="Border.gear-vaulted">
+      <Setter Property="Opacity" Value="0.55" />
+    </Style>
+    <!-- Fade a card out before it is removed when marked owned with "Show owned gear"
+         off. Declared last so its Opacity wins over the muted classes above. -->
+    <Style Selector="Border.fading">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
     <Style Selector="TextBlock.ghost-part">
       <Setter Property="Foreground" Value="#C0A000" />
       <Setter Property="FontStyle" Value="Italic" />
@@ -181,6 +194,11 @@
                   <CheckBox IsChecked="{Binding PrimeGear.ShowVaulted}" VerticalAlignment="Center" />
                   <TextBlock Text="Show vaulted gear" VerticalAlignment="Center" />
                 </StackPanel>
+                <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                  <CheckBox IsChecked="{Binding PrimeGear.ShowOwned}" VerticalAlignment="Center" />
+                  <TextBlock Text="Show owned gear" VerticalAlignment="Center" />
+                </StackPanel>
               </StackPanel>
             </Border>
 
@@ -199,12 +217,44 @@
                       BorderBrush="Gray"
                       BorderThickness="1"
                       CornerRadius="4"
-                      Width="180">
+                      Width="180"
+                      Classes.owned="{Binding IsOwned}"
+                      Classes.fading="{Binding IsFadingOut}">
+                    <Border.Transitions>
+                      <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                      </Transitions>
+                    </Border.Transitions>
                     <StackPanel Spacing="6">
-                      <TextBlock
-                          FontWeight="SemiBold"
-                          Text="{Binding GearName}"
-                          TextWrapping="Wrap" />
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock
+                            Grid.Column="0"
+                            FontWeight="SemiBold"
+                            Text="{Binding GearName}"
+                            TextWrapping="Wrap"
+                            VerticalAlignment="Center" />
+                        <Button
+                            Grid.Column="1"
+                            Margin="4,0,0,0"
+                            Padding="6,2"
+                            VerticalAlignment="Center"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            FontWeight="Bold"
+                            Content="⋮"
+                            ToolTip.Tip="{Binding OwnedMenuLabel}"
+                            ToolTip.ShowDelay="1000">
+                          <Button.Flyout>
+                            <!-- Right-align the menu to the button so it opens to the
+                                 left, then nudge it 30px back toward the button. -->
+                            <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                              <MenuItem
+                                  Header="{Binding OwnedMenuLabel}"
+                                  Command="{Binding MarkOwnedCommand}" />
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                      </Grid>
                       <ItemsControl ItemsSource="{Binding Parts}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
@@ -265,12 +315,43 @@
                       BorderThickness="1"
                       CornerRadius="4"
                       Width="180"
-                      Opacity="0.55">
+                      Classes.gear-vaulted="True"
+                      Classes.fading="{Binding IsFadingOut}">
+                    <Border.Transitions>
+                      <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                      </Transitions>
+                    </Border.Transitions>
                     <StackPanel Spacing="6">
-                      <TextBlock
-                          FontWeight="SemiBold"
-                          Text="{Binding GearName}"
-                          TextWrapping="Wrap" />
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock
+                            Grid.Column="0"
+                            FontWeight="SemiBold"
+                            Text="{Binding GearName}"
+                            TextWrapping="Wrap"
+                            VerticalAlignment="Center" />
+                        <Button
+                            Grid.Column="1"
+                            Margin="4,0,0,0"
+                            Padding="6,2"
+                            VerticalAlignment="Center"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            FontWeight="Bold"
+                            Content="⋮"
+                            ToolTip.Tip="{Binding OwnedMenuLabel}"
+                            ToolTip.ShowDelay="1000">
+                          <Button.Flyout>
+                            <!-- Right-align the menu to the button so it opens to the
+                                 left, then nudge it 30px back toward the button. -->
+                            <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                              <MenuItem
+                                  Header="{Binding OwnedMenuLabel}"
+                                  Command="{Binding MarkOwnedCommand}" />
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                      </Grid>
                       <ItemsControl ItemsSource="{Binding Parts}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
