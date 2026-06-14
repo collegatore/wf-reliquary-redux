@@ -56,7 +56,7 @@ public sealed class MainWindowShellViewModelTests
 
         var primeGearReader = new Mock<IPrimeGearReader>();
         primeGearReader.Setup(r => r.GetAllAsync(default)).ReturnsAsync([]);
-        var primeGear = new PrimeGearViewModel(primeGearReader.Object, WishlistStore().Object);
+        var primeGear = new PrimeGearViewModel(primeGearReader.Object, WishlistStore().Object, Mock.Of<IOwnedGearStore>());
 
         var wishlist = new WishlistViewModel(WishlistStore().Object, _ => Task.FromResult<string?>(null));
 

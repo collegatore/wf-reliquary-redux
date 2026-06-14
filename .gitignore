@@ -54,3 +54,6 @@ appsettings.Development.json
 
 # Design artifacts
 .meta
+
+# Spec workflow is enabled here even if ignored on the machine level
+!openspec
