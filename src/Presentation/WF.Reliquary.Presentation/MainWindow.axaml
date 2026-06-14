@@ -59,6 +59,9 @@
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="_File">
         <MenuItem
+            Header="_Drop Tables"
+            Command="{Binding NavigateToDropTablesCommand}" />
+        <MenuItem
             Header="_Settings"
             Command="{Binding NavigateToSettingsCommand}"
             InputGesture="Ctrl+OemComma" />
@@ -85,45 +88,6 @@
 
     <!-- Main tab control -->
     <TabControl x:Name="MainTabControl" Margin="24" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
-
-      <TabItem Header="Drop Tables">
-        <StackPanel Margin="0,12,0,0" Spacing="16">
-
-          <!-- Section: File download -->
-          <StackPanel Spacing="8">
-            <TextBlock FontWeight="SemiBold" Text="File download" />
-            <TextBlock
-                Text="{Binding DropTables.StatusText}"
-                TextWrapping="Wrap" />
-            <Button
-                Padding="14,8"
-                HorizontalAlignment="Left"
-                Command="{Binding DropTables.DownloadCommand}"
-                Content="Download drop tables" />
-          </StackPanel>
-
-          <Separator />
-
-          <!-- Section: File import -->
-          <StackPanel Spacing="8">
-            <TextBlock FontWeight="SemiBold" Text="File import" />
-            <TextBlock
-                Text="{Binding DropTables.ImportStatusText}"
-                TextWrapping="Wrap" />
-            <Button
-                Padding="14,8"
-                HorizontalAlignment="Left"
-                Command="{Binding DropTables.ImportCommand}"
-                Content="Import stored file" />
-          </StackPanel>
-
-          <!-- Operation status (feedback for last action) -->
-          <TextBlock
-              Text="{Binding DropTables.OperationStatusText}"
-              TextWrapping="Wrap" />
-
-        </StackPanel>
-      </TabItem>
 
       <TabItem Header="Prime Gear">
         <ScrollViewer Margin="0,12,0,0">
@@ -664,10 +628,63 @@
         </Grid>
       </TabItem>
 
-      <!-- Settings tab — header intentionally hidden from the tab strip -->
+      <!-- Drop Tables tab — File-menu accessed; header shows only while this tab is active -->
       <TabItem>
         <TabItem.Header>
-          <TextBlock IsVisible="False" Text="Settings" />
+          <TextBlock
+              Text="Drop Tables"
+              FontSize="{Binding $parent[TabItem].FontSize}"
+              FontFamily="{Binding $parent[TabItem].FontFamily}"
+              FontWeight="{Binding $parent[TabItem].FontWeight}"
+              IsVisible="{Binding $parent[TabItem].IsSelected}" />
+        </TabItem.Header>
+        <StackPanel Margin="0,12,0,0" Spacing="16">
+
+          <!-- Section: File download -->
+          <StackPanel Spacing="8">
+            <TextBlock FontWeight="SemiBold" Text="File download" />
+            <TextBlock
+                Text="{Binding DropTables.StatusText}"
+                TextWrapping="Wrap" />
+            <Button
+                Padding="14,8"
+                HorizontalAlignment="Left"
+                Command="{Binding DropTables.DownloadCommand}"
+                Content="Download drop tables" />
+          </StackPanel>
+
+          <Separator />
+
+          <!-- Section: File import -->
+          <StackPanel Spacing="8">
+            <TextBlock FontWeight="SemiBold" Text="File import" />
+            <TextBlock
+                Text="{Binding DropTables.ImportStatusText}"
+                TextWrapping="Wrap" />
+            <Button
+                Padding="14,8"
+                HorizontalAlignment="Left"
+                Command="{Binding DropTables.ImportCommand}"
+                Content="Import stored file" />
+          </StackPanel>
+
+          <!-- Operation status (feedback for last action) -->
+          <TextBlock
+              Text="{Binding DropTables.OperationStatusText}"
+              TextWrapping="Wrap" />
+
+        </StackPanel>
+      </TabItem>
+
+      <!-- Settings tab — File-menu accessed; header shows only while this tab is active -->
+      <TabItem>
+        <TabItem.Header>
+          <TextBlock
+              Text="Settings"
+              FontSize="{Binding $parent[TabItem].FontSize}"
+              FontFamily="{Binding $parent[TabItem].FontFamily}"
+              FontWeight="{Binding $parent[TabItem].FontWeight}"
+              IsVisible="{Binding $parent[TabItem].IsSelected}" />
         </TabItem.Header>
         <local:SettingsView Margin="0,0,0,0" />
       </TabItem>

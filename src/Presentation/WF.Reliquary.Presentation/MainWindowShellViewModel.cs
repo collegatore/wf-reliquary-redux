@@ -8,8 +8,11 @@ namespace WF.Reliquary.Presentation;
 
 public sealed class MainWindowShellViewModel : INotifyPropertyChanged
 {
-    // Index of the Settings tab within the TabControl (Drop Tables=0, Prime Gear=1,
-    // Relics and Missions=2, Settings=3 — hidden from strip).
+    // Tab indices within the TabControl (declaration order): Prime Gear=0,
+    // Relics and Missions=1, Drop Tables=2, Settings=3. Prime Gear is the
+    // startup tab (default selectedTabIndex). Drop Tables and Settings are
+    // File-menu accessed and hide their header while inactive.
+    private const int DropTablesTabIndex = 2;
     private const int SettingsTabIndex = 3;
 
     private int selectedTabIndex;
@@ -34,6 +37,7 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         Settings = settings;
 
         NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
+        NavigateToDropTablesCommand = new RelayCommand(NavigateToDropTables);
 
         dropTables.OnImportSucceeded = async () =>
         {
@@ -80,6 +84,7 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
     public SettingsViewModel Settings { get; }
 
     public ICommand NavigateToSettingsCommand { get; }
+    public ICommand NavigateToDropTablesCommand { get; }
 
     public int SelectedTabIndex
     {
@@ -92,6 +97,13 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
     {
         get => relicsPanelHeight;
         set => SetProperty(ref relicsPanelHeight, value);
+    }
+
+    // Drop Tables has no unsaved-changes guard (only Settings does), so this is
+    // a plain index switch with no previous-tab/discard handling.
+    private void NavigateToDropTables()
+    {
+        SelectedTabIndex = DropTablesTabIndex;
     }
 
     private void NavigateToSettings()
