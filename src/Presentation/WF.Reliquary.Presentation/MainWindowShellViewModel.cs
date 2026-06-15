@@ -43,6 +43,13 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         {
             if (e.PropertyName == nameof(MainWindowViewModel.HasImportedData))
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowDropTablesTabHeader)));
+            if (e.PropertyName == nameof(MainWindowViewModel.IsBusy))
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowFooterImportStatus)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFooterBusy)));
+            }
+            if (e.PropertyName == nameof(MainWindowViewModel.OperationStatusText))
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FooterOperationStatusText)));
         };
 
         dropTables.OnImportSucceeded = async () =>
@@ -105,12 +112,22 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         set
         {
             if (SetProperty(ref selectedTabIndex, value))
+            {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowDropTablesTabHeader)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowFooterImportStatus)));
+            }
         }
     }
 
     public bool ShowDropTablesTabHeader =>
         !DropTables.HasImportedData || selectedTabIndex == DropTablesTabIndex;
+
+    public bool ShowFooterImportStatus =>
+        !DropTables.IsBusy && selectedTabIndex != DropTablesTabIndex;
+
+    public bool IsFooterBusy => DropTables.IsBusy;
+
+    public string FooterOperationStatusText => DropTables.OperationStatusText;
 
     /// <summary>Current live relics panel height in pixels (updated by splitter drag).</summary>
     public double? RelicsPanelHeight

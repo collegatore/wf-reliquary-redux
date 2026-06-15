@@ -15,9 +15,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private readonly IDropTableSourceExporter sourceExporter;
     private readonly IImportMetadataReader importMetadataReader;
     private readonly IDropTableImportStore importStore;
-    private string statusText = "Checking stored source...";
+    private string sourceStatusText = "Checking stored source...";
     private string operationStatusText = string.Empty;
     private string importStatusText = "No source imported yet.";
+    private string footerImportStatusText = string.Empty;
     private bool isBusy;
     private bool hasStoredSources;
     private bool hasImportedData;
@@ -57,10 +58,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public string Title => ApplicationInfo.Name;
 
-    public string StatusText
+    public string SourceStatusText
     {
-        get => statusText;
-        private set => SetProperty(ref statusText, value);
+        get => sourceStatusText;
+        private set => SetProperty(ref sourceStatusText, value);
+    }
+
+    public string FooterImportStatusText
+    {
+        get => footerImportStatusText;
+        private set => SetProperty(ref footerImportStatusText, value);
     }
 
     public string OperationStatusText
@@ -142,6 +149,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         IsBusy = true;
         OperationStatusText = "Downloading source from URL...";
+        await Task.Yield();
 
         try
         {
@@ -171,21 +179,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         IsBusy = true;
         OperationStatusText = "Importing stored source...";
+        await Task.Yield();
 
         try
         {
             var result = await importWorkflow.ImportAsync();
-            OperationStatusText = result.Succeeded
-                ? ImportSuccessText(result)
-                : $"Import failed: {result.ErrorMessage}";
-
             if (result.Succeeded)
             {
+                OperationStatusText = ImportCompletedText(result);
                 await RefreshImportStatusAsync();
+                ImportStatusText = ImportStatusDetail(result);
                 if (OnImportSucceeded != null)
                 {
                     await OnImportSucceeded();
                 }
+            }
+            else
+            {
+                OperationStatusText = $"Import failed: {result.ErrorMessage}";
             }
         }
         finally
@@ -208,6 +219,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         IsBusy = true;
         OperationStatusText = "Clearing imported data...";
+        await Task.Yield();
 
         try
         {
@@ -241,10 +253,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         IsBusy = true;
         OperationStatusText = "Reading source from file...";
+        await Task.Yield();
 
         try
         {
-            var result = await localFileWorkflow.RegisterFromFileAsync(path);
+            var result = await Task.Run(() => localFileWorkflow.RegisterFromFileAsync(path));
             if (result.Succeeded)
             {
                 ApplyStatus(await refreshWorkflow.GetStatusAsync());
@@ -277,6 +290,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         IsBusy = true;
         OperationStatusText = "Exporting stored sources...";
+        await Task.Yield();
 
         try
         {
@@ -298,17 +312,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ImportStatusText = version is null
             ? "Source data not imported."
             : $"Source data imported. {LastUpdateText(version)}.";
+        FooterImportStatusText = version is null
+            ? "Source data not imported"
+            : $"Drop Tables version: {version}";
     }
 
     private void ApplyStatus(DropTableSourceStatus status)
     {
         if (!status.FileExists)
         {
-            StatusText = "Source data not aquired.";
+            SourceStatusText = "Source data not aquired.";
             return;
         }
 
-        StatusText = $"Source data ready. {LastUpdateText(status.LastUpdate)}.";
+        SourceStatusText = $"Source data ready. {LastUpdateText(status.LastUpdate)}.";
     }
 
     private static string LastUpdateText(string? lastUpdate)
@@ -318,9 +335,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             : $"Drop Tables version: {lastUpdate}";
     }
 
-    private static string ImportSuccessText(DropTableImportResult result)
+    private static string ImportCompletedText(DropTableImportResult result)
     {
-        return $"Import completed. {LastUpdateText(result.SourceLastUpdate)}. Relics: {result.Counts.Relics}; relic rewards: {result.Counts.RelicRewards}; mission sources: {result.Counts.MissionSources}; mission rewards: {result.Counts.MissionRewards}.";
+        return $"Import completed. {LastUpdateText(result.SourceLastUpdate)}.";
+    }
+
+    private static string ImportStatusDetail(DropTableImportResult result)
+    {
+        return $"Source data imported. {LastUpdateText(result.SourceLastUpdate)}. Relics: {result.Counts.Relics}; relic rewards: {result.Counts.RelicRewards}; mission sources: {result.Counts.MissionSources}; mission rewards: {result.Counts.MissionRewards}.";
     }
 
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -13,6 +14,8 @@ namespace WF.Reliquary.Presentation;
 public sealed partial class MainWindow : Window
 {
     private MainWindowShellViewModel? shell;
+    private RotateTransform? _spinnerTransform;
+    private DispatcherTimer? _spinnerTimer;
 
     // True once the Relics/Missions grid rows have been converted to pixel sizing.
     // This is deferred until the grid is first measured (tab must be visible).
@@ -142,6 +145,7 @@ public sealed partial class MainWindow : Window
         dropTablesVm.ConfirmClear = () => ConfirmClearImportDialog.ShowAsync(this);
 
         Wire();
+        InitSpinner();
     }
 
     /// <summary>Test / design-time constructor.</summary>
@@ -155,6 +159,17 @@ public sealed partial class MainWindow : Window
     }
 
     // ── Wiring ──────────────────────────────────────────────────────────────
+
+    private void InitSpinner()
+    {
+        _spinnerTransform = new RotateTransform();
+        FooterSpinner.RenderTransform = _spinnerTransform;
+        _spinnerTimer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(16),
+            DispatcherPriority.Normal,
+            (_, _) => _spinnerTransform.Angle = (_spinnerTransform.Angle + 7.2) % 360);
+        _spinnerTimer.Start();
+    }
 
     private void Wire()
     {
@@ -253,6 +268,7 @@ public sealed partial class MainWindow : Window
 
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
+        _spinnerTimer?.Stop();
         if (shell is null) return;
         try
         {

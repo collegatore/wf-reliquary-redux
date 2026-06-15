@@ -17,7 +17,7 @@ public sealed class MainWindowViewModelTests
 
         await viewModel.LoadStatusAsync();
 
-        Assert.That(viewModel.StatusText, Is.EqualTo("Source data not aquired."));
+        Assert.That(viewModel.SourceStatusText, Is.EqualTo("Source data not aquired."));
     }
 
     [Test]
@@ -27,7 +27,7 @@ public sealed class MainWindowViewModelTests
 
         await viewModel.LoadStatusAsync();
 
-        Assert.That(viewModel.StatusText, Is.EqualTo("Source data ready. Last Update: 08 April, 2026."));
+        Assert.That(viewModel.SourceStatusText, Is.EqualTo("Source data ready. Drop Tables version: 08 April, 2026."));
     }
 
     [Test]
@@ -44,7 +44,7 @@ public sealed class MainWindowViewModelTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(viewModel.StatusText, Is.EqualTo("Source data ready. Last Update: 08 April, 2026."));
+            Assert.That(viewModel.SourceStatusText, Is.EqualTo("Source data ready. Drop Tables version: 08 April, 2026."));
             Assert.That(viewModel.OperationStatusText, Is.EqualTo("Download failed: network unavailable"));
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.DownloadCommand.CanExecute(null), Is.True);
@@ -64,7 +64,8 @@ public sealed class MainWindowViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(viewModel.OperationStatusText, Does.Contain("Import completed."));
-            Assert.That(viewModel.OperationStatusText, Does.Contain("Relics: 1"));
+            Assert.That(viewModel.OperationStatusText, Does.Not.Contain("Relics:"));
+            Assert.That(viewModel.ImportStatusText, Does.Contain("Relics: 1"));
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.ImportCommand.CanExecute(null), Is.True);
         });

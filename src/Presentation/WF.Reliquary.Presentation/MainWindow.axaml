@@ -68,7 +68,7 @@
       </MenuItem>
     </Menu>
 
-    <!-- Footer: active profile -->
+    <!-- Footer: active profile + Drop Tables operation status -->
     <Border
         DockPanel.Dock="Bottom"
         Padding="12,6"
@@ -83,6 +83,32 @@
             Text="{Binding Profiles.ActiveProfileName}"
             TextTrimming="CharacterEllipsis"
             ToolTip.Tip="{Binding Profiles.ActiveProfileName}" />
+        <Border Width="1" Background="Gray" Margin="12,0" VerticalAlignment="Stretch" />
+        <Path
+            x:Name="FooterSpinner"
+            Width="14" Height="14"
+            Stretch="Uniform"
+            StrokeThickness="1.5"
+            StrokeLineCap="Round"
+            Data="M 10 2 A 8 8 0 1 1 2 10"
+            IsVisible="{Binding IsFooterBusy}"
+            Margin="0,0,6,0"
+            VerticalAlignment="Center"
+            RenderTransformOrigin="50%,50%">
+            <Path.Stroke>
+                <SolidColorBrush Color="{DynamicResource SystemAccentColor}" />
+            </Path.Stroke>
+        </Path>
+        <TextBlock
+            IsVisible="{Binding IsFooterBusy}"
+            Text="{Binding FooterOperationStatusText}"
+            TextTrimming="CharacterEllipsis"
+            VerticalAlignment="Center" />
+        <TextBlock
+            IsVisible="{Binding ShowFooterImportStatus}"
+            Text="{Binding DropTables.FooterImportStatusText}"
+            TextTrimming="CharacterEllipsis"
+            VerticalAlignment="Center" />
       </StackPanel>
     </Border>
 
@@ -644,7 +670,7 @@
           <StackPanel Spacing="8">
             <TextBlock FontWeight="SemiBold" Text="Source acquisition" />
             <TextBlock
-                Text="{Binding DropTables.StatusText}"
+                Text="{Binding DropTables.SourceStatusText}"
                 TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button
@@ -691,10 +717,6 @@
                 Content="Export stored sources" />
           </StackPanel>
 
-          <!-- Operation status (feedback for last action) -->
-          <TextBlock
-              Text="{Binding DropTables.OperationStatusText}"
-              TextWrapping="Wrap" />
 
         </StackPanel>
       </TabItem>
