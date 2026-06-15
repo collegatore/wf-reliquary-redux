@@ -7,7 +7,9 @@ public sealed record UserSettings(
     double WindowWidth,
     double WindowHeight,
     UserFontSize FontSize,
-    double? RelicsPanelHeight)
+    double? RelicsPanelHeight,
+    int? WindowX = null,
+    int? WindowY = null)
 {
     public static UserSettings Default { get; } = new(
         SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl),

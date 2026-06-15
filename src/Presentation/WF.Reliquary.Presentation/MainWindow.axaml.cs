@@ -43,6 +43,14 @@ public sealed partial class MainWindow : Window
         Width = initialSettings.WindowWidth;
         Height = initialSettings.WindowHeight;
 
+        // Restore saved position only when the target monitor is still connected.
+        if (initialSettings.WindowX is { } savedX && initialSettings.WindowY is { } savedY)
+        {
+            var savedPoint = new PixelPoint(savedX, savedY);
+            if (Screens.All.Any(s => s.Bounds.Contains(savedPoint)))
+                Position = savedPoint;
+        }
+
         // Apply font size to Application resources.
         SettingsViewModel.ApplyFontSize(initialSettings.FontSize);
 
@@ -223,12 +231,15 @@ public sealed partial class MainWindow : Window
             var store = ReliquaryServiceFactory.CreateUserSettingsStore();
             var current = Task.Run(() => store.LoadAsync()).GetAwaiter().GetResult();
             var size = ClientSize;
+            var pos = Position;
             var relicsHeight = shell?.RelicsPanelHeight;
             Task.Run(() => store.SaveAsync(current with
             {
                 WindowWidth = size.Width,
                 WindowHeight = size.Height,
                 RelicsPanelHeight = relicsHeight,
+                WindowX = pos.X,
+                WindowY = pos.Y,
             })).GetAwaiter().GetResult();
         }
         catch

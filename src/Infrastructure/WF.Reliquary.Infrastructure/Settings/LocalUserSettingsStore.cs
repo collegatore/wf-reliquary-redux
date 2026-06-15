@@ -69,7 +69,9 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 WindowWidth: file.WindowWidth > 0 ? file.WindowWidth : UserSettings.Default.WindowWidth,
                 WindowHeight: file.WindowHeight > 0 ? file.WindowHeight : UserSettings.Default.WindowHeight,
                 FontSize: Enum.IsDefined(file.FontSize) ? file.FontSize : UserSettings.Default.FontSize,
-                RelicsPanelHeight: file.RelicsPanelHeight > 0 ? file.RelicsPanelHeight : null);
+                RelicsPanelHeight: file.RelicsPanelHeight > 0 ? file.RelicsPanelHeight : null,
+                WindowX: file.WindowX,
+                WindowY: file.WindowY);
         }
         catch (JsonException)
         {
@@ -86,7 +88,9 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.WindowWidth,
             settings.WindowHeight,
             settings.FontSize,
-            settings.RelicsPanelHeight);
+            settings.RelicsPanelHeight,
+            settings.WindowX,
+            settings.WindowY);
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -115,5 +119,7 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         double WindowWidth,
         double WindowHeight,
         UserFontSize FontSize,
-        double? RelicsPanelHeight);
+        double? RelicsPanelHeight,
+        int? WindowX = null,
+        int? WindowY = null);
 }
