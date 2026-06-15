@@ -628,7 +628,7 @@
         </Grid>
       </TabItem>
 
-      <!-- Drop Tables tab — File-menu accessed; header shows only while this tab is active -->
+      <!-- Drop Tables tab — File-menu accessed; header shows while active, or when no data is imported -->
       <TabItem>
         <TabItem.Header>
           <TextBlock
@@ -636,7 +636,7 @@
               FontSize="{Binding $parent[TabItem].FontSize}"
               FontFamily="{Binding $parent[TabItem].FontFamily}"
               FontWeight="{Binding $parent[TabItem].FontWeight}"
-              IsVisible="{Binding $parent[TabItem].IsSelected}" />
+              IsVisible="{Binding ShowDropTablesTabHeader}" />
         </TabItem.Header>
         <StackPanel Margin="0,12,0,0" Spacing="16">
 
@@ -666,11 +666,16 @@
             <TextBlock
                 Text="{Binding DropTables.ImportStatusText}"
                 TextWrapping="Wrap" />
-            <Button
-                Padding="14,8"
-                HorizontalAlignment="Left"
-                Command="{Binding DropTables.ImportCommand}"
-                Content="Import stored source" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button
+                  Padding="14,8"
+                  Command="{Binding DropTables.ImportCommand}"
+                  Content="Import stored source" />
+              <Button
+                  Padding="14,8"
+                  Command="{Binding DropTables.ClearImportCommand}"
+                  Content="Clear imported data" />
+            </StackPanel>
           </StackPanel>
 
           <Separator />

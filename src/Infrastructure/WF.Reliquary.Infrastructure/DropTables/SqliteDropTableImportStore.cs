@@ -23,6 +23,30 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
         return Path.Combine(LocalDropTableSourceStore.DefaultRootPath(), "drop-table-import.sqlite");
     }
 
+    public async Task ClearAsync(CancellationToken cancellationToken = default)
+    {
+        var directory = Path.GetDirectoryName(DatabasePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await using var context = new ReliquaryDbContext(options);
+        await context.Database.MigrateAsync(cancellationToken);
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+        await context.MissionRewards.ExecuteDeleteAsync(cancellationToken);
+        await context.RewardRotations.ExecuteDeleteAsync(cancellationToken);
+        await context.RelicRewards.ExecuteDeleteAsync(cancellationToken);
+        await context.MissionSources.ExecuteDeleteAsync(cancellationToken);
+        await context.Relics.ExecuteDeleteAsync(cancellationToken);
+        await context.RewardItems.ExecuteDeleteAsync(cancellationToken);
+        await context.GearVaultStatuses.ExecuteDeleteAsync(cancellationToken);
+        await context.ImportMetadata.ExecuteDeleteAsync(cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     public async Task ReplaceAsync(ParsedDropTableImport import, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(import);

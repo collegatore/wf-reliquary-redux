@@ -47,14 +47,48 @@ public sealed class MainWindowShellViewModelTests
         Assert.That(shell.SelectedTabIndex, Is.EqualTo(SettingsTabIndex));
     }
 
-    private static MainWindowShellViewModel CreateShell()
+    [Test]
+    public async Task InitializeAsync_SelectsDropTablesTab_WhenNoImportDataExists()
     {
+        var shell = CreateShell(importedVersion: null);
+
+        await shell.InitializeAsync();
+
+        Assert.That(shell.SelectedTabIndex, Is.EqualTo(DropTablesTabIndex));
+    }
+
+    [Test]
+    public async Task InitializeAsync_SelectsPrimeGearTab_WhenImportDataExists()
+    {
+        var shell = CreateShell(importedVersion: "08 April, 2026");
+
+        await shell.InitializeAsync();
+
+        Assert.That(shell.SelectedTabIndex, Is.EqualTo(PrimeGearTabIndex));
+    }
+
+    private static MainWindowShellViewModel CreateShell(string? importedVersion = null)
+    {
+        var importMetadataReader = new Mock<IImportMetadataReader>();
+        importMetadataReader
+            .Setup(r => r.GetImportedVersionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(importedVersion);
+
+        var refreshWorkflow = new Mock<IDropTableSourceRefreshWorkflow>();
+        refreshWorkflow
+            .Setup(w => w.GetStatusAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DropTableSourceStatus.Missing());
+        refreshWorkflow
+            .Setup(w => w.HasStoredSourcesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
         var dropTables = new MainWindowViewModel(
-            Mock.Of<IDropTableSourceRefreshWorkflow>(),
+            refreshWorkflow.Object,
             Mock.Of<IDropTableImportWorkflow>(),
-            Mock.Of<IImportMetadataReader>(),
+            importMetadataReader.Object,
             Mock.Of<IDropTableLocalFileSourceWorkflow>(),
-            Mock.Of<IDropTableSourceExporter>());
+            Mock.Of<IDropTableSourceExporter>(),
+            Mock.Of<IDropTableImportStore>());
 
         var primeGearReader = new Mock<IPrimeGearReader>();
         primeGearReader.Setup(r => r.GetAllAsync(default)).ReturnsAsync([]);

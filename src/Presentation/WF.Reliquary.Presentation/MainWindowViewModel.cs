@@ -14,35 +14,44 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private readonly IDropTableLocalFileSourceWorkflow localFileWorkflow;
     private readonly IDropTableSourceExporter sourceExporter;
     private readonly IImportMetadataReader importMetadataReader;
+    private readonly IDropTableImportStore importStore;
     private string statusText = "Checking stored source...";
     private string operationStatusText = string.Empty;
     private string importStatusText = "No source imported yet.";
     private bool isBusy;
     private bool hasStoredSources;
+    private bool hasImportedData;
 
     public MainWindowViewModel(
         IDropTableSourceRefreshWorkflow refreshWorkflow,
         IDropTableImportWorkflow importWorkflow,
         IImportMetadataReader importMetadataReader,
         IDropTableLocalFileSourceWorkflow localFileWorkflow,
-        IDropTableSourceExporter sourceExporter)
+        IDropTableSourceExporter sourceExporter,
+        IDropTableImportStore importStore)
     {
         this.refreshWorkflow = refreshWorkflow;
         this.importWorkflow = importWorkflow;
         this.localFileWorkflow = localFileWorkflow;
         this.sourceExporter = sourceExporter;
         this.importMetadataReader = importMetadataReader;
+        this.importStore = importStore;
         DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
         ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy && HasStoredSources);
         ReadFromFileCommand = new AsyncRelayCommand(ReadFromFileAsync, () => !IsBusy);
         ExportSourcesCommand = new AsyncRelayCommand(ExportSourcesAsync, () => !IsBusy && HasStoredSources);
+        ClearImportCommand = new AsyncRelayCommand(ClearImportAsync, () => HasImportedData && !IsBusy);
     }
 
     public Func<Task>? OnImportSucceeded { get; set; }
 
+    public Func<Task>? OnImportCleared { get; set; }
+
     public Func<Task<string?>>? PickSourceFileAsync { get; set; }
 
     public Func<Task<string?>>? PickExportFolderAsync { get; set; }
+
+    public Func<Task<bool>>? ConfirmClear { get; set; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -71,6 +80,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 ImportCommand.RaiseCanExecuteChanged();
                 ReadFromFileCommand.RaiseCanExecuteChanged();
                 ExportSourcesCommand.RaiseCanExecuteChanged();
+                ClearImportCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -88,6 +98,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool HasImportedData
+    {
+        get => hasImportedData;
+        private set
+        {
+            if (SetProperty(ref hasImportedData, value))
+            {
+                ClearImportCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
     public string ImportStatusText
     {
         get => importStatusText;
@@ -101,6 +123,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public AsyncRelayCommand ReadFromFileCommand { get; }
 
     public AsyncRelayCommand ExportSourcesCommand { get; }
+
+    public AsyncRelayCommand ClearImportCommand { get; }
 
     public async Task LoadStatusAsync(CancellationToken cancellationToken = default)
     {
@@ -162,6 +186,38 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 {
                     await OnImportSucceeded();
                 }
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    public async Task ClearImportAsync()
+    {
+        if (IsBusy || !HasImportedData)
+        {
+            return;
+        }
+
+        if (ConfirmClear != null && !await ConfirmClear())
+        {
+            return;
+        }
+
+        IsBusy = true;
+        OperationStatusText = "Clearing imported data...";
+
+        try
+        {
+            await importStore.ClearAsync();
+            await RefreshImportStatusAsync();
+            OperationStatusText = "Imported data cleared.";
+
+            if (OnImportCleared != null)
+            {
+                await OnImportCleared();
             }
         }
         finally
@@ -238,6 +294,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private async Task RefreshImportStatusAsync(CancellationToken cancellationToken = default)
     {
         var version = await importMetadataReader.GetImportedVersionAsync(cancellationToken);
+        HasImportedData = version is not null;
         ImportStatusText = version is null
             ? "Source data not imported."
             : $"Source data imported. {LastUpdateText(version)}.";

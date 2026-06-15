@@ -94,14 +94,16 @@ public sealed class MainWindowViewModelTests
     private static MainWindowViewModel CreateViewModel(
         IDropTableSourceRefreshWorkflow? refreshWorkflow = null,
         IDropTableImportWorkflow? importWorkflow = null,
-        IImportMetadataReader? importMetadataReader = null)
+        IImportMetadataReader? importMetadataReader = null,
+        IDropTableImportStore? importStore = null)
     {
         return new MainWindowViewModel(
             refreshWorkflow ?? Mock.Of<IDropTableSourceRefreshWorkflow>(),
             importWorkflow ?? CreateImportWorkflow().Object,
             importMetadataReader ?? CreateImportMetadataReader().Object,
             Mock.Of<IDropTableLocalFileSourceWorkflow>(),
-            Mock.Of<IDropTableSourceExporter>());
+            Mock.Of<IDropTableSourceExporter>(),
+            importStore ?? Mock.Of<IDropTableImportStore>());
     }
 
     private static Mock<IDropTableSourceRefreshWorkflow> CreateWorkflow(DropTableSourceStatus status, bool hasStoredSources = false)
@@ -159,10 +161,77 @@ public sealed class MainWindowViewModelTests
             []);
     }
 
+    [Test]
+    public async Task ClearImportCommand_WhenConfirmed_CallsClearAsyncAndUpdatesState()
+    {
+        var store = new Mock<IDropTableImportStore>();
+        var importMetadataReader = new Mock<IImportMetadataReader>();
+        importMetadataReader
+            .SetupSequence(r => r.GetImportedVersionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync("08 April, 2026")
+            .ReturnsAsync((string?)null);
+        var viewModel = CreateViewModel(
+            refreshWorkflow: CreateWorkflow(DropTableSourceStatus.Missing()).Object,
+            importMetadataReader: importMetadataReader.Object,
+            importStore: store.Object);
+        await viewModel.LoadStatusAsync();
+
+        var clearedCallbackInvoked = false;
+        viewModel.OnImportCleared = () => { clearedCallbackInvoked = true; return Task.CompletedTask; };
+        viewModel.ConfirmClear = () => Task.FromResult(true);
+
+        await viewModel.ClearImportAsync();
+
+        store.Verify(s => s.ClearAsync(It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.HasImportedData, Is.False);
+            Assert.That(viewModel.IsBusy, Is.False);
+            Assert.That(clearedCallbackInvoked, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task ClearImportCommand_WhenCancelled_DoesNotCallClearAsync()
+    {
+        var store = new Mock<IDropTableImportStore>();
+        var importMetadataReader = CreateImportMetadataReader("08 April, 2026");
+        var viewModel = CreateViewModel(
+            refreshWorkflow: CreateWorkflow(DropTableSourceStatus.Missing()).Object,
+            importMetadataReader: importMetadataReader.Object,
+            importStore: store.Object);
+        await viewModel.LoadStatusAsync();
+
+        viewModel.ConfirmClear = () => Task.FromResult(false);
+
+        await viewModel.ClearImportAsync();
+
+        store.Verify(s => s.ClearAsync(It.IsAny<CancellationToken>()), Times.Never);
+        Assert.That(viewModel.HasImportedData, Is.True);
+    }
+
+    [Test]
+    public async Task ClearImportCommand_CanExecute_ReflectsHasImportedDataAndBusy()
+    {
+        var importMetadataReader = CreateImportMetadataReader(version: null);
+        var refreshWorkflow = CreateWorkflow(DropTableSourceStatus.Missing());
+        var viewModel = CreateViewModel(
+            refreshWorkflow: refreshWorkflow.Object,
+            importMetadataReader: importMetadataReader.Object);
+
+        await viewModel.LoadStatusAsync();
+        Assert.That(viewModel.ClearImportCommand.CanExecute(null), Is.False, "disabled when no import data");
+
+        importMetadataReader.Setup(r => r.GetImportedVersionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync("08 April, 2026");
+        await viewModel.LoadStatusAsync();
+        Assert.That(viewModel.ClearImportCommand.CanExecute(null), Is.True, "enabled when import data present");
+    }
+
     private static DropTableSourceStatus StatusWithLastUpdate(string lastUpdate)
     {
         return new DropTableSourceStatus(
-            true,            
+            true,
             DateTimeOffset.UnixEpoch,
             lastUpdate);
     }

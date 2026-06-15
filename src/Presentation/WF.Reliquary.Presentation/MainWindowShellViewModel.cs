@@ -39,7 +39,20 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
         NavigateToDropTablesCommand = new RelayCommand(NavigateToDropTables);
 
+        dropTables.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainWindowViewModel.HasImportedData))
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowDropTablesTabHeader)));
+        };
+
         dropTables.OnImportSucceeded = async () =>
+        {
+            await primeGear.ReloadAsync();
+            await wishlistRelics.ReloadAsync();
+            await wishlistFarming.ReloadAsync();
+        };
+
+        dropTables.OnImportCleared = async () =>
         {
             await primeGear.ReloadAsync();
             await wishlistRelics.ReloadAsync();
@@ -89,14 +102,30 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
     public int SelectedTabIndex
     {
         get => selectedTabIndex;
-        set => SetProperty(ref selectedTabIndex, value);
+        set
+        {
+            if (SetProperty(ref selectedTabIndex, value))
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowDropTablesTabHeader)));
+        }
     }
+
+    public bool ShowDropTablesTabHeader =>
+        !DropTables.HasImportedData || selectedTabIndex == DropTablesTabIndex;
 
     /// <summary>Current live relics panel height in pixels (updated by splitter drag).</summary>
     public double? RelicsPanelHeight
     {
         get => relicsPanelHeight;
         set => SetProperty(ref relicsPanelHeight, value);
+    }
+
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        await DropTables.LoadStatusAsync(cancellationToken);
+        if (!DropTables.HasImportedData)
+        {
+            SelectedTabIndex = DropTablesTabIndex;
+        }
     }
 
     // Drop Tables has no unsaved-changes guard (only Settings does), so this is

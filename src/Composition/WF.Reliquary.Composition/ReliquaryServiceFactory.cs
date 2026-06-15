@@ -33,6 +33,11 @@ public static class ReliquaryServiceFactory
             new SqliteDropTableImportStore());
     }
 
+    public static IDropTableImportStore CreateDropTableImportStore()
+    {
+        return new SqliteDropTableImportStore();
+    }
+
     public static IDropTableLocalFileSourceWorkflow CreateDropTableLocalFileSourceWorkflow()
     {
         return new DropTableLocalFileSourceWorkflow(

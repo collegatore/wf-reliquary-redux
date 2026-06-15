@@ -98,7 +98,8 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreateDropTableImportService(),
             ReliquaryServiceFactory.CreateImportMetadataReader(),
             ReliquaryServiceFactory.CreateDropTableLocalFileSourceWorkflow(),
-            ReliquaryServiceFactory.CreateDropTableSourceExporter());
+            ReliquaryServiceFactory.CreateDropTableSourceExporter(),
+            ReliquaryServiceFactory.CreateDropTableImportStore());
 
         shell = new MainWindowShellViewModel(
             dropTablesVm,
@@ -114,7 +115,7 @@ public sealed partial class MainWindow : Window
         shell.RelicsPanelHeight = initialSettings.RelicsPanelHeight;
 
         DataContext = shell;
-        _ = shell.DropTables.LoadStatusAsync();
+        _ = shell.InitializeAsync();
 
         wishlistVm.FlyoutCloseRequested = () => WishlistDropdownButton.Flyout?.Hide();
 
@@ -138,6 +139,8 @@ public sealed partial class MainWindow : Window
             return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
         };
 
+        dropTablesVm.ConfirmClear = () => ConfirmClearImportDialog.ShowAsync(this);
+
         Wire();
     }
 
@@ -147,7 +150,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         DataContext = viewModel;
         shell = viewModel;
-        _ = viewModel.DropTables.LoadStatusAsync();
+        _ = viewModel.InitializeAsync();
         Wire();
     }
 

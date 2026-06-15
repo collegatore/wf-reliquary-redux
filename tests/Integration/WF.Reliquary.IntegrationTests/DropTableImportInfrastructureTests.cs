@@ -366,6 +366,37 @@ public sealed class DropTableImportInfrastructureTests
             """;
     }
 
+    [Test]
+    public async Task SqliteStore_ClearAsync_DeletesAllImportRows()
+    {
+        var databasePath = TempDatabasePath();
+        var store = new SqliteDropTableImportStore(databasePath);
+        var parser = new HtmlDropTableParser();
+        await store.ReplaceAsync(parser.Parse(StoredSource(FocusedHtml()), DateTimeOffset.UnixEpoch));
+
+        await store.ClearAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ScalarLong(databasePath, "SELECT COUNT(*) FROM import_metadata;"), Is.EqualTo(0));
+            Assert.That(ScalarLong(databasePath, "SELECT COUNT(*) FROM relics;"), Is.EqualTo(0));
+            Assert.That(ScalarLong(databasePath, "SELECT COUNT(*) FROM reward_items;"), Is.EqualTo(0));
+            Assert.That(ScalarLong(databasePath, "SELECT COUNT(*) FROM relic_rewards;"), Is.EqualTo(0));
+            Assert.That(ScalarLong(databasePath, "SELECT COUNT(*) FROM mission_sources;"), Is.EqualTo(0));
+            Assert.That(ScalarLong(databasePath, "SELECT COUNT(*) FROM mission_rewards;"), Is.EqualTo(0));
+        });
+    }
+
+    [Test]
+    public async Task SqliteStore_ClearAsync_IsIdempotentOnEmptyDatabase()
+    {
+        var databasePath = TempDatabasePath();
+        var store = new SqliteDropTableImportStore(databasePath);
+
+        Assert.DoesNotThrowAsync(() => store.ClearAsync());
+        Assert.DoesNotThrowAsync(() => store.ClearAsync());
+    }
+
     private static string TempDatabasePath()
     {
         var directory = Path.Combine(Path.GetTempPath(), "wf-reliquary-tests", Guid.NewGuid().ToString("N"));
