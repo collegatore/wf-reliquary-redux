@@ -37,7 +37,7 @@ public sealed class DropTableLocalFileSourceWorkflow : IDropTableLocalFileSource
 
         if (string.IsNullOrWhiteSpace(lastUpdate))
         {
-            return new DropTableFileRegistrationResult(false, "File does not contain a Last Update value.");
+            return new DropTableFileRegistrationResult(false, "File does not contain a Drop Tables version value.");
         }
 
         var content = new DropTableSourceContent(new Uri(filePath), html, now(), lastUpdate);

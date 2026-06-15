@@ -314,8 +314,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private static string LastUpdateText(string? lastUpdate)
     {
         return string.IsNullOrWhiteSpace(lastUpdate)
-            ? "Last Update unavailable"
-            : $"Last Update: {lastUpdate}";
+            ? "Drop Tables version unavailable"
+            : $"Drop Tables version: {lastUpdate}";
     }
 
     private static string ImportSuccessText(DropTableImportResult result)

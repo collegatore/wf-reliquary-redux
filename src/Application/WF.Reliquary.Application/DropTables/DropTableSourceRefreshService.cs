@@ -46,7 +46,7 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
 
             if (string.IsNullOrWhiteSpace(lastUpdate))
             {
-                throw new InvalidOperationException("Downloaded drop-table file does not contain a Last Update value.");
+                throw new InvalidOperationException("Downloaded drop-table file does not contain a Drop Tables version value.");
             }
 
             await sourceStore.SaveAsync(
