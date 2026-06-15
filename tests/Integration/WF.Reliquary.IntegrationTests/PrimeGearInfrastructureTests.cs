@@ -85,10 +85,9 @@ public sealed class PrimeGearInfrastructureTests
     private static ParsedDropTableImport ImportWithPrimeParts(IReadOnlyList<ParsedRewardItem> items)
     {
         return new ParsedDropTableImport(
-            null,
-            "stored.html",
-            null,
-            null,
+            new Uri(DropTableSourceDefaults.SourceUrl),
+            DateTimeOffset.UnixEpoch,
+            "08 April, 2026",
             DateTimeOffset.UnixEpoch,
             items,
             [],

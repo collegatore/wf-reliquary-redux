@@ -283,5 +283,5 @@ public sealed class WishlistInfrastructureTests
         ImportWithPrimeParts([]);
 
     private static ParsedDropTableImport ImportWithPrimeParts(IReadOnlyList<ParsedRewardItem> items) =>
-        new(null, "stored.html", null, null, DateTimeOffset.UnixEpoch, items, [], [], [], [], [], []);
+        new(new Uri(DropTableSourceDefaults.SourceUrl), DateTimeOffset.UnixEpoch, "08 April, 2026", DateTimeOffset.UnixEpoch, items, [], [], [], [], [], []);
 }

@@ -1,21 +1,20 @@
-using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Ports;
+using WF.Reliquary.Infrastructure.Storage;
+using WF.Reliquary.Infrastructure.Storage.Entities;
 
 namespace WF.Reliquary.Infrastructure.DropTables;
 
 public sealed class LocalDropTableSourceStore : IDropTableSourceStore
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        WriteIndented = true
-    };
+    private readonly string databasePath;
+    private readonly DbContextOptions<ReliquaryDbContext> contextOptions;
 
-    private readonly string rootPath;
-
-    public LocalDropTableSourceStore(string? rootPath = null)
+    public LocalDropTableSourceStore(string? databasePath = null)
     {
-        this.rootPath = rootPath ?? DefaultRootPath();
+        this.databasePath = databasePath ?? DefaultDatabasePath();
+        contextOptions = ReliquaryDbContext.BuildOptions(this.databasePath);
     }
 
     public static string DefaultRootPath()
@@ -30,54 +29,65 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
         return Path.Combine(localAppData, "WF Reliquary Redux", "DropTables");
     }
 
-    public async Task<StoredDropTableSource?> LoadAsync(string fileName, CancellationToken cancellationToken = default)
-    {
-        var filePath = Path.Combine(rootPath, fileName);
+    public static string DefaultDatabasePath()
+        => Path.Combine(DefaultRootPath(), "drop-table-import.sqlite");
 
-        if (!File.Exists(filePath))
+    public async Task<StoredDropTableSource?> LoadAsync(CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(databasePath))
         {
             return null;
         }
 
-        var html = await File.ReadAllTextAsync(filePath, cancellationToken);
-        var provenance = await LoadProvenanceAsync(fileName, cancellationToken);
+        await using var context = new ReliquaryDbContext(contextOptions);
+        var entity = await context.SourceFiles
+            .AsNoTracking()
+            .OrderByDescending(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        return new StoredDropTableSource(filePath, html, provenance);
-    }
-
-    public async Task SaveAsync(DropTableSourceContent content, string fileName, CancellationToken cancellationToken = default)
-    {
-        Directory.CreateDirectory(rootPath);
-
-        var filePath = Path.Combine(rootPath, fileName);
-        await File.WriteAllTextAsync(filePath, content.Html, cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(content.LastUpdate))
-        {
-            throw new InvalidOperationException("Unable to detect Last Update in the downloaded file. Please ensure that provided download URL exposes an official drop tables file.");
-        }
-
-        var provenance = new DropTableSourceProvenance(content.SourceUrl, content.DownloadedAt, content.LastUpdate);
-        var metadataJson = JsonSerializer.Serialize(provenance, SerializerOptions);
-        await File.WriteAllTextAsync(MetadataPath(fileName), metadataJson, cancellationToken);
-    }
-
-    private async Task<DropTableSourceProvenance?> LoadProvenanceAsync(string fileName, CancellationToken cancellationToken)
-    {
-        var metadataPath = MetadataPath(fileName);
-
-        if (!File.Exists(metadataPath))
+        if (entity is null)
         {
             return null;
         }
 
-        var json = await File.ReadAllTextAsync(metadataPath, cancellationToken);
-        return JsonSerializer.Deserialize<DropTableSourceProvenance>(json, SerializerOptions);
+        var provenance = new DropTableSourceProvenance(
+            new Uri(entity.SourceUrl),
+            DateTimeOffset.Parse(entity.DownloadedAt, null, System.Globalization.DateTimeStyles.RoundtripKind),
+            entity.SourceLastUpdate);
+
+        return new StoredDropTableSource(entity.Content, provenance);
     }
 
-    private string MetadataPath(string fileName)
+    public async Task SaveAsync(DropTableSourceContent content, CancellationToken cancellationToken = default)
     {
-        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-        return Path.Combine(rootPath, $"{nameWithoutExtension}.metadata.json");
+        var directory = Path.GetDirectoryName(databasePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await using var context = new ReliquaryDbContext(contextOptions);
+        await context.Database.MigrateAsync(cancellationToken);
+
+        context.SourceFiles.Add(new SourceFileEntity
+        {
+            Content = content.Html,
+            SourceUrl = content.SourceUrl?.ToString(),
+            DownloadedAt = content.DownloadedAt.ToString("O"),
+            SourceLastUpdate = content.LastUpdate
+        });
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> HasAnyAsync(CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(databasePath))
+        {
+            return false;
+        }
+
+        await using var context = new ReliquaryDbContext(contextOptions);
+        return await context.SourceFiles.AnyAsync(cancellationToken);
     }
 }

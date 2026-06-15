@@ -1,10 +1,9 @@
 namespace WF.Reliquary.Application.DropTables;
 
 public sealed record ParsedDropTableImport(
-    Uri? SourceUrl,
-    string SourcePath,
-    DateTimeOffset? DownloadedAt,
-    string? SourceLastUpdate,
+    Uri SourceUrl,
+    DateTimeOffset DownloadedAt,
+    string SourceLastUpdate,
     DateTimeOffset ImportedAt,
     IReadOnlyList<ParsedRewardItem> RewardItems,
     IReadOnlyList<ParsedRelic> Relics,

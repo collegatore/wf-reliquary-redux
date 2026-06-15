@@ -104,10 +104,9 @@ public sealed class DropTableImportInfrastructureTests
         var databasePath = TempDatabasePath();
         var store = new SqliteDropTableImportStore(databasePath);
         var import = new ParsedDropTableImport(
-            null,
-            "stored.html",
-            null,
-            null,
+            new Uri(DropTableSourceDefaults.SourceUrl),
+            DateTimeOffset.UnixEpoch,
+            "08 April, 2026",
             DateTimeOffset.UnixEpoch,
             [
                 new ParsedRewardItem("Reward A", "REWARD A", "Other"),
@@ -163,10 +162,9 @@ public sealed class DropTableImportInfrastructureTests
         await store.ReplaceAsync(parser.Parse(StoredSource(FocusedHtml()), DateTimeOffset.UnixEpoch));
 
         var invalidImport = new ParsedDropTableImport(
-            null,
-            "stored.html",
-            null,
-            null,
+            new Uri(DropTableSourceDefaults.SourceUrl),
+            DateTimeOffset.UnixEpoch,
+            "08 April, 2026",
             DateTimeOffset.UnixEpoch,
             [],
             [new ParsedRelic("Lith", "C14", "Lith C14 Relic", "Lith C14 Relic")],
@@ -191,7 +189,7 @@ public sealed class DropTableImportInfrastructureTests
             "warframe-drop-tables-sample.html");
         var html = File.ReadAllText(samplePath);
 
-        var import = parser.Parse(StoredSource(html, samplePath), DateTimeOffset.UnixEpoch);
+        var import = parser.Parse(StoredSource(html), DateTimeOffset.UnixEpoch);
 
         Assert.Multiple(() =>
         {
@@ -239,10 +237,9 @@ public sealed class DropTableImportInfrastructureTests
         Assert.That(item.ItemKind, Is.EqualTo("PrimePart"));
     }
 
-    private static StoredDropTableSource StoredSource(string html, string filePath = "stored.html")
+    private static StoredDropTableSource StoredSource(string html)
     {
         return new StoredDropTableSource(
-            filePath,
             html,
             new DropTableSourceProvenance(
                 new Uri(DropTableSourceDefaults.SourceUrl),

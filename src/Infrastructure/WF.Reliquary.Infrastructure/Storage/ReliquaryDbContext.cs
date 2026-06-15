@@ -21,6 +21,7 @@ internal sealed class ReliquaryDbContext : DbContext
     public DbSet<WishlistItemEntity> WishlistItems => Set<WishlistItemEntity>();
     public DbSet<OwnedGearEntity> OwnedGear => Set<OwnedGearEntity>();
     public DbSet<UserPreferencesEntity> UserPreferences => Set<UserPreferencesEntity>();
+    public DbSet<SourceFileEntity> SourceFiles => Set<SourceFileEntity>();
 
     internal static DbContextOptions<ReliquaryDbContext> BuildOptions(string databasePath)
     {
@@ -147,7 +148,7 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
             entity.Property(e => e.SourceUrl).HasColumnName("source_url");
-            entity.Property(e => e.SourceFilePath).HasColumnName("source_file_path").IsRequired();
+            entity.Property(e => e.SourceFilePath).HasColumnName("source_file_path");
             entity.Property(e => e.DownloadedAt).HasColumnName("downloaded_at");
             entity.Property(e => e.SourceLastUpdate).HasColumnName("source_last_update");
             entity.Property(e => e.ImportedAt).HasColumnName("imported_at").IsRequired();
@@ -222,6 +223,18 @@ internal sealed class ReliquaryDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.ProfileId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── source_files ──────────────────────────────────────────────────────────
+        modelBuilder.Entity<SourceFileEntity>(entity =>
+        {
+            entity.ToTable("source_files");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.Content).HasColumnName("content").IsRequired();
+            entity.Property(e => e.SourceUrl).HasColumnName("source_url").IsRequired();
+            entity.Property(e => e.DownloadedAt).HasColumnName("downloaded_at").IsRequired();
+            entity.Property(e => e.SourceLastUpdate).HasColumnName("source_last_update").IsRequired();
         });
 
         // ── user_preferences ──────────────────────────────────────────────────────

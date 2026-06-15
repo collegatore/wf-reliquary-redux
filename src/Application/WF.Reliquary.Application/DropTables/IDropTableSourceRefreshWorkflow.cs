@@ -6,6 +6,8 @@ public interface IDropTableSourceRefreshWorkflow
 
     Task<DropTableRefreshResult> RefreshAsync(CancellationToken cancellationToken = default);
 
+    Task<bool> HasStoredSourcesAsync(CancellationToken cancellationToken = default);
+
     Task<DropTableSourceSettings> GetSettingsAsync(CancellationToken cancellationToken = default);
 
     Task SaveSettingsAsync(DropTableSourceSettings settings, CancellationToken cancellationToken = default);

@@ -9,42 +9,82 @@ namespace WF.Reliquary.IntegrationTests;
 public sealed class DropTableInfrastructureTests
 {
     [Test]
-    public async Task LocalStore_SavesRawHtmlAndProvenance()
+    public async Task LocalStore_SavesHtmlAndProvenanceToDb()
     {
-        var root = CreateTempDirectory();
-        var store = new LocalDropTableSourceStore(root);
+        var dbPath = TempDatabasePath();
+        var store = new LocalDropTableSourceStore(dbPath);
         var sourceUrl = new Uri("https://example.test/drop-tables.html");
         var downloadedAt = new DateTimeOffset(2026, 4, 19, 12, 0, 0, TimeSpan.Zero);
 
         await store.SaveAsync(
-            new DropTableSourceContent(sourceUrl, "<b>Last Update:</b> 08 April, 2026", downloadedAt, "08 April, 2026"),
-            DropTableSourceDefaults.FileName);
+            new DropTableSourceContent(sourceUrl, "<b>Last Update:</b> 08 April, 2026", downloadedAt, "08 April, 2026"));
 
-        var stored = await store.LoadAsync(DropTableSourceDefaults.FileName);
+        var stored = await store.LoadAsync();
 
         Assert.Multiple(() =>
         {
             Assert.That(stored, Is.Not.Null);
-            Assert.That(stored!.FilePath, Does.EndWith(DropTableSourceDefaults.FileName));
-            Assert.That(stored.Html, Does.Contain("08 April, 2026"));
-            Assert.That(stored.Provenance?.SourceUrl, Is.EqualTo(sourceUrl));
-            Assert.That(stored.Provenance?.DownloadedAt, Is.EqualTo(downloadedAt));
-            Assert.That(stored.Provenance?.LastUpdate, Is.EqualTo("08 April, 2026"));
+            Assert.That(stored!.Html, Does.Contain("08 April, 2026"));
+            Assert.That(stored.Provenance.SourceUrl, Is.EqualTo(sourceUrl));
+            Assert.That(stored.Provenance.DownloadedAt, Is.EqualTo(downloadedAt));
+            Assert.That(stored.Provenance.LastUpdate, Is.EqualTo("08 April, 2026"));
         });
     }
 
     [Test]
-    public void LocalStore_RejectsSaveWithoutLastUpdateProvenance()
+    public async Task LocalStore_ReturnsNullWhenNoSourcesStored()
     {
-        var root = CreateTempDirectory();
-        var store = new LocalDropTableSourceStore(root);
+        var dbPath = TempDatabasePath();
+        var store = new LocalDropTableSourceStore(dbPath);
 
-        var exception = Assert.ThrowsAsync<InvalidOperationException>(() =>
-            store.SaveAsync(
-                new DropTableSourceContent(new Uri("https://example.test/drop-tables.html"), "<html></html>", DateTimeOffset.UnixEpoch),
-                DropTableSourceDefaults.FileName));
+        var stored = await store.LoadAsync();
 
-        Assert.That(exception?.Message, Does.Contain("Last Update"));
+        Assert.That(stored, Is.Null);
+    }
+
+    [Test]
+    public async Task LocalStore_HasAnyAsync_ReturnsTrueAfterSave()
+    {
+        var dbPath = TempDatabasePath();
+        var store = new LocalDropTableSourceStore(dbPath);
+
+        Assert.That(await store.HasAnyAsync(), Is.False);
+
+        await store.SaveAsync(
+            new DropTableSourceContent(new Uri("file:///test.html"), "<b>Last Update:</b> 08 April, 2026", DateTimeOffset.UtcNow, "08 April, 2026"));
+
+        Assert.That(await store.HasAnyAsync(), Is.True);
+    }
+
+    [Test]
+    public async Task LocalStore_LoadAsync_ReturnsMostRecentRow()
+    {
+        var dbPath = TempDatabasePath();
+        var store = new LocalDropTableSourceStore(dbPath);
+
+        await store.SaveAsync(
+            new DropTableSourceContent(new Uri("file:///test.html"), "<b>Last Update:</b> 07 April, 2026", DateTimeOffset.UtcNow, "07 April, 2026"));
+        await store.SaveAsync(
+            new DropTableSourceContent(new Uri("file:///test.html"), "<b>Last Update:</b> 08 April, 2026", DateTimeOffset.UtcNow, "08 April, 2026"));
+
+        var stored = await store.LoadAsync();
+
+        Assert.That(stored?.Provenance?.LastUpdate, Is.EqualTo("08 April, 2026"));
+    }
+
+    [Test]
+    public async Task LocalStore_StoresLocalFileAcquisitionWithFileUri()
+    {
+        var dbPath = TempDatabasePath();
+        var store = new LocalDropTableSourceStore(dbPath);
+        var fileUri = new Uri(@"C:\Users\test\drop-tables.html");
+
+        await store.SaveAsync(
+            new DropTableSourceContent(fileUri, "<b>Last Update:</b> 08 April, 2026", DateTimeOffset.UtcNow, "08 April, 2026"));
+
+        var stored = await store.LoadAsync();
+
+        Assert.That(stored?.Provenance?.SourceUrl, Is.EqualTo(fileUri));
     }
 
     [Test]
@@ -113,6 +153,12 @@ public sealed class DropTableInfrastructureTests
         var path = Path.Combine(Path.GetTempPath(), "wf-reliquary-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private static string TempDatabasePath()
+    {
+        var dir = CreateTempDirectory();
+        return Path.Combine(dir, "test.sqlite");
     }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler

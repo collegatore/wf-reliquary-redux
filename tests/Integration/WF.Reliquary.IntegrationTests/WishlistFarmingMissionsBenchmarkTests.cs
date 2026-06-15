@@ -79,7 +79,6 @@ public sealed class WishlistFarmingMissionsBenchmarkTests
         var samplePath = Path.Combine(AppContext.BaseDirectory, "TestData", "warframe-drop-tables-sample.html");
         var html = await File.ReadAllTextAsync(samplePath);
         var source = new StoredDropTableSource(
-            samplePath,
             html,
             new DropTableSourceProvenance(
                 new Uri(DropTableSourceDefaults.SourceUrl),

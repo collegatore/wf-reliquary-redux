@@ -35,7 +35,7 @@ public sealed class DropTableImportServiceTests
         var parser = new Mock<IDropTableParser>();
         var importStore = new Mock<IDropTableImportStore>();
         sourceStore
-            .Setup(store => store.LoadAsync(DropTableSourceDefaults.FileName, It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
             .Setup(parser => parser.Parse(stored, It.IsAny<DateTimeOffset>()))
@@ -47,7 +47,6 @@ public sealed class DropTableImportServiceTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Succeeded, Is.False);
-            Assert.That(result.SourcePath, Is.EqualTo(stored.FilePath));
             Assert.That(result.SourceLastUpdate, Is.EqualTo("08 April, 2026"));
             Assert.That(result.ErrorMessage, Does.Contain("Relics section missing"));
         });
@@ -63,7 +62,7 @@ public sealed class DropTableImportServiceTests
         var parser = new Mock<IDropTableParser>();
         var importStore = new Mock<IDropTableImportStore>();
         sourceStore
-            .Setup(store => store.LoadAsync(DropTableSourceDefaults.FileName, It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
             .Setup(parser => parser.Parse(stored, parsed.ImportedAt))
@@ -95,7 +94,7 @@ public sealed class DropTableImportServiceTests
         var parser = new Mock<IDropTableParser>();
         var importStore = new Mock<IDropTableImportStore>();
         sourceStore
-            .Setup(store => store.LoadAsync(DropTableSourceDefaults.FileName, It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
             .Setup(parser => parser.Parse(stored, parsed.ImportedAt))
@@ -126,7 +125,6 @@ public sealed class DropTableImportServiceTests
         Func<DateTimeOffset>? now = null)
     {
         return new DropTableImportService(
-            DropTableSourceOptions.CreateDefault(),
             sourceStore ?? Mock.Of<IDropTableSourceStore>(),
             parser ?? Mock.Of<IDropTableParser>(),
             importStore ?? Mock.Of<IDropTableImportStore>(),
@@ -136,7 +134,6 @@ public sealed class DropTableImportServiceTests
     private static StoredDropTableSource StoredSource()
     {
         return new StoredDropTableSource(
-            "stored.html",
             "<html></html>",
             new DropTableSourceProvenance(
                 new Uri(DropTableSourceDefaults.SourceUrl),
@@ -148,7 +145,6 @@ public sealed class DropTableImportServiceTests
     {
         return new ParsedDropTableImport(
             new Uri(DropTableSourceDefaults.SourceUrl),
-            "stored.html",
             DateTimeOffset.UnixEpoch,
             "08 April, 2026",
             new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero),

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WF.Reliquary.Application.Settings;
@@ -92,11 +93,15 @@ public sealed partial class MainWindow : Window
         var settingsVm = new SettingsViewModel(userSettingsStore, initialSettings);
         settingsVm.ConfirmDiscard = () => ConfirmDiscardDialog.ShowAsync(this);
 
+        var dropTablesVm = new MainWindowViewModel(
+            ReliquaryServiceFactory.CreateDropTableSourceRefreshService(userSettingsStore),
+            ReliquaryServiceFactory.CreateDropTableImportService(),
+            ReliquaryServiceFactory.CreateImportMetadataReader(),
+            ReliquaryServiceFactory.CreateDropTableLocalFileSourceWorkflow(),
+            ReliquaryServiceFactory.CreateDropTableSourceExporter());
+
         shell = new MainWindowShellViewModel(
-            new MainWindowViewModel(
-                ReliquaryServiceFactory.CreateDropTableSourceRefreshService(userSettingsStore),
-                ReliquaryServiceFactory.CreateDropTableImportService(),
-                ReliquaryServiceFactory.CreateImportMetadataReader()),
+            dropTablesVm,
             primeGearVm,
             wishlistVm,
             wishlistRelicsVm,
@@ -112,6 +117,26 @@ public sealed partial class MainWindow : Window
         _ = shell.DropTables.LoadStatusAsync();
 
         wishlistVm.FlyoutCloseRequested = () => WishlistDropdownButton.Flyout?.Hide();
+
+        dropTablesVm.PickSourceFileAsync = async () =>
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select drop-table HTML file",
+                AllowMultiple = false,
+                FileTypeFilter = [new FilePickerFileType("HTML files") { Patterns = ["*.html"] }]
+            });
+            return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        };
+
+        dropTablesVm.PickExportFolderAsync = async () =>
+        {
+            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "Select export folder"
+            });
+            return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+        };
 
         Wire();
     }

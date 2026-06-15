@@ -140,10 +140,9 @@ public sealed class WishlistFarmingMissionsInfrastructureTests
     }
 
     private static ParsedDropTableImport BuildImport() => new(
-        SourceUrl: null,
-        SourcePath: "test.html",
-        DownloadedAt: null,
-        SourceLastUpdate: null,
+        SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl),
+        DownloadedAt: DateTimeOffset.UnixEpoch,
+        SourceLastUpdate: "08 April, 2026",
         ImportedAt: DateTimeOffset.UnixEpoch,
         RewardItems:
         [

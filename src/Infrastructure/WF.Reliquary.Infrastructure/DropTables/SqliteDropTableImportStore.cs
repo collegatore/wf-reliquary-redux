@@ -132,9 +132,9 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
         context.ImportMetadata.Add(new ImportMetadataEntity
         {
             Id = 1,
-            SourceUrl = import.SourceUrl?.ToString(),
-            SourceFilePath = import.SourcePath,
-            DownloadedAt = import.DownloadedAt?.ToString("O"),
+            SourceUrl = import.SourceUrl.ToString(),
+            SourceFilePath = null,
+            DownloadedAt = import.DownloadedAt.ToString("O"),
             SourceLastUpdate = import.SourceLastUpdate,
             ImportedAt = import.ImportedAt.ToString("O")
         });

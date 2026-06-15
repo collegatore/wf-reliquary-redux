@@ -14,12 +14,12 @@ public sealed class HttpDropTableSourceClient : IDropTableSourceClient
         this.getNow = getNow ?? (() => DateTimeOffset.UtcNow);
     }
 
-    public async Task<DropTableSourceContent> DownloadAsync(Uri sourceUrl, CancellationToken cancellationToken = default)
+    public async Task<DropTableDownload> DownloadAsync(Uri sourceUrl, CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.GetAsync(sourceUrl, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var html = await response.Content.ReadAsStringAsync(cancellationToken);
-        return new DropTableSourceContent(sourceUrl, html, getNow());
+        return new DropTableDownload(sourceUrl, html, getNow());
     }
 }

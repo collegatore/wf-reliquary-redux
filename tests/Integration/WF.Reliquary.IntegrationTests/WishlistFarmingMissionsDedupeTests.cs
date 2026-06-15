@@ -87,7 +87,7 @@ public sealed class WishlistFarmingMissionsDedupeTests
     // ── Fixtures ──────────────────────────────────────────────────────────────
 
     private static ParsedDropTableImport DuplicateNonRotationImport() => new(
-        SourceUrl: null, SourcePath: "test.html", DownloadedAt: null, SourceLastUpdate: null,
+        SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl), DownloadedAt: DateTimeOffset.UnixEpoch, SourceLastUpdate: "08 April, 2026",
         ImportedAt: DateTimeOffset.UnixEpoch,
         RewardItems:
         [
@@ -107,7 +107,7 @@ public sealed class WishlistFarmingMissionsDedupeTests
         Warnings: []);
 
     private static ParsedDropTableImport DuplicateRotationImport() => new(
-        SourceUrl: null, SourcePath: "test.html", DownloadedAt: null, SourceLastUpdate: null,
+        SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl), DownloadedAt: DateTimeOffset.UnixEpoch, SourceLastUpdate: "08 April, 2026",
         ImportedAt: DateTimeOffset.UnixEpoch,
         RewardItems:
         [
@@ -127,7 +127,7 @@ public sealed class WishlistFarmingMissionsDedupeTests
         Warnings: []);
 
     private static ParsedDropTableImport TwoMissionsIdenticalAfterMergeImport() => new(
-        SourceUrl: null, SourcePath: "test.html", DownloadedAt: null, SourceLastUpdate: null,
+        SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl), DownloadedAt: DateTimeOffset.UnixEpoch, SourceLastUpdate: "08 April, 2026",
         ImportedAt: DateTimeOffset.UnixEpoch,
         RewardItems:
         [
@@ -162,7 +162,6 @@ public sealed class WishlistFarmingMissionsDedupeTests
         var samplePath = Path.Combine(AppContext.BaseDirectory, "TestData", "warframe-drop-tables-sample.html");
         var html = await File.ReadAllTextAsync(samplePath);
         var source = new StoredDropTableSource(
-            samplePath,
             html,
             new DropTableSourceProvenance(new Uri(DropTableSourceDefaults.SourceUrl), DateTimeOffset.UnixEpoch, "08 April, 2026"));
         var import = new HtmlDropTableParser().Parse(source, DateTimeOffset.UnixEpoch);

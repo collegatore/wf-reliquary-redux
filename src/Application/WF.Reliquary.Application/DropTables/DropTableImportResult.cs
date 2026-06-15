@@ -2,7 +2,6 @@ namespace WF.Reliquary.Application.DropTables;
 
 public sealed record DropTableImportResult(
     bool Succeeded,
-    string? SourcePath,
     string? SourceLastUpdate,
     DateTimeOffset? ImportedAt,
     DropTableImportCounts Counts,
@@ -13,7 +12,6 @@ public sealed record DropTableImportResult(
     {
         return new DropTableImportResult(
             true,
-            import.SourcePath,
             import.SourceLastUpdate,
             import.ImportedAt,
             import.Counts,
@@ -23,13 +21,11 @@ public sealed record DropTableImportResult(
 
     public static DropTableImportResult Failure(
         string errorMessage,
-        string? sourcePath = null,
         string? sourceLastUpdate = null,
         IReadOnlyList<string>? warnings = null)
     {
         return new DropTableImportResult(
             false,
-            sourcePath,
             sourceLastUpdate,
             null,
             new DropTableImportCounts(0, 0, 0, 0, 0, 0),

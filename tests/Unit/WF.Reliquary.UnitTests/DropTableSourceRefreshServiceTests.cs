@@ -9,30 +9,16 @@ namespace WF.Reliquary.UnitTests;
 public sealed class DropTableSourceRefreshServiceTests
 {
     [Test]
-    public void DefaultOptions_UsePreparationPhaseSourceUrl()
-    {
-        var options = DropTableSourceOptions.CreateDefault();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(options.SourceUrl.ToString(), Is.EqualTo(DropTableSourceDefaults.SourceUrl));
-            Assert.That(options.FileName, Is.EqualTo(DropTableSourceDefaults.FileName));
-        });
-    }
-
-    [Test]
     public async Task GetStatusAsync_ReturnsMissingStatusWhenNoFileExists()
     {
-        var options = DropTableSourceOptions.CreateDefault();
         var store = new Mock<IDropTableSourceStore>();
-        var service = CreateService(options, sourceStore: store.Object);
+        var service = CreateService(sourceStore: store.Object);
 
         var status = await service.GetStatusAsync();
 
         Assert.Multiple(() =>
         {
-            Assert.That(status.FileExists, Is.False);
-            Assert.That(status.SourceUrl, Is.EqualTo(options.SourceUrl));
+            Assert.That(status.FileExists, Is.False);            
             Assert.That(status.LastUpdate, Is.Null);
         });
     }
@@ -42,11 +28,9 @@ public sealed class DropTableSourceRefreshServiceTests
     {
         var downloadedAt = new DateTimeOffset(2026, 4, 19, 12, 0, 0, TimeSpan.Zero);
         var configuredSourceUrl = new Uri("https://example.test/custom.html");
-        var options = DropTableSourceOptions.CreateDefault();
-        var content = new DropTableSourceContent(configuredSourceUrl, "<b>Last Update:</b> 08 April, 2026", downloadedAt);
+        var download = new DropTableDownload(configuredSourceUrl, "<b>Last Update:</b> 08 April, 2026", downloadedAt);
         var stored = new StoredDropTableSource(
-            options.FileName,
-            content.Html,
+            download.Html,
             new DropTableSourceProvenance(configuredSourceUrl, downloadedAt, "08 April, 2026"));
         var client = new Mock<IDropTableSourceClient>();
         var store = new Mock<IDropTableSourceStore>();
@@ -58,15 +42,15 @@ public sealed class DropTableSourceRefreshServiceTests
             .ReturnsAsync(new DropTableSourceSettings(configuredSourceUrl));
         client
             .Setup(client => client.DownloadAsync(configuredSourceUrl, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(content);
+            .ReturnsAsync(download);
         store
-            .Setup(store => store.LoadAsync(options.FileName, It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         metadataReader
-            .Setup(reader => reader.ReadLastUpdate(content.Html))
+            .Setup(reader => reader.ReadLastUpdate(download.Html))
             .Returns("08 April, 2026");
 
-        var service = CreateService(options, client.Object, store.Object, metadataReader.Object, settingsStore.Object);
+        var service = CreateService(client.Object, store.Object, metadataReader.Object, settingsStore.Object);
 
         var result = await service.RefreshAsync();
 
@@ -82,7 +66,6 @@ public sealed class DropTableSourceRefreshServiceTests
         store.Verify(
             store => store.SaveAsync(
                 It.Is<DropTableSourceContent>(saved => saved.LastUpdate == "08 April, 2026"),
-                options.FileName,
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -90,20 +73,20 @@ public sealed class DropTableSourceRefreshServiceTests
     [Test]
     public async Task RefreshAsync_WhenLastUpdateCannotBeParsed_FailsWithoutSaving()
     {
-        var options = DropTableSourceOptions.CreateDefault();
-        var content = new DropTableSourceContent(options.SourceUrl, "<html>No Last Update here</html>", DateTimeOffset.UnixEpoch);
+        var defaultUrl = new Uri(DropTableSourceDefaults.SourceUrl);
+        var download = new DropTableDownload(defaultUrl, "<html>No Last Update here</html>", DateTimeOffset.UnixEpoch);
         var client = new Mock<IDropTableSourceClient>();
         var store = new Mock<IDropTableSourceStore>();
         var metadataReader = new Mock<IDropTableMetadataReader>();
 
         client
-            .Setup(client => client.DownloadAsync(options.SourceUrl, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(content);
+            .Setup(client => client.DownloadAsync(defaultUrl, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(download);
         metadataReader
-            .Setup(reader => reader.ReadLastUpdate(content.Html))
+            .Setup(reader => reader.ReadLastUpdate(download.Html))
             .Returns((string?)null);
 
-        var service = CreateService(options, client.Object, store.Object, metadataReader.Object);
+        var service = CreateService(client.Object, store.Object, metadataReader.Object);
 
         var result = await service.RefreshAsync();
 
@@ -114,29 +97,28 @@ public sealed class DropTableSourceRefreshServiceTests
             Assert.That(result.Status.FileExists, Is.False);
         });
         store.Verify(
-            store => store.SaveAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            store => store.SaveAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     [Test]
     public async Task RefreshAsync_WhenDownloadFails_KeepsExistingStatus()
     {
-        var options = DropTableSourceOptions.CreateDefault();
+        var defaultUrl = new Uri(DropTableSourceDefaults.SourceUrl);
         var stored = new StoredDropTableSource(
-            "stored.html",
             "<b>Last Update:</b> 08 April, 2026",
-            new DropTableSourceProvenance(options.SourceUrl, DateTimeOffset.UnixEpoch, "08 April, 2026"));
+            new DropTableSourceProvenance(defaultUrl, DateTimeOffset.UnixEpoch, "08 April, 2026"));
         var client = new Mock<IDropTableSourceClient>();
         var store = new Mock<IDropTableSourceStore>();
         var metadataReader = new Mock<IDropTableMetadataReader>();
 
         client
-            .Setup(client => client.DownloadAsync(options.SourceUrl, It.IsAny<CancellationToken>()))
+            .Setup(client => client.DownloadAsync(defaultUrl, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("network unavailable"));
         store
-            .Setup(store => store.LoadAsync(options.FileName, It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
-        var service = CreateService(options, client.Object, store.Object, metadataReader.Object);
+        var service = CreateService(client.Object, store.Object, metadataReader.Object);
 
         var result = await service.RefreshAsync();
 
@@ -149,7 +131,7 @@ public sealed class DropTableSourceRefreshServiceTests
         });
         metadataReader.Verify(reader => reader.ReadLastUpdate(stored.Html), Times.Never);
         store.Verify(
-            store => store.SaveAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            store => store.SaveAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -172,20 +154,16 @@ public sealed class DropTableSourceRefreshServiceTests
     }
 
     private static DropTableSourceRefreshService CreateService(
-        DropTableSourceOptions? options = null,
         IDropTableSourceClient? sourceClient = null,
         IDropTableSourceStore? sourceStore = null,
         IDropTableMetadataReader? metadataReader = null,
         IDropTableSourceSettingsStore? settingsStore = null)
     {
-        options ??= DropTableSourceOptions.CreateDefault();
-
         return new DropTableSourceRefreshService(
-            options,
             sourceClient ?? Mock.Of<IDropTableSourceClient>(),
             sourceStore ?? Mock.Of<IDropTableSourceStore>(),
             metadataReader ?? Mock.Of<IDropTableMetadataReader>(),
-            settingsStore ?? DefaultSettingsStore(options.SourceUrl));
+            settingsStore ?? DefaultSettingsStore(new Uri(DropTableSourceDefaults.SourceUrl)));
     }
 
     private static IDropTableSourceSettingsStore DefaultSettingsStore(Uri sourceUrl)

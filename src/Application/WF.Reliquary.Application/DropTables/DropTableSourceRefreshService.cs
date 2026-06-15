@@ -4,20 +4,17 @@ namespace WF.Reliquary.Application.DropTables;
 
 public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkflow
 {
-    private readonly DropTableSourceOptions options;
     private readonly IDropTableSourceClient sourceClient;
     private readonly IDropTableSourceStore sourceStore;
     private readonly IDropTableMetadataReader metadataReader;
     private readonly IDropTableSourceSettingsStore settingsStore;
 
     public DropTableSourceRefreshService(
-        DropTableSourceOptions options,
         IDropTableSourceClient sourceClient,
         IDropTableSourceStore sourceStore,
         IDropTableMetadataReader metadataReader,
         IDropTableSourceSettingsStore settingsStore)
     {
-        this.options = options;
         this.sourceClient = sourceClient;
         this.sourceStore = sourceStore;
         this.metadataReader = metadataReader;
@@ -26,22 +23,17 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
 
     public async Task<DropTableSourceStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
-        var settings = await settingsStore.LoadAsync(cancellationToken);
-        var stored = await sourceStore.LoadAsync(options.FileName, cancellationToken);
+        var stored = await sourceStore.LoadAsync(cancellationToken);
 
         if (stored is null)
         {
-            return new DropTableSourceStatus(false, settings.SourceUrl, null, null, null);
+            return new DropTableSourceStatus(false, null, null);
         }
-
-        var sourceUrl = stored.Provenance?.SourceUrl ?? settings.SourceUrl;
 
         return new DropTableSourceStatus(
             true,
-            sourceUrl,
-            stored.FilePath,
-            stored.Provenance?.DownloadedAt,
-            stored.Provenance?.LastUpdate);
+            stored.Provenance.DownloadedAt,
+            stored.Provenance.LastUpdate);
     }
 
     public async Task<DropTableRefreshResult> RefreshAsync(CancellationToken cancellationToken = default)
@@ -49,15 +41,17 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
         try
         {
             var settings = await settingsStore.LoadAsync(cancellationToken);
-            var content = await sourceClient.DownloadAsync(settings.SourceUrl, cancellationToken);
-            var lastUpdate = metadataReader.ReadLastUpdate(content.Html);
+            var download = await sourceClient.DownloadAsync(settings.SourceUrl, cancellationToken);
+            var lastUpdate = metadataReader.ReadLastUpdate(download.Html);
 
             if (string.IsNullOrWhiteSpace(lastUpdate))
             {
                 throw new InvalidOperationException("Downloaded drop-table file does not contain a Last Update value.");
             }
 
-            await sourceStore.SaveAsync(content with { LastUpdate = lastUpdate }, options.FileName, cancellationToken);
+            await sourceStore.SaveAsync(
+                new DropTableSourceContent(download.SourceUrl, download.Html, download.DownloadedAt, lastUpdate),
+                cancellationToken);
 
             var status = await GetStatusAsync(cancellationToken);
             return DropTableRefreshResult.Success(status);
@@ -67,6 +61,11 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
             var status = await GetStatusAsync(CancellationToken.None);
             return DropTableRefreshResult.Failure(status, ex.Message);
         }
+    }
+
+    public Task<bool> HasStoredSourcesAsync(CancellationToken cancellationToken = default)
+    {
+        return sourceStore.HasAnyAsync(cancellationToken);
     }
 
     public Task<DropTableSourceSettings> GetSettingsAsync(CancellationToken cancellationToken = default)

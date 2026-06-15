@@ -640,24 +640,29 @@
         </TabItem.Header>
         <StackPanel Margin="0,12,0,0" Spacing="16">
 
-          <!-- Section: File download -->
+          <!-- Section: Source acquisition -->
           <StackPanel Spacing="8">
-            <TextBlock FontWeight="SemiBold" Text="File download" />
+            <TextBlock FontWeight="SemiBold" Text="Source acquisition" />
             <TextBlock
                 Text="{Binding DropTables.StatusText}"
                 TextWrapping="Wrap" />
-            <Button
-                Padding="14,8"
-                HorizontalAlignment="Left"
-                Command="{Binding DropTables.DownloadCommand}"
-                Content="Download drop tables" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button
+                  Padding="14,8"
+                  Command="{Binding DropTables.DownloadCommand}"
+                  Content="Download from URL" />
+              <Button
+                  Padding="14,8"
+                  Command="{Binding DropTables.ReadFromFileCommand}"
+                  Content="Read from file" />
+            </StackPanel>
           </StackPanel>
 
           <Separator />
 
-          <!-- Section: File import -->
+          <!-- Section: Import -->
           <StackPanel Spacing="8">
-            <TextBlock FontWeight="SemiBold" Text="File import" />
+            <TextBlock FontWeight="SemiBold" Text="Import" />
             <TextBlock
                 Text="{Binding DropTables.ImportStatusText}"
                 TextWrapping="Wrap" />
@@ -665,7 +670,20 @@
                 Padding="14,8"
                 HorizontalAlignment="Left"
                 Command="{Binding DropTables.ImportCommand}"
-                Content="Import stored file" />
+                Content="Import stored source" />
+          </StackPanel>
+
+          <Separator />
+
+          <!-- Section: Export -->
+          <StackPanel Spacing="8">
+            <TextBlock FontWeight="SemiBold" Text="Export" />
+            <Button
+                Padding="14,8"
+                HorizontalAlignment="Left"
+                IsEnabled="{Binding DropTables.HasStoredSources}"
+                Command="{Binding DropTables.ExportSourcesCommand}"
+                Content="Export stored sources" />
           </StackPanel>
 
           <!-- Operation status (feedback for last action) -->

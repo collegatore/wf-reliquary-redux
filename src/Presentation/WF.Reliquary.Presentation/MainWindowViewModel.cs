@@ -11,25 +11,38 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly IDropTableSourceRefreshWorkflow refreshWorkflow;
     private readonly IDropTableImportWorkflow importWorkflow;
+    private readonly IDropTableLocalFileSourceWorkflow localFileWorkflow;
+    private readonly IDropTableSourceExporter sourceExporter;
     private readonly IImportMetadataReader importMetadataReader;
-    private string statusText = "Checking drop-table file status...";
+    private string statusText = "Checking stored source...";
     private string operationStatusText = string.Empty;
-    private string importStatusText = "No drop-table file imported yet";
+    private string importStatusText = "No source imported yet.";
     private bool isBusy;
+    private bool hasStoredSources;
 
     public MainWindowViewModel(
         IDropTableSourceRefreshWorkflow refreshWorkflow,
         IDropTableImportWorkflow importWorkflow,
-        IImportMetadataReader importMetadataReader)
+        IImportMetadataReader importMetadataReader,
+        IDropTableLocalFileSourceWorkflow localFileWorkflow,
+        IDropTableSourceExporter sourceExporter)
     {
         this.refreshWorkflow = refreshWorkflow;
         this.importWorkflow = importWorkflow;
+        this.localFileWorkflow = localFileWorkflow;
+        this.sourceExporter = sourceExporter;
         this.importMetadataReader = importMetadataReader;
         DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
-        ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy);
+        ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy && HasStoredSources);
+        ReadFromFileCommand = new AsyncRelayCommand(ReadFromFileAsync, () => !IsBusy);
+        ExportSourcesCommand = new AsyncRelayCommand(ExportSourcesAsync, () => !IsBusy && HasStoredSources);
     }
 
     public Func<Task>? OnImportSucceeded { get; set; }
+
+    public Func<Task<string?>>? PickSourceFileAsync { get; set; }
+
+    public Func<Task<string?>>? PickExportFolderAsync { get; set; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -56,6 +69,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             {
                 DownloadCommand.RaiseCanExecuteChanged();
                 ImportCommand.RaiseCanExecuteChanged();
+                ReadFromFileCommand.RaiseCanExecuteChanged();
+                ExportSourcesCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool HasStoredSources
+    {
+        get => hasStoredSources;
+        private set
+        {
+            if (SetProperty(ref hasStoredSources, value))
+            {
+                ImportCommand.RaiseCanExecuteChanged();
+                ExportSourcesCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -70,10 +98,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public AsyncRelayCommand ImportCommand { get; }
 
+    public AsyncRelayCommand ReadFromFileCommand { get; }
+
+    public AsyncRelayCommand ExportSourcesCommand { get; }
+
     public async Task LoadStatusAsync(CancellationToken cancellationToken = default)
     {
         ApplyStatus(await refreshWorkflow.GetStatusAsync(cancellationToken));
         await RefreshImportStatusAsync(cancellationToken);
+        HasStoredSources = await refreshWorkflow.HasStoredSourcesAsync(cancellationToken);
     }
 
     public async Task RefreshAsync()
@@ -84,15 +117,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         IsBusy = true;
-        OperationStatusText = "Downloading drop-table file...";
+        OperationStatusText = "Downloading source from URL...";
 
         try
         {
             var result = await refreshWorkflow.RefreshAsync();
             ApplyStatus(result.Status);
             OperationStatusText = result.Succeeded
-                ? "Drop-table file updated."
+                ? $"Source downloaded. {LastUpdateText(result.Status.LastUpdate)}."
                 : $"Download failed: {result.ErrorMessage}";
+
+            if (result.Succeeded)
+            {
+                HasStoredSources = true;
+            }
         }
         finally
         {
@@ -108,7 +146,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         IsBusy = true;
-        OperationStatusText = "Importing stored drop-table file...";
+        OperationStatusText = "Importing stored source...";
 
         try
         {
@@ -132,34 +170,100 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public async Task ReadFromFileAsync()
+    {
+        if (IsBusy || PickSourceFileAsync is null)
+        {
+            return;
+        }
+
+        var path = await PickSourceFileAsync();
+        if (path is null)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        OperationStatusText = "Reading source from file...";
+
+        try
+        {
+            var result = await localFileWorkflow.RegisterFromFileAsync(path);
+            if (result.Succeeded)
+            {
+                ApplyStatus(await refreshWorkflow.GetStatusAsync());
+                HasStoredSources = true;
+                OperationStatusText = $"Source read from file. {LastUpdateText(result.LastUpdate)}.";
+            }
+            else
+            {
+                OperationStatusText = $"Reading file failed: {result.ErrorMessage}";
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    public async Task ExportSourcesAsync()
+    {
+        if (IsBusy || PickExportFolderAsync is null)
+        {
+            return;
+        }
+
+        var folder = await PickExportFolderAsync();
+        if (folder is null)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        OperationStatusText = "Exporting stored sources...";
+
+        try
+        {
+            var result = await sourceExporter.ExportAllAsync(folder);
+            OperationStatusText = result.Succeeded
+                ? $"Exported {result.FileCount} source file(s) to the selected folder."
+                : $"Export failed: {result.ErrorMessage}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     private async Task RefreshImportStatusAsync(CancellationToken cancellationToken = default)
     {
         var version = await importMetadataReader.GetImportedVersionAsync(cancellationToken);
         ImportStatusText = version is null
-            ? "No drop-table file imported yet"
-            : $"Imported file version: {version}";
+            ? "Source data not imported."
+            : $"Source data imported. {LastUpdateText(version)}.";
     }
 
     private void ApplyStatus(DropTableSourceStatus status)
     {
         if (!status.FileExists)
         {
-            StatusText = "No drop-table file downloaded yet.";
+            StatusText = "Source data not aquired.";
             return;
         }
 
-        StatusText = string.IsNullOrWhiteSpace(status.LastUpdate)
-            ? "Drop-table file exists. Downloaded file version unavailable."
-            : $"Downloaded file version: {status.LastUpdate}";
+        StatusText = $"Source data ready. {LastUpdateText(status.LastUpdate)}.";
+    }
+
+    private static string LastUpdateText(string? lastUpdate)
+    {
+        return string.IsNullOrWhiteSpace(lastUpdate)
+            ? "Last Update unavailable"
+            : $"Last Update: {lastUpdate}";
     }
 
     private static string ImportSuccessText(DropTableImportResult result)
     {
-        var lastUpdate = string.IsNullOrWhiteSpace(result.SourceLastUpdate)
-            ? "Last Update unavailable"
-            : $"Last Update: {result.SourceLastUpdate}";
-
-        return $"Import completed. {lastUpdate}. Relics: {result.Counts.Relics}; relic rewards: {result.Counts.RelicRewards}; mission sources: {result.Counts.MissionSources}; mission rewards: {result.Counts.MissionRewards}.";
+        return $"Import completed. {LastUpdateText(result.SourceLastUpdate)}. Relics: {result.Counts.Relics}; relic rewards: {result.Counts.RelicRewards}; mission sources: {result.Counts.MissionSources}; mission rewards: {result.Counts.MissionRewards}.";
     }
 
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

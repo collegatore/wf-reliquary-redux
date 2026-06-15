@@ -47,7 +47,6 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .HasColumnName("imported_at");
 
                     b.Property<string>("SourceFilePath")
-                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("source_file_path");
 
@@ -343,6 +342,38 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("reward_rotations", (string)null);
+                });
+
+            modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.SourceFileEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("content");
+
+                    b.Property<string>("DownloadedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("downloaded_at");
+
+                    b.Property<string>("SourceLastUpdate")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source_last_update");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source_url");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("source_files", (string)null);
                 });
 
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.UserPreferencesEntity", b =>

@@ -52,7 +52,9 @@ public sealed class MainWindowShellViewModelTests
         var dropTables = new MainWindowViewModel(
             Mock.Of<IDropTableSourceRefreshWorkflow>(),
             Mock.Of<IDropTableImportWorkflow>(),
-            Mock.Of<IImportMetadataReader>());
+            Mock.Of<IImportMetadataReader>(),
+            Mock.Of<IDropTableLocalFileSourceWorkflow>(),
+            Mock.Of<IDropTableSourceExporter>());
 
         var primeGearReader = new Mock<IPrimeGearReader>();
         primeGearReader.Setup(r => r.GetAllAsync(default)).ReturnsAsync([]);

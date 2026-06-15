@@ -15,12 +15,10 @@ public static class ReliquaryServiceFactory
 
     public static IDropTableSourceRefreshWorkflow CreateDropTableSourceRefreshService(IUserSettingsStore? userSettingsStore = null)
     {
-        var options = DropTableSourceOptions.CreateDefault();
         var settingsStore = (userSettingsStore as IDropTableSourceSettingsStore)
             ?? new LocalUserSettingsStore();
 
         return new DropTableSourceRefreshService(
-            options,
             new HttpDropTableSourceClient(new HttpClient()),
             new LocalDropTableSourceStore(),
             new HtmlDropTableMetadataReader(),
@@ -29,13 +27,22 @@ public static class ReliquaryServiceFactory
 
     public static IDropTableImportWorkflow CreateDropTableImportService()
     {
-        var options = DropTableSourceOptions.CreateDefault();
-
         return new DropTableImportService(
-            options,
             new LocalDropTableSourceStore(),
             new HtmlDropTableParser(),
             new SqliteDropTableImportStore());
+    }
+
+    public static IDropTableLocalFileSourceWorkflow CreateDropTableLocalFileSourceWorkflow()
+    {
+        return new DropTableLocalFileSourceWorkflow(
+            new LocalDropTableSourceStore(),
+            new HtmlDropTableMetadataReader());
+    }
+
+    public static IDropTableSourceExporter CreateDropTableSourceExporter()
+    {
+        return new LocalDropTableSourceExporter();
     }
 
     public static IPrimeGearReader CreatePrimeGearReader()

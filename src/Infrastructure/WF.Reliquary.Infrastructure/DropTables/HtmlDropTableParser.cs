@@ -33,10 +33,9 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
         }
 
         return new ParsedDropTableImport(
-            source.Provenance?.SourceUrl,
-            source.FilePath,
-            source.Provenance?.DownloadedAt,
-            source.Provenance?.LastUpdate,
+            source.Provenance.SourceUrl,
+            source.Provenance.DownloadedAt,
+            source.Provenance.LastUpdate,
             importedAt,
             rewardItems.Values.OrderBy(item => item.NormalizedName, StringComparer.Ordinal).ToArray(),
             relicData.Relics,

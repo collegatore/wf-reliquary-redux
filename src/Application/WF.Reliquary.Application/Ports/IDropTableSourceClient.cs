@@ -4,5 +4,5 @@ namespace WF.Reliquary.Application.Ports;
 
 public interface IDropTableSourceClient
 {
-    Task<DropTableSourceContent> DownloadAsync(Uri sourceUrl, CancellationToken cancellationToken = default);
+    Task<DropTableDownload> DownloadAsync(Uri sourceUrl, CancellationToken cancellationToken = default);
 }

@@ -12,25 +12,22 @@ public sealed class MainWindowViewModelTests
     [Test]
     public async Task LoadStatusAsync_ShowsEmptyStateWhenNoFileExists()
     {
-        var workflow = CreateWorkflow(DropTableSourceStatus.Missing(DropTableSourceOptions.CreateDefault()));
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object);
+        var workflow = CreateWorkflow(DropTableSourceStatus.Missing());
+        var viewModel = CreateViewModel(workflow.Object);
 
         await viewModel.LoadStatusAsync();
 
-        Assert.That(viewModel.StatusText, Is.EqualTo("No drop-table file downloaded yet."));
+        Assert.That(viewModel.StatusText, Is.EqualTo("Source data not aquired."));
     }
 
     [Test]
     public async Task LoadStatusAsync_ShowsLastUpdateWhenAvailable()
     {
-        var viewModel = new MainWindowViewModel(
-            CreateWorkflow(StatusWithLastUpdate("08 April, 2026")).Object,
-            CreateImportWorkflow().Object,
-            CreateImportMetadataReader().Object);
+        var viewModel = CreateViewModel(CreateWorkflow(StatusWithLastUpdate("08 April, 2026")).Object);
 
         await viewModel.LoadStatusAsync();
 
-        Assert.That(viewModel.StatusText, Is.EqualTo("Downloaded file version: 08 April, 2026"));
+        Assert.That(viewModel.StatusText, Is.EqualTo("Source data ready. Last Update: 08 April, 2026."));
     }
 
     [Test]
@@ -41,13 +38,13 @@ public sealed class MainWindowViewModelTests
         workflow
             .Setup(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DropTableRefreshResult.Failure(status, "network unavailable"));
-        var viewModel = new MainWindowViewModel(workflow.Object, CreateImportWorkflow().Object, CreateImportMetadataReader().Object);
+        var viewModel = CreateViewModel(workflow.Object);
 
         await viewModel.RefreshAsync();
 
         Assert.Multiple(() =>
         {
-            Assert.That(viewModel.StatusText, Is.EqualTo("Downloaded file version: 08 April, 2026"));
+            Assert.That(viewModel.StatusText, Is.EqualTo("Source data ready. Last Update: 08 April, 2026."));
             Assert.That(viewModel.OperationStatusText, Is.EqualTo("Download failed: network unavailable"));
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.DownloadCommand.CanExecute(null), Is.True);
@@ -57,9 +54,10 @@ public sealed class MainWindowViewModelTests
     [Test]
     public async Task ImportAsync_InvokesImportWorkflowWithoutRefreshingSource()
     {
-        var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"));
+        var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"), hasStoredSources: true);
         var importWorkflow = CreateImportWorkflow(DropTableImportResult.Success(SampleParsedImport()));
-        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object, CreateImportMetadataReader().Object);
+        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object);
+        await viewModel.LoadStatusAsync();
 
         await viewModel.ImportAsync();
 
@@ -77,9 +75,10 @@ public sealed class MainWindowViewModelTests
     [Test]
     public async Task ImportAsync_ShowsFailureAndKeepsCommandAvailable()
     {
-        var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"));
+        var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"), hasStoredSources: true);
         var importWorkflow = CreateImportWorkflow(DropTableImportResult.Failure("source file missing"));
-        var viewModel = new MainWindowViewModel(refreshWorkflow.Object, importWorkflow.Object, CreateImportMetadataReader().Object);
+        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object);
+        await viewModel.LoadStatusAsync();
 
         await viewModel.ImportAsync();
 
@@ -92,7 +91,20 @@ public sealed class MainWindowViewModelTests
         refreshWorkflow.Verify(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private static Mock<IDropTableSourceRefreshWorkflow> CreateWorkflow(DropTableSourceStatus status)
+    private static MainWindowViewModel CreateViewModel(
+        IDropTableSourceRefreshWorkflow? refreshWorkflow = null,
+        IDropTableImportWorkflow? importWorkflow = null,
+        IImportMetadataReader? importMetadataReader = null)
+    {
+        return new MainWindowViewModel(
+            refreshWorkflow ?? Mock.Of<IDropTableSourceRefreshWorkflow>(),
+            importWorkflow ?? CreateImportWorkflow().Object,
+            importMetadataReader ?? CreateImportMetadataReader().Object,
+            Mock.Of<IDropTableLocalFileSourceWorkflow>(),
+            Mock.Of<IDropTableSourceExporter>());
+    }
+
+    private static Mock<IDropTableSourceRefreshWorkflow> CreateWorkflow(DropTableSourceStatus status, bool hasStoredSources = false)
     {
         var workflow = new Mock<IDropTableSourceRefreshWorkflow>();
         workflow
@@ -100,10 +112,13 @@ public sealed class MainWindowViewModelTests
             .ReturnsAsync(status);
         workflow
             .Setup(workflow => workflow.GetSettingsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DropTableSourceSettings(status.SourceUrl));
+            .ReturnsAsync(new DropTableSourceSettings(new Uri(DropTableSourceDefaults.SourceUrl)));
         workflow
             .Setup(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DropTableRefreshResult.Success(status));
+        workflow
+            .Setup(workflow => workflow.HasStoredSourcesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(hasStoredSources);
 
         return workflow;
     }
@@ -132,7 +147,6 @@ public sealed class MainWindowViewModelTests
     {
         return new ParsedDropTableImport(
             new Uri(DropTableSourceDefaults.SourceUrl),
-            "stored.html",
             DateTimeOffset.UnixEpoch,
             "08 April, 2026",
             DateTimeOffset.UnixEpoch,
@@ -147,12 +161,8 @@ public sealed class MainWindowViewModelTests
 
     private static DropTableSourceStatus StatusWithLastUpdate(string lastUpdate)
     {
-        var options = DropTableSourceOptions.CreateDefault();
-
         return new DropTableSourceStatus(
-            true,
-            options.SourceUrl,
-            "stored.html",
+            true,            
             DateTimeOffset.UnixEpoch,
             lastUpdate);
     }

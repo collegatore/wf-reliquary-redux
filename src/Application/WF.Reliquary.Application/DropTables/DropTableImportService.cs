@@ -4,20 +4,17 @@ namespace WF.Reliquary.Application.DropTables;
 
 public sealed class DropTableImportService : IDropTableImportWorkflow
 {
-    private readonly DropTableSourceOptions options;
     private readonly IDropTableSourceStore sourceStore;
     private readonly IDropTableParser parser;
     private readonly IDropTableImportStore importStore;
     private readonly Func<DateTimeOffset> now;
 
     public DropTableImportService(
-        DropTableSourceOptions options,
         IDropTableSourceStore sourceStore,
         IDropTableParser parser,
         IDropTableImportStore importStore,
         Func<DateTimeOffset>? now = null)
     {
-        this.options = options;
         this.sourceStore = sourceStore;
         this.parser = parser;
         this.importStore = importStore;
@@ -30,7 +27,7 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
 
         try
         {
-            stored = await sourceStore.LoadAsync(options.FileName, cancellationToken);
+            stored = await sourceStore.LoadAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -50,7 +47,7 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return DropTableImportResult.Failure(ex.Message, stored.FilePath, stored.Provenance?.LastUpdate);
+            return DropTableImportResult.Failure(ex.Message, stored.Provenance.LastUpdate);
         }
 
         try
@@ -62,7 +59,6 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
         {
             return DropTableImportResult.Failure(
                 $"Unable to persist parsed drop-table import: {ex.Message}",
-                parsed.SourcePath,
                 parsed.SourceLastUpdate,
                 parsed.Warnings);
         }

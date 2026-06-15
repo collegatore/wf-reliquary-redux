@@ -2,13 +2,11 @@ namespace WF.Reliquary.Application.DropTables;
 
 public sealed record DropTableSourceStatus(
     bool FileExists,
-    Uri SourceUrl,
-    string? FilePath,
     DateTimeOffset? DownloadedAt,
     string? LastUpdate)
 {
-    public static DropTableSourceStatus Missing(DropTableSourceOptions options)
+    public static DropTableSourceStatus Missing()
     {
-        return new DropTableSourceStatus(false, options.SourceUrl, null, null, null);
+        return new DropTableSourceStatus(false, null, null);
     }
 }
