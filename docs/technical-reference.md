@@ -131,6 +131,20 @@ Applies to **all persistent state**: database data, settings files, config files
 
 - **Card display** — the rationale behind the relic and farming-mission cards (the ~5–10s reward-match use case, verbatim names, tier accent bars, the light-theme palette, and font-scaled card widths) is documented in [card-display-design.md](card-display-design.md).
 
+## UI Concurrency
+
+The Presentation layer must never block the UI thread. The contract:
+
+- **SQLite is sync-over-async.** `Microsoft.Data.Sqlite` runs its `…Async` methods *synchronously*, so awaiting EF Core calls does **not** yield the UI thread. Offloading is therefore mandatory and lives in **Infrastructure**, not the consumer.
+- **The data-context seam.** `ReliquaryDbExecutor` (`Infrastructure/Storage/`) owns each `ReliquaryDbContext` lifetime and runs the whole unit of work inside one `Task.Run`. Every `Sqlite*` store/reader routes its method body through `executor.RunAsync(...)` — one offload per logical operation, never per EF call, never per consumer method. The context stays confined to that single thread. Infrastructure delegates may use `ConfigureAwait(false)`.
+- **Synchronous CPU adapters offload themselves.** `IDropTableParser.ParseAsync` wraps the regex-heavy parse in `Task.Run` inside `HtmlDropTableParser`.
+- **ViewModels never call `Task.Run` and never use `ConfigureAwait(false)`** — work is already offloaded below them, and continuations must resume on the UI thread to mutate bound `ObservableCollection`s. (Enforced by `UiConcurrencyContractTests`.)
+- **MVVM plumbing** uses `CommunityToolkit.Mvvm` (`ObservableObject`, `[ObservableProperty]`, `AsyncRelayCommand` with built-in `IsRunning`/reentrancy) and `AsyncAwaitBestPractices` (`SafeFireAndForget` for constructor loads and property-setter persistence).
+- **Failures are observed.** No discarded async tasks: fire-and-forget goes through `SafeFireAndForget`; commands catch and report. All failures route to `IErrorReporter` (the toast + log surface is delivered by the `error-reporting-surface` change; an interim `NoOpErrorReporter` is wired via `AppErrors.Reporter`, plus a global `SafeFireAndForget`/`TaskScheduler.UnobservedTaskException` handler in `Program`).
+- **Busy + reentrancy.** `BusyScope` gives commands a busy state and a reentrancy guard. Content views (Prime Gear / Relics / Missions) expose `IsBusy` and show an in-content "Updating…" indicator; global Drop Tables source operations use the footer spinner.
+- **Reloads are latest-wins.** `ReloadGate` cancels a superseded reload's `CancellationToken`; reloads check the token after their awaited fetches and only then mutate bound collections, so a cancelled reload never leaves a half-rebuilt view.
+- **Blocking-on-async is confined to the startup/shutdown boundary** — only `MainWindow`'s constructor and `OnWindowClosing` may `Task.Run(...).GetAwaiter().GetResult()` (no message loop to starve there). No interactive code path blocks. (Enforced by `UiConcurrencyContractTests`.)
+
 ## Code Conventions
 
 - All I/O methods are `async` and accept `CancellationToken`.

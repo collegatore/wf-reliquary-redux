@@ -23,7 +23,7 @@ public sealed class DropTableImportServiceTests
             Assert.That(result.Succeeded, Is.False);
             Assert.That(result.ErrorMessage, Does.Contain("downloaded before import"));
         });
-        parser.Verify(parser => parser.Parse(It.IsAny<StoredDropTableSource>(), It.IsAny<DateTimeOffset>()), Times.Never);
+        parser.Verify(parser => parser.ParseAsync(It.IsAny<StoredDropTableSource>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
         importStore.Verify(store => store.ReplaceAsync(It.IsAny<ParsedDropTableImport>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -38,8 +38,8 @@ public sealed class DropTableImportServiceTests
             .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
-            .Setup(parser => parser.Parse(stored, It.IsAny<DateTimeOffset>()))
-            .Throws(new InvalidOperationException("Relics section missing"));
+            .Setup(parser => parser.ParseAsync(stored, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Relics section missing"));
         var service = CreateService(sourceStore: sourceStore.Object, parser: parser.Object, importStore: importStore.Object);
 
         var result = await service.ImportAsync();
@@ -65,8 +65,8 @@ public sealed class DropTableImportServiceTests
             .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
-            .Setup(parser => parser.Parse(stored, parsed.ImportedAt))
-            .Returns(parsed);
+            .Setup(parser => parser.ParseAsync(stored, parsed.ImportedAt, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(parsed);
         var service = CreateService(
             sourceStore: sourceStore.Object,
             parser: parser.Object,
@@ -97,8 +97,8 @@ public sealed class DropTableImportServiceTests
             .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
-            .Setup(parser => parser.Parse(stored, parsed.ImportedAt))
-            .Returns(parsed);
+            .Setup(parser => parser.ParseAsync(stored, parsed.ImportedAt, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(parsed);
         importStore
             .Setup(store => store.ReplaceAsync(parsed, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("database locked"));

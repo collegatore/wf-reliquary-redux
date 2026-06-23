@@ -91,7 +91,7 @@ public sealed class MainWindowShellViewModelTests
             Mock.Of<IDropTableImportStore>());
 
         var primeGearReader = new Mock<IPrimeGearReader>();
-        primeGearReader.Setup(r => r.GetAllAsync(default)).ReturnsAsync([]);
+        primeGearReader.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var primeGear = new PrimeGearViewModel(primeGearReader.Object, WishlistStore().Object, Mock.Of<IOwnedGearStore>());
 
         var wishlist = new WishlistViewModel(WishlistStore().Object, _ => Task.FromResult<string?>(null));
@@ -122,11 +122,11 @@ public sealed class MainWindowShellViewModelTests
     private static Mock<IWishlistStore> WishlistStore()
     {
         var mock = new Mock<IWishlistStore>();
-        mock.Setup(s => s.GetActiveAsync(default))
+        mock.Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new WishlistEntry(1, "Default", DateTimeOffset.UnixEpoch));
-        mock.Setup(s => s.GetAllAsync(default))
+        mock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([new WishlistEntry(1, "Default", DateTimeOffset.UnixEpoch)]);
-        mock.Setup(s => s.GetItemsAsync(It.IsAny<long>(), default))
+        mock.Setup(s => s.GetItemsAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         return mock;
     }
@@ -134,9 +134,9 @@ public sealed class MainWindowShellViewModelTests
     private static Mock<IProfileStore> ProfileStore()
     {
         var mock = new Mock<IProfileStore>();
-        mock.Setup(s => s.GetActiveAsync(default))
+        mock.Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ProfileEntry(1, "Default", DateTimeOffset.UnixEpoch));
-        mock.Setup(s => s.GetAllAsync(default))
+        mock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([new ProfileEntry(1, "Default", DateTimeOffset.UnixEpoch)]);
         return mock;
     }

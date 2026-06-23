@@ -170,22 +170,11 @@ public sealed class SettingsViewModelTests
     }
 }
 
-// Extension to allow awaiting AsyncRelayCommand.Execute in tests.
+// Convenience to await a Toolkit async command with no parameter in tests.
 file static class AsyncRelayCommandExtensions
 {
-    public static Task ExecuteAsync(this System.Windows.Input.ICommand command)
+    public static Task ExecuteAsync(this CommunityToolkit.Mvvm.Input.IAsyncRelayCommand command)
     {
-        if (command is AsyncRelayCommand arc)
-        {
-            return arc.ExecuteAsync();
-        }
-
-        command.Execute(null);
-        return Task.CompletedTask;
-    }
-
-    public static Task ExecuteAsync(this AsyncRelayCommand command)
-    {
-        return command.ExecuteTaskAsync();
+        return command.ExecuteAsync(null);
     }
 }

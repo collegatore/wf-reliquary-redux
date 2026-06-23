@@ -9,38 +9,39 @@ namespace WF.Reliquary.Infrastructure.DropTables;
 public sealed class SqliteWishlistFarmingMissionsReader : IWishlistFarmingMissionsReader
 {
     private readonly string databasePath;
-    private readonly DbContextOptions<ReliquaryDbContext> options;
+    private readonly ReliquaryDbExecutor executor;
     private readonly string sql;
 
     public SqliteWishlistFarmingMissionsReader(string? databasePath = null)
     {
         this.databasePath = databasePath ?? SqliteDropTableImportStore.DefaultDatabasePath();
-        options = ReliquaryDbContext.BuildOptions(this.databasePath);
+        executor = new ReliquaryDbExecutor(ReliquaryDbContext.BuildOptions(this.databasePath));
         sql = SqlQueryLoader.Load("GetWishlistFarmingMissions.sql");
     }
 
-    public async Task<IReadOnlyList<WishlistFarmingMissionGroupEntry>> GetMissionsForWishlistAsync(
+    public Task<IReadOnlyList<WishlistFarmingMissionGroupEntry>> GetMissionsForWishlistAsync(
         long wishlistId, CancellationToken cancellationToken = default)
-    {
-        if (!File.Exists(databasePath))
+        => executor.RunAsync<IReadOnlyList<WishlistFarmingMissionGroupEntry>>(async (context, ct) =>
         {
-            return [];
-        }
+            if (!File.Exists(databasePath))
+            {
+                return [];
+            }
 
-        try
-        {
-            await using var context = new ReliquaryDbContext(options);
-            var rows = await context.Database
-                .SqlQueryRaw<FarmingRow>(sql, new SqliteParameter("@wishlist_id", wishlistId))
-                .ToListAsync(cancellationToken);
+            try
+            {
+                var rows = await context.Database
+                    .SqlQueryRaw<FarmingRow>(sql, new SqliteParameter("@wishlist_id", wishlistId))
+                    .ToListAsync(ct)
+                    .ConfigureAwait(false);
 
-            return BuildGroups(rows);
-        }
-        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1)
-        {
-            return [];
-        }
-    }
+                return BuildGroups(rows);
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1)
+            {
+                return [];
+            }
+        }, cancellationToken);
 
     internal static IReadOnlyList<WishlistFarmingMissionGroupEntry> BuildGroups(List<FarmingRow> rows)
     {

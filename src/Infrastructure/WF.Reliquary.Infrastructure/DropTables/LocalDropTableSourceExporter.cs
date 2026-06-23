@@ -7,27 +7,24 @@ namespace WF.Reliquary.Infrastructure.DropTables;
 
 public sealed class LocalDropTableSourceExporter : IDropTableSourceExporter
 {
-    private readonly DbContextOptions<ReliquaryDbContext> contextOptions;
+    private readonly ReliquaryDbExecutor executor;
 
     public LocalDropTableSourceExporter(string? databasePath = null)
     {
-        contextOptions = ReliquaryDbContext.BuildOptions(
-            databasePath ?? LocalDropTableSourceStore.DefaultDatabasePath());
+        executor = new ReliquaryDbExecutor(ReliquaryDbContext.BuildOptions(
+            databasePath ?? LocalDropTableSourceStore.DefaultDatabasePath()));
     }
 
     public async Task<DropTableExportResult> ExportAllAsync(
         string destinationFolderPath,
         CancellationToken cancellationToken = default)
     {
-        List<Storage.Entities.SourceFileEntity> entities;
-
-        await using (var context = new ReliquaryDbContext(contextOptions))
-        {
-            entities = await context.SourceFiles
+        var entities = await executor.RunAsync(
+            (context, ct) => context.SourceFiles
                 .AsNoTracking()
                 .OrderBy(e => e.Id)
-                .ToListAsync(cancellationToken);
-        }
+                .ToListAsync(ct),
+            cancellationToken);
 
         if (entities.Count == 0)
         {

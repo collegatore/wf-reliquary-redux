@@ -8,37 +8,38 @@ namespace WF.Reliquary.Infrastructure.DropTables;
 public sealed class SqlitePrimeGearReader : IPrimeGearReader
 {
     private readonly string databasePath;
-    private readonly DbContextOptions<ReliquaryDbContext> options;
+    private readonly ReliquaryDbExecutor executor;
     private readonly string primeGearSql;
 
     public SqlitePrimeGearReader(string? databasePath = null)
     {
         this.databasePath = databasePath ?? SqliteDropTableImportStore.DefaultDatabasePath();
-        options = ReliquaryDbContext.BuildOptions(this.databasePath);
+        executor = new ReliquaryDbExecutor(ReliquaryDbContext.BuildOptions(this.databasePath));
         primeGearSql = SqlQueryLoader.Load("GetPrimeGear.sql");
     }
 
-    public async Task<IReadOnlyList<PrimeGearEntry>> GetAllAsync(CancellationToken cancellationToken = default)
-    {
-        if (!File.Exists(databasePath))
+    public Task<IReadOnlyList<PrimeGearEntry>> GetAllAsync(CancellationToken cancellationToken = default)
+        => executor.RunAsync<IReadOnlyList<PrimeGearEntry>>(async (context, ct) =>
         {
-            return [];
-        }
+            if (!File.Exists(databasePath))
+            {
+                return [];
+            }
 
-        try
-        {
-            await using var context = new ReliquaryDbContext(options);
-            var rows = await context.Database
-                .SqlQueryRaw<PrimeGearRow>(primeGearSql)
-                .ToListAsync(cancellationToken);
+            try
+            {
+                var rows = await context.Database
+                    .SqlQueryRaw<PrimeGearRow>(primeGearSql)
+                    .ToListAsync(ct)
+                    .ConfigureAwait(false);
 
-            return BuildEntries(rows);
-        }
-        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1)
-        {
-            return [];
-        }
-    }
+                return BuildEntries(rows);
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1)
+            {
+                return [];
+            }
+        }, cancellationToken);
 
     private static IReadOnlyList<PrimeGearEntry> BuildEntries(List<PrimeGearRow> rows)
     {

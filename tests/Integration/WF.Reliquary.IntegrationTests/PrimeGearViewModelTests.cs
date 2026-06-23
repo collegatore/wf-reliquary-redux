@@ -298,7 +298,7 @@ public sealed class PrimeGearViewModelTests
     private static Mock<IOwnedGearStore> OwnedStore(params string[] ownedGearNames)
     {
         var mock = new Mock<IOwnedGearStore>();
-        mock.Setup(s => s.GetOwnedGearNamesAsync(default)).ReturnsAsync(ownedGearNames);
+        mock.Setup(s => s.GetOwnedGearNamesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ownedGearNames);
         mock.Setup(s => s.SetOwnedAsync(It.IsAny<string>(), It.IsAny<bool>(), default))
             .Returns(Task.CompletedTask);
         return mock;
@@ -307,15 +307,15 @@ public sealed class PrimeGearViewModelTests
     private static Mock<IPrimeGearReader> ReaderWith(IReadOnlyList<PrimeGearEntry> entries)
     {
         var mock = new Mock<IPrimeGearReader>();
-        mock.Setup(r => r.GetAllAsync(default)).ReturnsAsync(entries);
+        mock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(entries);
         return mock;
     }
 
     private static Mock<IWishlistStore> StoreWithItems(IReadOnlyList<WishlistItem> items)
     {
         var mock = new Mock<IWishlistStore>();
-        mock.Setup(s => s.GetActiveAsync(default)).ReturnsAsync(ActiveWishlist);
-        mock.Setup(s => s.GetItemsAsync(ActiveWishlistId, default)).ReturnsAsync(items);
+        mock.Setup(s => s.GetActiveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ActiveWishlist);
+        mock.Setup(s => s.GetItemsAsync(ActiveWishlistId, It.IsAny<CancellationToken>())).ReturnsAsync(items);
         mock.Setup(s => s.AddItemAsync(
             It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), default))
             .Returns(Task.CompletedTask);

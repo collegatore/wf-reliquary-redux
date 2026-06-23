@@ -43,7 +43,7 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
 
         try
         {
-            parsed = await Task.Run(() => parser.Parse(stored, now()), cancellationToken);
+            parsed = await parser.ParseAsync(stored, now(), cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -52,7 +52,7 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
 
         try
         {
-            await Task.Run(() => importStore.ReplaceAsync(parsed, cancellationToken), cancellationToken);
+            await importStore.ReplaceAsync(parsed, cancellationToken);
             return DropTableImportResult.Success(parsed);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

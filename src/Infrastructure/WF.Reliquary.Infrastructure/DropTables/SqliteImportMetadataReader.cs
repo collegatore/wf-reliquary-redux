@@ -7,26 +7,27 @@ namespace WF.Reliquary.Infrastructure.DropTables;
 public sealed class SqliteImportMetadataReader : IImportMetadataReader
 {
     private readonly string databasePath;
-    private readonly DbContextOptions<ReliquaryDbContext> options;
+    private readonly ReliquaryDbExecutor executor;
 
     public SqliteImportMetadataReader(string? databasePath = null)
     {
         this.databasePath = databasePath ?? SqliteDropTableImportStore.DefaultDatabasePath();
-        options = ReliquaryDbContext.BuildOptions(this.databasePath);
+        executor = new ReliquaryDbExecutor(ReliquaryDbContext.BuildOptions(this.databasePath));
     }
 
-    public async Task<string?> GetImportedVersionAsync(CancellationToken ct = default)
-    {
-        if (!File.Exists(databasePath))
+    public Task<string?> GetImportedVersionAsync(CancellationToken cancellationToken = default)
+        => executor.RunAsync<string?>(async (context, ct) =>
         {
-            return null;
-        }
+            if (!File.Exists(databasePath))
+            {
+                return null;
+            }
 
-        await using var context = new ReliquaryDbContext(options);
-        var metadata = await context.ImportMetadata
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == 1, ct);
+            var metadata = await context.ImportMetadata
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == 1, ct)
+                .ConfigureAwait(false);
 
-        return metadata?.SourceLastUpdate;
-    }
+            return metadata?.SourceLastUpdate;
+        }, cancellationToken);
 }

@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using AsyncAwaitBestPractices;
+using CommunityToolkit.Mvvm.ComponentModel;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Wishlist;
 
@@ -100,12 +102,14 @@ public sealed class WishlistFarmingMissionGroupCardViewModel : INotifyPropertyCh
     }
 }
 
-public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
+public sealed class WishlistFarmingMissionsViewModel : ObservableObject
 {
     private readonly IWishlistFarmingMissionsReader reader;
     private readonly IWishlistStore wishlistStore;
+    private readonly ReloadGate reloadGate = new();
     private bool isEmpty = true;
     private bool showExactDropChances = false;
+    private bool isBusy;
 
     public WishlistFarmingMissionsViewModel(
         IWishlistFarmingMissionsReader reader,
@@ -114,12 +118,23 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
         this.reader = reader;
         this.wishlistStore = wishlistStore;
         Cards = [];
-        _ = ReloadAsync();
+        // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
+        ReloadAsync().SafeFireAndForget();
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public ObservableCollection<WishlistFarmingMissionGroupCardViewModel> Cards { get; }
+
+    /// <summary>True while this view reloads, for the in-content busy indicator.</summary>
+    public bool IsBusy
+    {
+        get => isBusy;
+        private set
+        {
+            if (isBusy == value) return;
+            isBusy = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool IsEmpty
     {
@@ -128,7 +143,7 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
         {
             if (isEmpty == value) return;
             isEmpty = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEmpty)));
+            OnPropertyChanged();
         }
     }
 
@@ -139,7 +154,7 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
         {
             if (showExactDropChances == value) return;
             showExactDropChances = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowExactDropChances)));
+            OnPropertyChanged();
             foreach (var card in Cards)
                 card.ShowExactDropChances = value;
         }
@@ -147,24 +162,41 @@ public sealed class WishlistFarmingMissionsViewModel : INotifyPropertyChanged
 
     public async Task ReloadAsync()
     {
-        var activeWishlist = await wishlistStore.GetActiveAsync();
-        if (activeWishlist is null)
+        var token = reloadGate.Begin();
+        IsBusy = true;
+        try
         {
-            Cards.Clear();
-            IsEmpty = true;
-            return;
-        }
-
-        var entries = await reader.GetMissionsForWishlistAsync(activeWishlist.Id);
-        Cards.Clear();
-        foreach (var entry in entries)
-        {
-            var card = new WishlistFarmingMissionGroupCardViewModel(entry)
+            var activeWishlist = await wishlistStore.GetActiveAsync(token);
+            if (activeWishlist is null)
             {
-                ShowExactDropChances = showExactDropChances
-            };
-            Cards.Add(card);
+                if (token.IsCancellationRequested) return;
+                Cards.Clear();
+                IsEmpty = true;
+                return;
+            }
+
+            var entries = await reader.GetMissionsForWishlistAsync(activeWishlist.Id, token);
+            if (token.IsCancellationRequested) return;
+
+            Cards.Clear();
+            foreach (var entry in entries)
+            {
+                var card = new WishlistFarmingMissionGroupCardViewModel(entry)
+                {
+                    ShowExactDropChances = showExactDropChances
+                };
+                Cards.Add(card);
+            }
+            IsEmpty = Cards.Count == 0;
         }
-        IsEmpty = Cards.Count == 0;
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer reload.
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+                IsBusy = false;
+        }
     }
 }

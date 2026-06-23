@@ -38,14 +38,15 @@ public sealed class MainWindowViewModelTests
         workflow
             .Setup(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DropTableRefreshResult.Failure(status, "network unavailable"));
-        var viewModel = CreateViewModel(workflow.Object);
+        var reporter = new FakeErrorReporter();
+        var viewModel = CreateViewModel(workflow.Object, errorReporter: reporter);
 
         await viewModel.RefreshAsync();
 
         Assert.Multiple(() =>
         {
             Assert.That(viewModel.SourceStatusText, Is.EqualTo("Source data ready. Drop Tables version: 08 April, 2026."));
-            Assert.That(viewModel.OperationStatusText, Is.EqualTo("Download failed: network unavailable"));
+            Assert.That(reporter.LastMessage, Is.EqualTo("Download failed: network unavailable"));
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.DownloadCommand.CanExecute(null), Is.True);
         });
@@ -78,25 +79,66 @@ public sealed class MainWindowViewModelTests
     {
         var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"), hasStoredSources: true);
         var importWorkflow = CreateImportWorkflow(DropTableImportResult.Failure("source file missing"));
-        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object);
+        var reporter = new FakeErrorReporter();
+        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object, errorReporter: reporter);
         await viewModel.LoadStatusAsync();
 
         await viewModel.ImportAsync();
 
         Assert.Multiple(() =>
         {
-            Assert.That(viewModel.OperationStatusText, Is.EqualTo("Import failed: source file missing"));
+            Assert.That(reporter.LastMessage, Is.EqualTo("Import failed: source file missing"));
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.ImportCommand.CanExecute(null), Is.True);
         });
         refreshWorkflow.Verify(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Test]
+    public async Task RefreshAsync_WhileBusy_DisablesCommand_AndIgnoresReentrantCall()
+    {
+        var gate = new TaskCompletionSource();
+        var status = StatusWithLastUpdate("08 April, 2026");
+        var workflow = new Mock<IDropTableSourceRefreshWorkflow>();
+        workflow.Setup(w => w.GetStatusAsync(It.IsAny<CancellationToken>())).ReturnsAsync(status);
+        var calls = 0;
+        workflow
+            .Setup(w => w.RefreshAsync(It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                Interlocked.Increment(ref calls);
+                await gate.Task;
+                return DropTableRefreshResult.Success(status);
+            });
+        var viewModel = CreateViewModel(workflow.Object);
+
+        var inFlight = viewModel.RefreshAsync();          // enters busy, parks on the gate
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.IsBusy, Is.True);
+            Assert.That(viewModel.DownloadCommand.CanExecute(null), Is.False, "command disabled while busy");
+        });
+
+        await viewModel.RefreshAsync();                   // reentrant — must be a no-op
+
+        gate.SetResult();
+        await inFlight;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(calls, Is.EqualTo(1), "the reentrant call did not start a second operation");
+            Assert.That(viewModel.IsBusy, Is.False);
+            Assert.That(viewModel.DownloadCommand.CanExecute(null), Is.True);
+        });
+    }
+
     private static MainWindowViewModel CreateViewModel(
         IDropTableSourceRefreshWorkflow? refreshWorkflow = null,
         IDropTableImportWorkflow? importWorkflow = null,
         IImportMetadataReader? importMetadataReader = null,
-        IDropTableImportStore? importStore = null)
+        IDropTableImportStore? importStore = null,
+        IErrorReporter? errorReporter = null)
     {
         return new MainWindowViewModel(
             refreshWorkflow ?? Mock.Of<IDropTableSourceRefreshWorkflow>(),
@@ -104,7 +146,21 @@ public sealed class MainWindowViewModelTests
             importMetadataReader ?? CreateImportMetadataReader().Object,
             Mock.Of<IDropTableLocalFileSourceWorkflow>(),
             Mock.Of<IDropTableSourceExporter>(),
-            importStore ?? Mock.Of<IDropTableImportStore>());
+            importStore ?? Mock.Of<IDropTableImportStore>(),
+            errorReporter);
+    }
+
+    /// <summary>Captures the most recent reported failure for assertions.</summary>
+    private sealed class FakeErrorReporter : IErrorReporter
+    {
+        public string? LastMessage { get; private set; }
+        public Exception? LastException { get; private set; }
+
+        public void Report(string userMessage, Exception? exception = null)
+        {
+            LastMessage = userMessage;
+            LastException = exception;
+        }
     }
 
     private static Mock<IDropTableSourceRefreshWorkflow> CreateWorkflow(DropTableSourceStatus status, bool hasStoredSources = false)

@@ -8,52 +8,54 @@ namespace WF.Reliquary.Infrastructure.DropTables;
 
 public sealed class SqliteOwnedGearStore : IOwnedGearStore
 {
-    private readonly DbContextOptions<ReliquaryDbContext> options;
+    private readonly ReliquaryDbExecutor executor;
 
     public SqliteOwnedGearStore(string? databasePath = null)
     {
         var path = databasePath ?? SqliteDropTableImportStore.DefaultDatabasePath();
-        options = ReliquaryDbContext.BuildOptions(path);
+        executor = new ReliquaryDbExecutor(ReliquaryDbContext.BuildOptions(path));
     }
 
-    public async Task<IReadOnlyList<string>> GetOwnedGearNamesAsync(CancellationToken cancellationToken = default)
-    {
-        await using var context = new ReliquaryDbContext(options);
-        var profileId = await ResolveActiveProfileIdAsync(context, cancellationToken);
-        if (profileId is null) return [];
-
-        return await context.OwnedGear
-            .AsNoTracking()
-            .Where(g => g.ProfileId == profileId)
-            .Select(g => g.GearName)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task SetOwnedAsync(string gearName, bool owned, CancellationToken cancellationToken = default)
-    {
-        await using var context = new ReliquaryDbContext(options);
-        var profileId = await ResolveActiveProfileIdAsync(context, cancellationToken);
-        if (profileId is null) return;
-
-        if (owned)
+    public Task<IReadOnlyList<string>> GetOwnedGearNamesAsync(CancellationToken cancellationToken = default)
+        => executor.RunAsync<IReadOnlyList<string>>(async (context, ct) =>
         {
-            context.OwnedGear.Add(new OwnedGearEntity { ProfileId = profileId.Value, GearName = gearName });
-            try
-            {
-                await context.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException ex) when (ex.InnerException is SqliteException { SqliteErrorCode: 19 })
-            {
-                // Idempotent — UNIQUE constraint violation, gear already owned in this profile.
-            }
-        }
-        else
+            var profileId = await ResolveActiveProfileIdAsync(context, ct).ConfigureAwait(false);
+            if (profileId is null) return [];
+
+            return await context.OwnedGear
+                .AsNoTracking()
+                .Where(g => g.ProfileId == profileId)
+                .Select(g => g.GearName)
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+        }, cancellationToken);
+
+    public Task SetOwnedAsync(string gearName, bool owned, CancellationToken cancellationToken = default)
+        => executor.RunAsync(async (context, ct) =>
         {
-            await context.OwnedGear
-                .Where(g => g.ProfileId == profileId && g.GearName == gearName)
-                .ExecuteDeleteAsync(cancellationToken);
-        }
-    }
+            var profileId = await ResolveActiveProfileIdAsync(context, ct).ConfigureAwait(false);
+            if (profileId is null) return;
+
+            if (owned)
+            {
+                context.OwnedGear.Add(new OwnedGearEntity { ProfileId = profileId.Value, GearName = gearName });
+                try
+                {
+                    await context.SaveChangesAsync(ct).ConfigureAwait(false);
+                }
+                catch (DbUpdateException ex) when (ex.InnerException is SqliteException { SqliteErrorCode: 19 })
+                {
+                    // Idempotent — UNIQUE constraint violation, gear already owned in this profile.
+                }
+            }
+            else
+            {
+                await context.OwnedGear
+                    .Where(g => g.ProfileId == profileId && g.GearName == gearName)
+                    .ExecuteDeleteAsync(ct)
+                    .ConfigureAwait(false);
+            }
+        }, cancellationToken);
 
     /// <summary>
     /// Resolves the active profile id from the persisted preference, falling back to

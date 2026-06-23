@@ -1,13 +1,12 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using AvaloniaApp = Avalonia.Application;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Settings;
 
 namespace WF.Reliquary.Presentation;
 
-public sealed class SettingsViewModel : INotifyPropertyChanged
+public sealed class SettingsViewModel : ObservableObject
 {
     private readonly IUserSettingsStore settingsStore;
 
@@ -36,10 +35,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         relicsPanelHeight = savedRelicsPanelHeight;
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => HasUnsavedChanges);
-        BackCommand = new AsyncRelayCommand(BackAsync, () => true);
+        BackCommand = new AsyncRelayCommand(BackAsync);
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     // ── Delegates wired by MainWindow ──────────────────────────────────────
 
@@ -242,34 +239,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private void NotifyHasUnsavedChanges()
     {
         OnPropertyChanged(nameof(HasUnsavedChanges));
-        SaveCommand.RaiseCanExecuteChanged();
+        SaveCommand.NotifyCanExecuteChanged();
     }
-
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-        {
-            return false;
-        }
-
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
-    }
-}
-
-public sealed class RelayCommand(Action execute) : ICommand
-{
-#pragma warning disable CS0067 // Required by ICommand; never raised for commands whose CanExecute is always true
-    public event EventHandler? CanExecuteChanged;
-#pragma warning restore CS0067
-
-    public bool CanExecute(object? parameter) => true;
-
-    public void Execute(object? parameter) => execute();
 }

@@ -36,8 +36,12 @@ public sealed partial class MainWindow : Window
     {
         var userSettingsStore = ReliquaryServiceFactory.CreateUserSettingsStore();
 
-        // Run on a thread-pool thread to avoid deadlocking Avalonia's UI
-        // SynchronizationContext when blocking with .GetResult().
+        // STARTUP BOUNDARY — the only place (besides OnWindowClosing) where blocking on
+        // async work is permitted. The window must be fully initialized synchronously
+        // before it is shown, and no message loop is running yet, so there is nothing to
+        // starve. Task.Run hops off the UI SynchronizationContext so .GetResult() cannot
+        // deadlock it. Do NOT use this pattern in any interactive code path (commands,
+        // property setters, reloads) — those must stay fully async.
         var initialSettings = Task.Run(() => userSettingsStore.LoadAsync()).GetAwaiter().GetResult();
 
         InitializeComponent();
@@ -102,7 +106,8 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreateImportMetadataReader(),
             ReliquaryServiceFactory.CreateDropTableLocalFileSourceWorkflow(),
             ReliquaryServiceFactory.CreateDropTableSourceExporter(),
-            ReliquaryServiceFactory.CreateDropTableImportStore());
+            ReliquaryServiceFactory.CreateDropTableImportStore(),
+            AppErrors.Reporter);
 
         shell = new MainWindowShellViewModel(
             dropTablesVm,
@@ -272,6 +277,10 @@ public sealed partial class MainWindow : Window
         if (shell is null) return;
         try
         {
+            // SHUTDOWN BOUNDARY — like the constructor, blocking on async is permitted here
+            // (the window is closing; persisting size/position must complete before exit).
+            // Task.Run keeps the block off the UI SynchronizationContext. Best-effort: never
+            // block the close on failure.
             var store = ReliquaryServiceFactory.CreateUserSettingsStore();
             var current = Task.Run(() => store.LoadAsync()).GetAwaiter().GetResult();
             var size = ClientSize;

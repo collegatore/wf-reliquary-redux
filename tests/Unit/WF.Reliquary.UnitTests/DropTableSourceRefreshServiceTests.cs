@@ -93,7 +93,7 @@ public sealed class DropTableSourceRefreshServiceTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Succeeded, Is.False);
-            Assert.That(result.ErrorMessage, Does.Contain("Last Update"));
+            Assert.That(result.ErrorMessage, Does.Contain("Drop Tables version"));
             Assert.That(result.Status.FileExists, Is.False);
         });
         store.Verify(

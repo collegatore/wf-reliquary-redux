@@ -203,6 +203,14 @@
               </StackPanel>
             </Border>
 
+            <!-- In-content busy indicator: shows which view is reloading. -->
+            <TextBlock
+                Margin="8,0,8,8"
+                Text="Updating…"
+                Opacity="0.7"
+                FontStyle="Italic"
+                IsVisible="{Binding PrimeGear.IsBusy}" />
+
             <!-- Active gear section -->
             <ItemsControl ItemsSource="{Binding PrimeGear.ActiveCards}">
               <ItemsControl.ItemsPanel>
@@ -415,6 +423,13 @@
                 <CheckBox IsChecked="{Binding WishlistFarming.ShowExactDropChances}" VerticalAlignment="Center" />
                 <TextBlock Text="Show exact drop chances" VerticalAlignment="Center" />
               </StackPanel>
+              <!-- In-content busy indicator for the Relics/Missions reload. -->
+              <TextBlock
+                  Text="Updating…"
+                  Opacity="0.7"
+                  FontStyle="Italic"
+                  VerticalAlignment="Center"
+                  IsVisible="{Binding WishlistRelics.IsBusy}" />
             </StackPanel>
           </Border>
 

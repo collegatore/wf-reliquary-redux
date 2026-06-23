@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using AsyncAwaitBestPractices;
+using CommunityToolkit.Mvvm.ComponentModel;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Wishlist;
 
@@ -84,26 +85,39 @@ public sealed class WishlistRelicCardViewModel
     public ObservableCollection<WishlistRelicTierGroupViewModel> TierGroups { get; }
 }
 
-public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
+public sealed class WishlistRelicsViewModel : ObservableObject
 {
     private readonly IWishlistRelicsReader reader;
     private readonly IWishlistStore wishlistStore;
+    private readonly ReloadGate reloadGate = new();
     private IReadOnlyList<WishlistRelicEntry> allEntries = [];
     private bool showVaulted;
     private bool showAllRewards;
     private bool isEmpty = true;
+    private bool isBusy;
 
     public WishlistRelicsViewModel(IWishlistRelicsReader reader, IWishlistStore wishlistStore)
     {
         this.reader = reader;
         this.wishlistStore = wishlistStore;
         Cards = [];
-        _ = ReloadAsync();
+        // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
+        ReloadAsync().SafeFireAndForget();
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public ObservableCollection<WishlistRelicCardViewModel> Cards { get; }
+
+    /// <summary>True while this view reloads, for the in-content busy indicator.</summary>
+    public bool IsBusy
+    {
+        get => isBusy;
+        private set
+        {
+            if (isBusy == value) return;
+            isBusy = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool IsEmpty
     {
@@ -112,7 +126,7 @@ public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
         {
             if (isEmpty == value) return;
             isEmpty = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEmpty)));
+            OnPropertyChanged();
         }
     }
 
@@ -123,7 +137,7 @@ public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
         {
             if (showVaulted == value) return;
             showVaulted = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowVaulted)));
+            OnPropertyChanged();
             RebuildCards();
         }
     }
@@ -135,23 +149,41 @@ public sealed class WishlistRelicsViewModel : INotifyPropertyChanged
         {
             if (showAllRewards == value) return;
             showAllRewards = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowAllRewards)));
+            OnPropertyChanged();
             RebuildCards();
         }
     }
 
     public async Task ReloadAsync()
     {
-        var activeWishlist = await wishlistStore.GetActiveAsync();
-        if (activeWishlist is null)
+        var token = reloadGate.Begin();
+        IsBusy = true;
+        try
         {
-            allEntries = [];
-            RebuildCards();
-            return;
-        }
+            var activeWishlist = await wishlistStore.GetActiveAsync(token);
+            if (activeWishlist is null)
+            {
+                if (token.IsCancellationRequested) return;
+                allEntries = [];
+                RebuildCards();
+                return;
+            }
 
-        allEntries = await reader.GetRelicsForWishlistAsync(activeWishlist.Id);
-        RebuildCards();
+            var entries = await reader.GetRelicsForWishlistAsync(activeWishlist.Id, token);
+            if (token.IsCancellationRequested) return;
+
+            allEntries = entries;
+            RebuildCards();
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer reload.
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+                IsBusy = false;
+        }
     }
 
     private void RebuildCards()

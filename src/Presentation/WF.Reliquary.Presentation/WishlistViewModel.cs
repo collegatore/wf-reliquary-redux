@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Wishlist;
 
@@ -12,7 +12,7 @@ namespace WF.Reliquary.Presentation;
 /// The <see cref="PromptForNameAsync"/> delegate must be provided by the view
 /// layer; it opens a modal dialog and returns the confirmed name, or null on cancel.
 /// </summary>
-public sealed class WishlistViewModel : INotifyPropertyChanged
+public sealed class WishlistViewModel : ObservableObject
 {
     private readonly IWishlistStore store;
     private WishlistEntryViewModel? activeEntry;
@@ -26,8 +26,6 @@ public sealed class WishlistViewModel : INotifyPropertyChanged
         DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => CanDelete);
         _ = ReloadAsync();
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>Raised after the active wishlist changes, so gear cards can reload.</summary>
     public Func<Task>? OnActiveWishlistChanged { get; set; }
@@ -49,8 +47,8 @@ public sealed class WishlistViewModel : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(ActiveWishlistName));
             OnPropertyChanged(nameof(CanDelete));
-            ((AsyncRelayCommand)RenameCommand).RaiseCanExecuteChanged();
-            ((AsyncRelayCommand)DeleteCommand).RaiseCanExecuteChanged();
+            ((AsyncRelayCommand)RenameCommand).NotifyCanExecuteChanged();
+            ((AsyncRelayCommand)DeleteCommand).NotifyCanExecuteChanged();
         }
     }
 
@@ -89,7 +87,7 @@ public sealed class WishlistViewModel : INotifyPropertyChanged
             : Wishlists.FirstOrDefault(v => v.Id == active.Id);
 
         OnPropertyChanged(nameof(CanDelete));
-        ((AsyncRelayCommand)DeleteCommand).RaiseCanExecuteChanged();
+        ((AsyncRelayCommand)DeleteCommand).NotifyCanExecuteChanged();
     }
 
     private async Task CreateAsync(Func<NameDialogRequest, Task<string?>> prompt)
@@ -110,7 +108,7 @@ public sealed class WishlistViewModel : INotifyPropertyChanged
         ActiveEntry = vm;
 
         OnPropertyChanged(nameof(CanDelete));
-        ((AsyncRelayCommand)DeleteCommand).RaiseCanExecuteChanged();
+        ((AsyncRelayCommand)DeleteCommand).NotifyCanExecuteChanged();
 
         if (OnActiveWishlistChanged is not null) await OnActiveWishlistChanged();
     }
@@ -146,18 +144,13 @@ public sealed class WishlistViewModel : INotifyPropertyChanged
         Wishlists.Remove(toDelete);
 
         OnPropertyChanged(nameof(CanDelete));
-        ((AsyncRelayCommand)DeleteCommand).RaiseCanExecuteChanged();
+        ((AsyncRelayCommand)DeleteCommand).NotifyCanExecuteChanged();
 
         if (OnActiveWishlistChanged is not null) await OnActiveWishlistChanged();
     }
-
-    private void OnPropertyChanged([CallerMemberName] string? name = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    }
 }
 
-public sealed class WishlistEntryViewModel : INotifyPropertyChanged
+public sealed class WishlistEntryViewModel : ObservableObject
 {
     private string name;
     private bool isActive;
@@ -167,10 +160,8 @@ public sealed class WishlistEntryViewModel : INotifyPropertyChanged
         Id = entry.Id;
         name = entry.Name;
         Parent = parent;
-        SelectCommand = new AsyncRelayCommand(() => parent.SelectAsync(this), () => true);
+        SelectCommand = new AsyncRelayCommand(() => parent.SelectAsync(this));
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public long Id { get; }
 
@@ -179,23 +170,13 @@ public sealed class WishlistEntryViewModel : INotifyPropertyChanged
     public string Name
     {
         get => name;
-        set
-        {
-            if (name == value) return;
-            name = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
-        }
+        set => SetProperty(ref name, value);
     }
 
     public bool IsActive
     {
         get => isActive;
-        set
-        {
-            if (isActive == value) return;
-            isActive = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsActive)));
-        }
+        set => SetProperty(ref isActive, value);
     }
 
     public ICommand SelectCommand { get; }

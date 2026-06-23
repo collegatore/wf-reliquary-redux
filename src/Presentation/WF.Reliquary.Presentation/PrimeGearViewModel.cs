@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Windows.Input;
+using AsyncAwaitBestPractices;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Ports;
 
 namespace WF.Reliquary.Presentation;
@@ -17,7 +19,7 @@ public enum OwnedConfirmChoice
     ReleaseTracking,
 }
 
-public sealed class PrimePartViewModel : INotifyPropertyChanged
+public sealed class PrimePartViewModel : ObservableObject
 {
     private readonly IWishlistStore wishlistStore;
     private readonly Func<long> getActiveWishlistId;
@@ -44,8 +46,6 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
         this.onPersisted = onPersisted;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public string PartName { get; }
     public string NormalizedName { get; }
     public string GearName { get; }
@@ -58,8 +58,9 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
         {
             if (isChecked == value) return;
             isChecked = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsChecked)));
-            _ = PersistCheckedAsync(value);
+            OnPropertyChanged();
+            // Fire-and-forget: failures flow to the global SafeFireAndForget handler.
+            PersistCheckedAsync(value).SafeFireAndForget();
         }
     }
 
@@ -76,7 +77,7 @@ public sealed class PrimePartViewModel : INotifyPropertyChanged
     }
 }
 
-public sealed class PrimeGearCardViewModel : INotifyPropertyChanged
+public sealed class PrimeGearCardViewModel : ObservableObject
 {
     private readonly IOwnedGearStore ownedGearStore;
     private readonly Func<string, Task<OwnedConfirmChoice>>? confirmOwned;
@@ -103,8 +104,6 @@ public sealed class PrimeGearCardViewModel : INotifyPropertyChanged
         MarkOwnedCommand = new RelayCommand(() => IsOwned = !IsOwned);
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public string GearName { get; }
     public ObservableCollection<PrimePartViewModel> Parts { get; }
     public bool IsVaulted { get; }
@@ -123,7 +122,7 @@ public sealed class PrimeGearCardViewModel : INotifyPropertyChanged
         {
             if (isFadingOut == value) return;
             isFadingOut = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFadingOut)));
+            OnPropertyChanged();
         }
     }
 
@@ -144,11 +143,11 @@ public sealed class PrimeGearCardViewModel : INotifyPropertyChanged
 
             if (value && HasWishedParts && confirmOwned is not null)
             {
-                _ = HandleOwnTransitionAsync();
+                HandleOwnTransitionAsync().SafeFireAndForget();
                 return;
             }
 
-            _ = PersistOwnedAsync(value);
+            PersistOwnedAsync(value).SafeFireAndForget();
         }
     }
 
@@ -179,8 +178,8 @@ public sealed class PrimeGearCardViewModel : INotifyPropertyChanged
 
     private void RaiseOwnedChanged()
     {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsOwned)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(OwnedMenuLabel)));
+        OnPropertyChanged(nameof(IsOwned));
+        OnPropertyChanged(nameof(OwnedMenuLabel));
     }
 
     private async Task PersistOwnedAsync(bool owned)
@@ -194,15 +193,17 @@ public sealed class PrimeGearCardViewModel : INotifyPropertyChanged
     }
 }
 
-public sealed class PrimeGearViewModel : INotifyPropertyChanged
+public sealed class PrimeGearViewModel : ObservableObject
 {
     private readonly IPrimeGearReader reader;
     private readonly IWishlistStore wishlistStore;
     private readonly IOwnedGearStore ownedGearStore;
     private readonly List<PrimeGearCardViewModel> allCards = [];
+    private readonly ReloadGate reloadGate = new();
     private long activeWishlistId;
     private bool showVaulted;
     private bool showOwned;
+    private bool isBusy;
 
     public PrimeGearViewModel(IPrimeGearReader reader, IWishlistStore wishlistStore, IOwnedGearStore ownedGearStore)
     {
@@ -211,10 +212,9 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
         this.ownedGearStore = ownedGearStore;
         ActiveCards = [];
         VaultedCards = [];
-        _ = LoadAsync();
+        // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
+        ReloadAsync().SafeFireAndForget();
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public Func<Task>? OnWishlistChanged { get; set; }
 
@@ -231,6 +231,18 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
     public ObservableCollection<PrimeGearCardViewModel> ActiveCards { get; }
     public ObservableCollection<PrimeGearCardViewModel> VaultedCards { get; }
 
+    /// <summary>True while this view reloads, for the in-content busy indicator.</summary>
+    public bool IsBusy
+    {
+        get => isBusy;
+        private set
+        {
+            if (isBusy == value) return;
+            isBusy = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool ShowVaulted
     {
         get => showVaulted;
@@ -238,7 +250,7 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
         {
             if (showVaulted == value) return;
             showVaulted = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowVaulted)));
+            OnPropertyChanged();
         }
     }
 
@@ -249,35 +261,56 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
         {
             if (showOwned == value) return;
             showOwned = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowOwned)));
+            OnPropertyChanged();
             RebuildVisibleCards();
         }
     }
 
     public async Task ReloadAsync()
     {
-        allCards.Clear();
-        ActiveCards.Clear();
-        VaultedCards.Clear();
-        await LoadAsync();
+        // Latest-wins: a newer reload cancels this one's token.
+        var token = reloadGate.Begin();
+        IsBusy = true;
+        try
+        {
+            await LoadAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer reload; leave state to the winner.
+        }
+        finally
+        {
+            // Only the latest (non-cancelled) reload clears the busy state.
+            if (!token.IsCancellationRequested)
+                IsBusy = false;
+        }
     }
 
-    private async Task LoadAsync()
+    private async Task LoadAsync(CancellationToken cancellationToken)
     {
-        var activeWishlist = await wishlistStore.GetActiveAsync();
+        var activeWishlist = await wishlistStore.GetActiveAsync(cancellationToken);
         if (activeWishlist is null)
         {
             // No wishlists at all — show nothing (should only happen in tests).
+            if (cancellationToken.IsCancellationRequested) return;
+            allCards.Clear();
+            ActiveCards.Clear();
+            VaultedCards.Clear();
             return;
         }
 
         activeWishlistId = activeWishlist.Id;
 
-        var wishlistItems = await wishlistStore.GetItemsAsync(activeWishlistId);
-        var importEntries = await reader.GetAllAsync();
+        var wishlistItems = await wishlistStore.GetItemsAsync(activeWishlistId, cancellationToken);
+        var importEntries = await reader.GetAllAsync(cancellationToken);
         var ownedGearNames = new HashSet<string>(
-            await ownedGearStore.GetOwnedGearNamesAsync(),
+            await ownedGearStore.GetOwnedGearNamesAsync(cancellationToken),
             StringComparer.OrdinalIgnoreCase);
+
+        // All awaited fetches are done; if a newer reload superseded us, stop before
+        // touching any bound state so we never leave a half-rebuilt view.
+        if (cancellationToken.IsCancellationRequested) return;
 
         // Build lookup: normalizedName → WishlistItem for ghost detection.
         var wishlistLookup = wishlistItems.ToDictionary(
@@ -312,6 +345,9 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
         {
             allGearNames.Add(wi.GearName);
         }
+
+        // Build the full card set into a local list first, then swap in one step.
+        var built = new List<PrimeGearCardViewModel>();
 
         foreach (var gearName in allGearNames.OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
         {
@@ -370,8 +406,13 @@ public sealed class PrimeGearViewModel : INotifyPropertyChanged
                 confirmOwned: gn => ConfirmOwnedTracking?.Invoke(gn)
                     ?? Task.FromResult(OwnedConfirmChoice.KeepTracking),
                 onOwnedChanged: () => OnCardOwnedChangedAsync(card));
-            allCards.Add(card);
+            built.Add(card);
         }
+
+        // Swap the freshly built set in (single synchronous step — no await between
+        // the cancellation check above and here, so no interleaving with another reload).
+        allCards.Clear();
+        allCards.AddRange(built);
 
         RebuildVisibleCards();
     }

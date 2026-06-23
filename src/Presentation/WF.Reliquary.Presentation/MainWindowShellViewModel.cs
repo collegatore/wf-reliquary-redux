@@ -1,12 +1,12 @@
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using WF.Reliquary.Application.Ports;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Settings;
 
 namespace WF.Reliquary.Presentation;
 
-public sealed class MainWindowShellViewModel : INotifyPropertyChanged
+public sealed class MainWindowShellViewModel : ObservableObject
 {
     // Tab indices within the TabControl (declaration order): Prime Gear=0,
     // Relics and Missions=1, Drop Tables=2, Settings=3. Prime Gear is the
@@ -42,14 +42,14 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         dropTables.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(MainWindowViewModel.HasImportedData))
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowDropTablesTabHeader)));
+                OnPropertyChanged(nameof(ShowDropTablesTabHeader));
             if (e.PropertyName == nameof(MainWindowViewModel.IsBusy))
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowFooterImportStatus)));
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFooterBusy)));
+                OnPropertyChanged(nameof(ShowFooterImportStatus));
+                OnPropertyChanged(nameof(IsFooterBusy));
             }
             if (e.PropertyName == nameof(MainWindowViewModel.OperationStatusText))
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FooterOperationStatusText)));
+                OnPropertyChanged(nameof(FooterOperationStatusText));
         };
 
         dropTables.OnImportSucceeded = async () =>
@@ -93,8 +93,6 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         settings.OnSaved = OnSettingsSaved;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public MainWindowViewModel DropTables { get; }
     public PrimeGearViewModel PrimeGear { get; }
     public WishlistViewModel Wishlist { get; }
@@ -113,8 +111,8 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         {
             if (SetProperty(ref selectedTabIndex, value))
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowDropTablesTabHeader)));
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowFooterImportStatus)));
+                OnPropertyChanged(nameof(ShowDropTablesTabHeader));
+                OnPropertyChanged(nameof(ShowFooterImportStatus));
             }
         }
     }
@@ -170,17 +168,5 @@ public sealed class MainWindowShellViewModel : INotifyPropertyChanged
         // If the user saved a relics panel height, sync it back so the splitter
         // reflects the persisted value on next open (e.g. after Reset to default).
         RelicsPanelHeight = saved.RelicsPanelHeight;
-    }
-
-    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-        {
-            return false;
-        }
-
-        field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        return true;
     }
 }

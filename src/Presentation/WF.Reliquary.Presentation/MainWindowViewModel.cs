@@ -1,13 +1,12 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application;
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Ports;
 
 namespace WF.Reliquary.Presentation;
 
-public sealed class MainWindowViewModel : INotifyPropertyChanged
+public sealed partial class MainWindowViewModel : ObservableObject
 {
     private readonly IDropTableSourceRefreshWorkflow refreshWorkflow;
     private readonly IDropTableImportWorkflow importWorkflow;
@@ -15,12 +14,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private readonly IDropTableSourceExporter sourceExporter;
     private readonly IImportMetadataReader importMetadataReader;
     private readonly IDropTableImportStore importStore;
+    private readonly IErrorReporter errorReporter;
+    private readonly BusyScope busy;
+
+    [ObservableProperty]
     private string sourceStatusText = "Checking stored source...";
+
+    [ObservableProperty]
     private string operationStatusText = string.Empty;
+
+    [ObservableProperty]
     private string importStatusText = "No source imported yet.";
+
+    [ObservableProperty]
     private string footerImportStatusText = string.Empty;
-    private bool isBusy;
+
+    [ObservableProperty]
     private bool hasStoredSources;
+
+    [ObservableProperty]
     private bool hasImportedData;
 
     public MainWindowViewModel(
@@ -29,7 +41,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         IImportMetadataReader importMetadataReader,
         IDropTableLocalFileSourceWorkflow localFileWorkflow,
         IDropTableSourceExporter sourceExporter,
-        IDropTableImportStore importStore)
+        IDropTableImportStore importStore,
+        IErrorReporter? errorReporter = null)
     {
         this.refreshWorkflow = refreshWorkflow;
         this.importWorkflow = importWorkflow;
@@ -37,6 +50,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         this.sourceExporter = sourceExporter;
         this.importMetadataReader = importMetadataReader;
         this.importStore = importStore;
+        this.errorReporter = errorReporter ?? NoOpErrorReporter.Instance;
+
+        busy = new BusyScope(_ =>
+        {
+            OnPropertyChanged(nameof(IsBusy));
+            DownloadCommand.NotifyCanExecuteChanged();
+            ImportCommand.NotifyCanExecuteChanged();
+            ReadFromFileCommand.NotifyCanExecuteChanged();
+            ExportSourcesCommand.NotifyCanExecuteChanged();
+            ClearImportCommand.NotifyCanExecuteChanged();
+        });
+
         DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
         ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy && HasStoredSources);
         ReadFromFileCommand = new AsyncRelayCommand(ReadFromFileAsync, () => !IsBusy);
@@ -54,84 +79,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public Func<Task<bool>>? ConfirmClear { get; set; }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public string Title => ApplicationInfo.Name;
 
-    public string SourceStatusText
-    {
-        get => sourceStatusText;
-        private set => SetProperty(ref sourceStatusText, value);
-    }
+    /// <summary>True while a source operation runs; gates commands and the footer spinner.</summary>
+    public bool IsBusy => busy.IsBusy;
 
-    public string FooterImportStatusText
-    {
-        get => footerImportStatusText;
-        private set => SetProperty(ref footerImportStatusText, value);
-    }
+    public IAsyncRelayCommand DownloadCommand { get; }
 
-    public string OperationStatusText
-    {
-        get => operationStatusText;
-        private set => SetProperty(ref operationStatusText, value);
-    }
+    public IAsyncRelayCommand ImportCommand { get; }
 
-    public bool IsBusy
-    {
-        get => isBusy;
-        private set
-        {
-            if (SetProperty(ref isBusy, value))
-            {
-                DownloadCommand.RaiseCanExecuteChanged();
-                ImportCommand.RaiseCanExecuteChanged();
-                ReadFromFileCommand.RaiseCanExecuteChanged();
-                ExportSourcesCommand.RaiseCanExecuteChanged();
-                ClearImportCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
+    public IAsyncRelayCommand ReadFromFileCommand { get; }
 
-    public bool HasStoredSources
-    {
-        get => hasStoredSources;
-        private set
-        {
-            if (SetProperty(ref hasStoredSources, value))
-            {
-                ImportCommand.RaiseCanExecuteChanged();
-                ExportSourcesCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
+    public IAsyncRelayCommand ExportSourcesCommand { get; }
 
-    public bool HasImportedData
-    {
-        get => hasImportedData;
-        private set
-        {
-            if (SetProperty(ref hasImportedData, value))
-            {
-                ClearImportCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
-
-    public string ImportStatusText
-    {
-        get => importStatusText;
-        private set => SetProperty(ref importStatusText, value);
-    }
-
-    public AsyncRelayCommand DownloadCommand { get; }
-
-    public AsyncRelayCommand ImportCommand { get; }
-
-    public AsyncRelayCommand ReadFromFileCommand { get; }
-
-    public AsyncRelayCommand ExportSourcesCommand { get; }
-
-    public AsyncRelayCommand ClearImportCommand { get; }
+    public IAsyncRelayCommand ClearImportCommand { get; }
 
     public async Task LoadStatusAsync(CancellationToken cancellationToken = default)
     {
@@ -142,44 +103,40 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public async Task RefreshAsync()
     {
-        if (IsBusy)
-        {
-            return;
-        }
+        using var scope = busy.TryEnter();
+        if (scope is null) return;
 
-        IsBusy = true;
         OperationStatusText = "Downloading source from URL...";
-        await Task.Yield();
 
         try
         {
             var result = await refreshWorkflow.RefreshAsync();
             ApplyStatus(result.Status);
-            OperationStatusText = result.Succeeded
-                ? $"Source downloaded. {LastUpdateText(result.Status.LastUpdate)}."
-                : $"Download failed: {result.ErrorMessage}";
 
             if (result.Succeeded)
             {
+                OperationStatusText = $"Source downloaded. {LastUpdateText(result.Status.LastUpdate)}.";
                 HasStoredSources = true;
             }
+            else
+            {
+                OperationStatusText = string.Empty;
+                errorReporter.Report($"Download failed: {result.ErrorMessage}");
+            }
         }
-        finally
+        catch (Exception ex)
         {
-            IsBusy = false;
+            OperationStatusText = string.Empty;
+            errorReporter.Report("Download failed.", ex);
         }
     }
 
     public async Task ImportAsync()
     {
-        if (IsBusy)
-        {
-            return;
-        }
+        using var scope = busy.TryEnter();
+        if (scope is null) return;
 
-        IsBusy = true;
         OperationStatusText = "Importing stored source...";
-        await Task.Yield();
 
         try
         {
@@ -196,30 +153,30 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
             else
             {
-                OperationStatusText = $"Import failed: {result.ErrorMessage}";
+                OperationStatusText = string.Empty;
+                errorReporter.Report($"Import failed: {result.ErrorMessage}");
             }
         }
-        finally
+        catch (Exception ex)
         {
-            IsBusy = false;
+            OperationStatusText = string.Empty;
+            errorReporter.Report("Import failed.", ex);
         }
     }
 
     public async Task ClearImportAsync()
     {
-        if (IsBusy || !HasImportedData)
-        {
-            return;
-        }
+        if (!HasImportedData) return;
 
         if (ConfirmClear != null && !await ConfirmClear())
         {
             return;
         }
 
-        IsBusy = true;
+        using var scope = busy.TryEnter();
+        if (scope is null) return;
+
         OperationStatusText = "Clearing imported data...";
-        await Task.Yield();
 
         try
         {
@@ -232,18 +189,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 await OnImportCleared();
             }
         }
-        finally
+        catch (Exception ex)
         {
-            IsBusy = false;
+            OperationStatusText = string.Empty;
+            errorReporter.Report("Clearing imported data failed.", ex);
         }
     }
 
     public async Task ReadFromFileAsync()
     {
-        if (IsBusy || PickSourceFileAsync is null)
-        {
-            return;
-        }
+        if (PickSourceFileAsync is null) return;
 
         var path = await PickSourceFileAsync();
         if (path is null)
@@ -251,13 +206,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             return;
         }
 
-        IsBusy = true;
+        using var scope = busy.TryEnter();
+        if (scope is null) return;
+
         OperationStatusText = "Reading source from file...";
-        await Task.Yield();
 
         try
         {
-            var result = await Task.Run(() => localFileWorkflow.RegisterFromFileAsync(path));
+            var result = await localFileWorkflow.RegisterFromFileAsync(path);
             if (result.Succeeded)
             {
                 ApplyStatus(await refreshWorkflow.GetStatusAsync());
@@ -266,21 +222,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
             else
             {
-                OperationStatusText = $"Reading file failed: {result.ErrorMessage}";
+                OperationStatusText = string.Empty;
+                errorReporter.Report($"Reading file failed: {result.ErrorMessage}");
             }
         }
-        finally
+        catch (Exception ex)
         {
-            IsBusy = false;
+            OperationStatusText = string.Empty;
+            errorReporter.Report("Reading file failed.", ex);
         }
     }
 
     public async Task ExportSourcesAsync()
     {
-        if (IsBusy || PickExportFolderAsync is null)
-        {
-            return;
-        }
+        if (PickExportFolderAsync is null) return;
 
         var folder = await PickExportFolderAsync();
         if (folder is null)
@@ -288,21 +243,40 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             return;
         }
 
-        IsBusy = true;
+        using var scope = busy.TryEnter();
+        if (scope is null) return;
+
         OperationStatusText = "Exporting stored sources...";
-        await Task.Yield();
 
         try
         {
             var result = await sourceExporter.ExportAllAsync(folder);
-            OperationStatusText = result.Succeeded
-                ? $"Exported {result.FileCount} source file(s) to the selected folder."
-                : $"Export failed: {result.ErrorMessage}";
+            if (result.Succeeded)
+            {
+                OperationStatusText = $"Exported {result.FileCount} source file(s) to the selected folder.";
+            }
+            else
+            {
+                OperationStatusText = string.Empty;
+                errorReporter.Report($"Export failed: {result.ErrorMessage}");
+            }
         }
-        finally
+        catch (Exception ex)
         {
-            IsBusy = false;
+            OperationStatusText = string.Empty;
+            errorReporter.Report("Export failed.", ex);
         }
+    }
+
+    partial void OnHasStoredSourcesChanged(bool value)
+    {
+        ImportCommand.NotifyCanExecuteChanged();
+        ExportSourcesCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnHasImportedDataChanged(bool value)
+    {
+        ClearImportCommand.NotifyCanExecuteChanged();
     }
 
     private async Task RefreshImportStatusAsync(CancellationToken cancellationToken = default)
@@ -343,49 +317,5 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private static string ImportStatusDetail(DropTableImportResult result)
     {
         return $"Source data imported. {LastUpdateText(result.SourceLastUpdate)}. Relics: {result.Counts.Relics}; relic rewards: {result.Counts.RelicRewards}; mission sources: {result.Counts.MissionSources}; mission rewards: {result.Counts.MissionRewards}.";
-    }
-
-    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-        {
-            return false;
-        }
-
-        field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        return true;
-    }
-}
-
-public sealed class AsyncRelayCommand : ICommand
-{
-    private readonly Func<Task> execute;
-    private readonly Func<bool> canExecute;
-
-    public AsyncRelayCommand(Func<Task> execute, Func<bool> canExecute)
-    {
-        this.execute = execute;
-        this.canExecute = canExecute;
-    }
-
-    public event EventHandler? CanExecuteChanged;
-
-    public bool CanExecute(object? parameter)
-    {
-        return canExecute();
-    }
-
-    public async void Execute(object? parameter)
-    {
-        await execute();
-    }
-
-    /// <summary>Awaitable version for use in tests.</summary>
-    public Task ExecuteTaskAsync() => execute();
-
-    public void RaiseCanExecuteChanged()
-    {
-        CanExecuteChanged?.Invoke(this, EventArgs.Empty);
     }
 }

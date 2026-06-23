@@ -8,6 +8,19 @@ namespace WF.Reliquary.Infrastructure.DropTables;
 
 public sealed partial class HtmlDropTableParser : IDropTableParser
 {
+    /// <summary>
+    /// Offloads the synchronous, regex-heavy <see cref="Parse"/> onto a Task
+    /// </summary>
+    public Task<ParsedDropTableImport> ParseAsync(
+        StoredDropTableSource source,
+        DateTimeOffset importedAt,
+        CancellationToken cancellationToken = default)
+        => Task.Run(() => Parse(source, importedAt), cancellationToken);
+
+    /// <summary>
+    /// Synchronous parse core. Kept public for direct, in-process testing; production
+    /// callers go through <see cref="ParseAsync"/> via the <see cref="IDropTableParser"/> port.
+    /// </summary>
     public ParsedDropTableImport Parse(StoredDropTableSource source, DateTimeOffset importedAt)
     {
         ArgumentNullException.ThrowIfNull(source);
