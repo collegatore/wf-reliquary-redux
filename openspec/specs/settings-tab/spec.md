@@ -40,17 +40,6 @@ The Settings tab SHALL display controls for: font size selection, relics panel h
 - **WHEN** the Settings tab is open
 - **THEN** the drop-tables source URL text field is visible and editable
 
-### Requirement: Settings Keyboard Shortcut
-
-The Settings tab SHALL be reachable via the keyboard shortcut **Ctrl+,**. The shortcut SHALL be active at all times while the main window has focus, not only when the File menu is open.
-
-> **Implementation note:** `MenuItem.InputGesture` in Avalonia only renders the hint label inside the menu. The actual global shortcut must be registered via `Window.KeyBindings`.
-
-#### Scenario: Keyboard shortcut opens Settings
-
-- **WHEN** the user presses Ctrl+, while the main window has focus
-- **THEN** the Settings tab is displayed
-
 ### Requirement: Font Size Live Preview
 
 Selecting a font size option in the Settings tab SHALL apply the change to the entire application immediately, before the user clicks Save. If the user discards their changes (via Back or by navigating to another tab), the font reverts to the last saved value.

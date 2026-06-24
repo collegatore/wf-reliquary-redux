@@ -7,7 +7,6 @@
     Width="900"
     Height="600">
   <Window.KeyBindings>
-    <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding NavigateToSettingsCommand}" />
   </Window.KeyBindings>
 
   <Window.Styles>
@@ -41,6 +40,11 @@
     <Style Selector="TextBlock.dimmed">
       <Setter Property="Opacity" Value="0.5" />
     </Style>
+    <!-- Buttons inside Flyout popups: lighter background so they don't look
+         like heavy stand-alone buttons in a dropdown list context. -->
+    <Style Selector="FlyoutPresenter Button">
+      <Setter Property="Background" Value="#18FFFFFF" />
+    </Style>
     <!-- Per-tier accent bar color (left border of each tier group). -->
     <Style Selector="Border.tier-common">
       <Setter Property="BorderBrush" Value="{DynamicResource TierCommonBrush}" />
@@ -64,8 +68,7 @@
             Command="{Binding NavigateToDropTablesCommand}" />
         <MenuItem
             Header="_Settings"
-            Command="{Binding NavigateToSettingsCommand}"
-            InputGesture="Ctrl+OemComma" />
+            Command="{Binding NavigateToSettingsCommand}" />
       </MenuItem>
     </Menu>
 
@@ -416,16 +419,18 @@
               Background="#1A808080"
               CornerRadius="4">
             <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="Relics:" VerticalAlignment="Center" />
               <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                 <CheckBox IsChecked="{Binding WishlistRelics.ShowVaulted}" VerticalAlignment="Center" />
-                <TextBlock Text="Show vaulted relics" VerticalAlignment="Center" />
+                <TextBlock Text="Show vaulted" VerticalAlignment="Center" />
               </StackPanel>
               <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
               <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                 <CheckBox IsChecked="{Binding WishlistRelics.ShowAllRewards}" VerticalAlignment="Center" />
                 <TextBlock Text="Show all rewards" VerticalAlignment="Center" />
               </StackPanel>
-              <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+              <Border Width="2" Background="Gray" Margin="10,0" VerticalAlignment="Stretch" />
+              <TextBlock Text="Missions:" VerticalAlignment="Center" />
               <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                 <CheckBox IsChecked="{Binding WishlistFarming.ShowExactDropChances}" VerticalAlignment="Center" />
                 <TextBlock Text="Show exact drop chances" VerticalAlignment="Center" />
@@ -537,7 +542,7 @@
           </GridSplitter>
 
           <!-- Row 3: Missions scroll -->
-          <ScrollViewer Grid.Row="3">
+          <ScrollViewer Grid.Row="3" Margin="0,8,0,0">
             <StackPanel>
 
               <!-- Missions empty state -->
