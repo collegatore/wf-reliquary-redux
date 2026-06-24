@@ -54,6 +54,8 @@ Pre-V1, no runtime migration. Sequence: (1) `IErrorLog` port + file impl + test;
 
 ## Open Questions
 
-- **`IErrorLog.AppendAsync` vs. synchronous append:** async fits the project's "all I/O is async" convention, but error reporting from a catch block is simpler if fire-and-forget; likely async with the reporter awaiting/observing it.
-- **Toast auto-dismiss vs. sticky for errors:** errors may warrant a longer or manual-dismiss duration so the log controls stay reachable. (Leaning: longer, manually dismissible.)
-- **Should `IErrorReporter` live in Application (port) or Presentation only?** Application placement lets non-UI layers report; Presentation-only keeps Avalonia types out of Application. (Leaning: `IErrorReporter` in Application as a port, toast impl in Presentation.)
+All resolved.
+
+- **`IErrorLog.AppendAsync` vs. synchronous append:** **Resolved — async.** File I/O on .NET is genuinely async (`FileStream` with `useAsync: true`), so the port is `Task AppendAsync(string message, Exception? ex, CancellationToken ct)` and the implementation awaits real async writes.
+- **Toast auto-dismiss vs. sticky for errors:** **Resolved — manual dismiss only.** With no other persistent error channel in the UI, an auto-dismissing toast could be missed entirely. Toasts have no expiry and require explicit close.
+- **Should `IErrorReporter` live in Application (port) or Presentation only?** **Resolved — Presentation only.** `audit-ui-concurrency` already placed `IErrorReporter`, `NoOpErrorReporter`, and `AppErrors` in Presentation; nothing below Presentation currently needs to call it (Infrastructure failures surface as exceptions caught by the ViewModel/command layer). Moving it to Application would add a dependency with no current consumer.

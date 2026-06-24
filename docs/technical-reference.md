@@ -140,10 +140,47 @@ The Presentation layer must never block the UI thread. The contract:
 - **Synchronous CPU adapters offload themselves.** `IDropTableParser.ParseAsync` wraps the regex-heavy parse in `Task.Run` inside `HtmlDropTableParser`.
 - **ViewModels never call `Task.Run` and never use `ConfigureAwait(false)`** — work is already offloaded below them, and continuations must resume on the UI thread to mutate bound `ObservableCollection`s. (Enforced by `UiConcurrencyContractTests`.)
 - **MVVM plumbing** uses `CommunityToolkit.Mvvm` (`ObservableObject`, `[ObservableProperty]`, `AsyncRelayCommand` with built-in `IsRunning`/reentrancy) and `AsyncAwaitBestPractices` (`SafeFireAndForget` for constructor loads and property-setter persistence).
-- **Failures are observed.** No discarded async tasks: fire-and-forget goes through `SafeFireAndForget`; commands catch and report. All failures route to `IErrorReporter` (the toast + log surface is delivered by the `error-reporting-surface` change; an interim `NoOpErrorReporter` is wired via `AppErrors.Reporter`, plus a global `SafeFireAndForget`/`TaskScheduler.UnobservedTaskException` handler in `Program`).
+- **Failures are observed.** No discarded async tasks: fire-and-forget goes through `SafeFireAndForget`; commands catch and report. All failures route to `IErrorReporter` (`AppErrors.Reporter`). The real implementation (`ErrorReporter`) logs to file, sets the footer error text, and adds a dismissible `ErrorToastCard` to the window's overlay panel.
 - **Busy + reentrancy.** `BusyScope` gives commands a busy state and a reentrancy guard. Content views (Prime Gear / Relics / Missions) expose `IsBusy` and show an in-content "Updating…" indicator; global Drop Tables source operations use the footer spinner.
 - **Reloads are latest-wins.** `ReloadGate` cancels a superseded reload's `CancellationToken`; reloads check the token after their awaited fetches and only then mutate bound collections, so a cancelled reload never leaves a half-rebuilt view.
 - **Blocking-on-async is confined to the startup/shutdown boundary** — only `MainWindow`'s constructor and `OnWindowClosing` may `Task.Run(...).GetAwaiter().GetResult()` (no message loop to starve there). No interactive code path blocks. (Enforced by `UiConcurrencyContractTests`.)
+
+## Error Reporting
+
+All runtime failures (caught command exceptions, `SafeFireAndForget` callbacks, failed background loads) are routed through `IErrorReporter` → `AppErrors.Reporter`.
+
+### What the reporter does
+
+`ErrorReporter` (Presentation) does three things on each `Report(userMessage, exception)` call:
+
+1. **Writes to the log file** via `IErrorLog.AppendAsync` — timestamped entry with the user message and exception detail. Fire-and-forget; a log failure does not suppress the other actions.
+2. **Sets the footer error text** via an injected `Action<string>` delegate — the text `"{userMessage}. Refer to logs for the error details."` appears in the footer in OrangeRed. Stays until replaced by the next `Report()` call.
+3. **Adds an `ErrorToastCard`** to the `StackPanel` overlay at the bottom-right of `MainWindow`. The card shows the message, a "Copy log path" button (puts the absolute log file path in the clipboard), and an "Open log" button (`IFileLauncher`). No auto-expiry; the user dismisses via the ✕ button.
+
+All UI mutations are posted to `Dispatcher.UIThread` so `Report()` is safe to call from any thread.
+
+### Ports and adapters
+
+| Port (Application) | Adapter (Infrastructure) | Purpose |
+|---|---|---|
+| `IErrorLog` | `FileErrorLog` | Appends timestamped entries to `app.log`; serializes concurrent writes with `SemaphoreSlim` |
+| `IFileLauncher` | `ShellFileLauncher` | Opens a file in the OS default app; Windows → `UseShellExecute=true`; Linux → `xdg-open` |
+
+### Log file location
+
+`%LOCALAPPDATA%\WF Reliquary Redux\logs\app.log`
+
+The directory is created on first write. Pre-V1 persistence rule: no migration — safe to delete.
+
+### Settings / Maintenance section
+
+**Settings → Maintenance → "Open log file"** — always enabled, calls `IFileLauncher.Open(IErrorLog.LogFilePath)`. Launch failures are silently swallowed; "Copy log path" in any active toast is the always-available fallback.
+
+### Wiring
+
+`ErrorReporter` is constructed in `MainWindow` (production constructor) after `InitializeComponent()` so the `ToastPanel` named control is available. `AppErrors.Reporter` (a static holder in Presentation, initialized to `NoOpErrorReporter.Instance`) is replaced with the real `ErrorReporter` before any ViewModel is created.
+
+`ReliquaryServiceFactory.CreateErrorLog()` and `CreateFileLauncher()` are the Composition-layer factory methods; Presentation calls them via Composition, never Infrastructure directly.
 
 ## Code Conventions
 

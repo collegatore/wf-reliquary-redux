@@ -118,7 +118,7 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
                 })
                 .ToList();
             context.MissionSources.AddRange(missionSourceEntities);
-            await context.SaveChanges(ct).ConfigureAwait(false);
+            await context.SaveChangesAsync(ct).ConfigureAwait(false);
             var missionSourceIdByKey = missionSourceEntities
                 .ToDictionary(e => MissionSourceKey.From(e.DisplayLabel, e.SourceOrder), e => e.Id);
 

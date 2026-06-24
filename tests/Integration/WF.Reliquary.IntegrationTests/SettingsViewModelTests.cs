@@ -45,8 +45,10 @@ public sealed class SettingsViewModelTests
     }
 
     [Test]
-    public void SyncRelicsPanelHeight_UpdatesRelicsPanelHeight_AndMarksUnsaved()
+    public void SyncRelicsPanelHeight_UpdatesRelicsPanelHeight_DoesNotMarkUnsaved()
     {
+        // The splitter cannot be adjusted from within Settings, so syncing the
+        // live position on entry must never trigger the leave-guard dialog.
         var vm = CreateViewModel(DefaultSettings);
 
         vm.SyncRelicsPanelHeight(250);
@@ -54,7 +56,7 @@ public sealed class SettingsViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(vm.RelicsPanelHeight, Is.EqualTo(250));
-            Assert.That(vm.HasUnsavedChanges, Is.True);
+            Assert.That(vm.HasUnsavedChanges, Is.False);
         });
     }
 

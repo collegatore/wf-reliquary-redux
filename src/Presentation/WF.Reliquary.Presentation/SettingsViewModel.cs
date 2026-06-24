@@ -36,6 +36,11 @@ public sealed class SettingsViewModel : ObservableObject
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => HasUnsavedChanges);
         BackCommand = new AsyncRelayCommand(BackAsync);
+        OpenLogFileCommand = new RelayCommand(() => OpenLogFile?.Invoke());
+        CopyLogPathCommand = new AsyncRelayCommand(async () =>
+        {
+            if (CopyLogPath is not null) await CopyLogPath();
+        });
     }
 
     // ── Delegates wired by MainWindow ──────────────────────────────────────
@@ -49,6 +54,18 @@ public sealed class SettingsViewModel : ObservableObject
 
     /// <summary>Returns true if the user confirms discarding unsaved changes.</summary>
     public Func<Task<bool>>? ConfirmDiscard { get; set; }
+
+    /// <summary>
+    /// Opens the application log file. Injected from <c>MainWindow</c> as a
+    /// delegate so <c>SettingsViewModel</c> has no dependency on Infrastructure.
+    /// </summary>
+    public Action? OpenLogFile { get; set; }
+
+    /// <summary>
+    /// Copies the log file path to the clipboard. Injected from <c>MainWindow</c>
+    /// as an async delegate (clipboard access requires a <c>TopLevel</c> reference).
+    /// </summary>
+    public Func<Task>? CopyLogPath { get; set; }
 
     // ── Properties ─────────────────────────────────────────────────────────
 
@@ -103,6 +120,8 @@ public sealed class SettingsViewModel : ObservableObject
 
     public AsyncRelayCommand SaveCommand { get; }
     public AsyncRelayCommand BackCommand { get; }
+    public RelayCommand OpenLogFileCommand { get; }
+    public AsyncRelayCommand CopyLogPathCommand { get; }
 
     // ── Called by shell to sync live splitter position ──────────────────────
 
@@ -110,6 +129,11 @@ public sealed class SettingsViewModel : ObservableObject
     /// persists it. Called by the shell before navigating to Settings.</summary>
     public void SyncRelicsPanelHeight(double? currentHeight)
     {
+        // Sync the saved baseline to the live position first so the splitter
+        // never appears as an "unsaved change" in the leave-guard. The user
+        // cannot adjust the splitter from within Settings, so any delta between
+        // the live position and the last-persisted value is not a user edit.
+        savedRelicsPanelHeight = currentHeight;
         RelicsPanelHeight = currentHeight;
     }
 

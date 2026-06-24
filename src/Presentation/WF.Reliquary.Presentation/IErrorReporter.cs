@@ -3,35 +3,27 @@ namespace WF.Reliquary.Presentation;
 /// <summary>
 /// Sink for surfacing asynchronous failures (caught command failures,
 /// <c>SafeFireAndForget</c> exceptions, failed background loads).
-///
-/// This is the seam the UI concurrency contract routes failures to. The full
-/// implementation — a toast backed by an application log file with copy-path /
-/// open-log controls — is delivered by the separate <c>error-reporting-surface</c>
-/// change. Until that lands, a <see cref="NoOpErrorReporter"/> is wired so the
-/// contract has a real, swappable target.
+/// The real implementation is <see cref="ErrorReporter"/>, which logs to file,
+/// updates the footer, and shows a dismissible toast with log-access controls.
 /// </summary>
 public interface IErrorReporter
 {
     /// <summary>
-    /// Reports a failure with a short user-facing message and, where available, the
-    /// originating exception (caught exceptions pass it; domain failures that carry only
-    /// a message may omit it).
+    /// Reports a failure with a short, operation-named user-facing message and,
+    /// where available, the originating exception.
     /// </summary>
     void Report(string userMessage, Exception? exception = null);
 }
 
 /// <summary>
-/// Interim no-op reporter used until the <c>error-reporting-surface</c> change
-/// supplies the toast + log implementation. Swallows reports silently.
+/// No-op reporter used in tests and design-time contexts where no real reporting
+/// surface is available. Swallows all reports silently.
 /// </summary>
 public sealed class NoOpErrorReporter : IErrorReporter
 {
     public static readonly NoOpErrorReporter Instance = new();
 
-    public void Report(string userMessage, Exception? exception = null)
-    {
-        // Intentionally no-op; replaced by the toast+log reporter from error-reporting-surface.
-    }
+    public void Report(string userMessage, Exception? exception = null) { }
 }
 
 /// <summary>

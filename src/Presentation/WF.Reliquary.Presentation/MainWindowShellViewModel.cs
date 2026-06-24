@@ -18,6 +18,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
     private int selectedTabIndex;
     private int previousTabIndex;
     private double? relicsPanelHeight;
+    private string footerErrorText = string.Empty;
 
     public MainWindowShellViewModel(
         MainWindowViewModel dropTables,
@@ -126,6 +127,22 @@ public sealed class MainWindowShellViewModel : ObservableObject
     public bool IsFooterBusy => DropTables.IsBusy;
 
     public string FooterOperationStatusText => DropTables.OperationStatusText;
+
+    /// <summary>
+    /// Terse error acknowledgment set by <see cref="ErrorReporter"/>. Stays visible
+    /// until replaced by the next <c>Report</c> call. Empty when no error has occurred.
+    /// </summary>
+    public string FooterErrorText
+    {
+        get => footerErrorText;
+        set
+        {
+            if (SetProperty(ref footerErrorText, value))
+                OnPropertyChanged(nameof(HasFooterError));
+        }
+    }
+
+    public bool HasFooterError => !string.IsNullOrEmpty(footerErrorText);
 
     /// <summary>Current live relics panel height in pixels (updated by splitter drag).</summary>
     public double? RelicsPanelHeight

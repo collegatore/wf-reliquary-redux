@@ -1,8 +1,9 @@
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Infrastructure.DropTables;
+using WF.Reliquary.Infrastructure.Logging;
 using WF.Reliquary.Infrastructure.Settings;
-
+using WF.Reliquary.Infrastructure.Shell;
 
 namespace WF.Reliquary.Composition;
 
@@ -83,5 +84,15 @@ public static class ReliquaryServiceFactory
     public static IWishlistFarmingMissionsReader CreateWishlistFarmingMissionsReader()
     {
         return new SqliteWishlistFarmingMissionsReader();
+    }
+
+    public static IErrorLog CreateErrorLog()
+    {
+        return new FileErrorLog();
+    }
+
+    public static IFileLauncher CreateFileLauncher()
+    {
+        return new ShellFileLauncher();
     }
 }

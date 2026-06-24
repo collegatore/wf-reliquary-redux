@@ -53,6 +53,7 @@
     </Style>
   </Window.Styles>
 
+  <Panel>
   <DockPanel>
 
     <!-- Application menu bar -->
@@ -107,6 +108,12 @@
         <TextBlock
             IsVisible="{Binding ShowFooterImportStatus}"
             Text="{Binding DropTables.FooterImportStatusText}"
+            TextTrimming="CharacterEllipsis"
+            VerticalAlignment="Center" />
+        <TextBlock
+            IsVisible="{Binding HasFooterError}"
+            Text="{Binding FooterErrorText}"
+            Foreground="OrangeRed"
             TextTrimming="CharacterEllipsis"
             VerticalAlignment="Center" />
       </StackPanel>
@@ -751,4 +758,15 @@
 
     </TabControl>
   </DockPanel>
+
+  <!-- Toast overlay: stacks error cards at the bottom-right above the footer. -->
+  <StackPanel
+      x:Name="ToastPanel"
+      VerticalAlignment="Bottom"
+      HorizontalAlignment="Right"
+      Margin="0,0,16,52"
+      Spacing="0"
+      MaxWidth="360" />
+
+  </Panel>
 </Window>

@@ -118,6 +118,27 @@
 
     <Separator />
 
+    <!-- Maintenance -->
+    <StackPanel Spacing="8">
+      <TextBlock FontWeight="SemiBold" Text="Maintenance" />
+      <TextBlock
+          Foreground="Gray"
+          TextWrapping="Wrap"
+          Text="Errors are written to an application log file." />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button
+            Padding="14,8"
+            Command="{Binding Settings.OpenLogFileCommand}"
+            Content="Open log file" />
+        <Button
+            Padding="14,8"
+            Command="{Binding Settings.CopyLogPathCommand}"
+            Content="Copy log path" />
+      </StackPanel>
+    </StackPanel>
+
+    <Separator />
+
     <!-- Save / Back -->
     <StackPanel Orientation="Horizontal" Spacing="10">
       <Button

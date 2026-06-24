@@ -46,6 +46,18 @@ public sealed partial class MainWindow : Window
 
         InitializeComponent();
 
+        // Set up the real error reporter now that InitializeComponent has run
+        // (ToastPanel is available) and before any VM is constructed (VMs fire
+        // SafeFireAndForget reloads whose failures must reach the reporter).
+        var errorLog = ReliquaryServiceFactory.CreateErrorLog();
+        var fileLauncher = ReliquaryServiceFactory.CreateFileLauncher();
+        var errorReporter = new ErrorReporter(
+            errorLog,
+            fileLauncher,
+            setFooterStatus: text => { if (shell is not null) shell.FooterErrorText = text; });
+        errorReporter.SetToastPanel(ToastPanel);
+        AppErrors.Reporter = errorReporter;
+
         // Apply saved window size after InitializeComponent (styled properties
         // are fully wired up at this point).
         Width = initialSettings.WindowWidth;
@@ -99,6 +111,37 @@ public sealed partial class MainWindow : Window
 
         var settingsVm = new SettingsViewModel(userSettingsStore, initialSettings);
         settingsVm.ConfirmDiscard = () => ConfirmDiscardDialog.ShowAsync(this);
+        settingsVm.CopyLogPath = async () =>
+        {
+            try
+            {
+                var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+                if (clipboard is not null)
+                {
+                    var data = new DataTransfer();
+                    data.Add(DataTransferItem.CreateText(errorLog.LogFilePath));
+                    await clipboard.SetDataAsync(data);
+                }
+            }
+            catch { }
+        };
+
+        settingsVm.OpenLogFile = () =>
+        {
+            var logPath = errorLog.LogFilePath;
+            if (File.Exists(logPath))
+            {
+                fileLauncher.Open(logPath);
+            }
+            else
+            {
+                // No log file yet (no errors have occurred). Open the log directory
+                // so the user can see where logs will appear once errors occur.
+                var dir = Path.GetDirectoryName(logPath)!;
+                Directory.CreateDirectory(dir);
+                fileLauncher.Open(dir);
+            }
+        };
 
         var dropTablesVm = new MainWindowViewModel(
             ReliquaryServiceFactory.CreateDropTableSourceRefreshService(userSettingsStore),
