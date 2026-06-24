@@ -120,7 +120,7 @@
     </Border>
 
     <!-- Main tab control -->
-    <TabControl x:Name="MainTabControl" Margin="24" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+    <TabControl x:Name="MainTabControl" Margin="16,12,16,24" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
 
       <TabItem Header="Prime Gear">
         <ScrollViewer Margin="0,12,0,0">
