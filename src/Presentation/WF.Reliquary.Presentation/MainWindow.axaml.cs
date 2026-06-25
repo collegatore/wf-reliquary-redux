@@ -105,6 +105,32 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreateWishlistRelicsReader(),
             wishlistStore);
 
+        var currentLfgTemplate = initialSettings.LfgTemplate;
+        var lfgEditorVm = new LfgTemplateEditorViewModel(userSettingsStore, initialSettings.LfgTemplate);
+        lfgEditorVm.OnSaved = t => currentLfgTemplate = t; // SaveCommand path (used by tests)
+
+        wishlistRelicsVm.OpenLfgCompose = async relicName =>
+        {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+            await LfgMessageDialog.ShowAsync(
+                this,
+                currentLfgTemplate,
+                relicName,
+                async text =>
+                {
+                    try
+                    {
+                        if (clipboard is not null)
+                        {
+                            var data = new DataTransfer();
+                            data.Add(DataTransferItem.CreateText(text));
+                            await clipboard.SetDataAsync(data);
+                        }
+                    }
+                    catch { }
+                });
+        };
+
         var wishlistFarmingVm = new WishlistFarmingMissionsViewModel(
             ReliquaryServiceFactory.CreateWishlistFarmingMissionsReader(),
             wishlistStore);
@@ -125,6 +151,13 @@ public sealed partial class MainWindow : Window
             }
             catch { }
         };
+
+        settingsVm.GetCurrentLfgTemplate = () => lfgEditorVm.CurrentDraftTemplate();
+        settingsVm.IsLfgTemplateDirty = () => lfgEditorVm.HasUnsavedChanges;
+        lfgEditorVm.OnDirtyChanged = settingsVm.NotifyLfgChanged;
+        // NOTE: settingsVm.OnSaved is wired by the shell (MainWindowShellViewModel),
+        // which clears the LFG editor's dirty state via LfgEditor.NotifySaved. The
+        // editor's own OnSaved callback (line above) keeps currentLfgTemplate in sync.
 
         settingsVm.OpenLogFile = () =>
         {
@@ -159,7 +192,8 @@ public sealed partial class MainWindow : Window
             wishlistRelicsVm,
             wishlistFarmingVm,
             profileVm,
-            settingsVm);
+            settingsVm,
+            lfgEditorVm);
 
         // Sync saved relics panel height into the shell so the grid initializer
         // can read it when the Relics tab is first shown.

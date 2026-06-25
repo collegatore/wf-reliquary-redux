@@ -473,11 +473,31 @@
                         Width="{DynamicResource RelicCardWidth}"
                         Classes.vaulted="{Binding IsVaulted}">
                       <StackPanel>
-                        <TextBlock
-                            Margin="0,0,0,6"
-                            FontWeight="SemiBold"
-                            Text="{Binding RelicName}"
-                            TextWrapping="Wrap" />
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                          <TextBlock
+                              Grid.Column="0"
+                              FontWeight="SemiBold"
+                              Text="{Binding RelicName}"
+                              TextWrapping="Wrap"
+                              VerticalAlignment="Center" />
+                          <Button
+                              Grid.Column="1"
+                              Margin="4,0,0,0"
+                              Padding="6,2"
+                              VerticalAlignment="Center"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              FontWeight="Bold"
+                              Content="⋮">
+                            <Button.Flyout>
+                              <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                                <MenuItem
+                                    Header="Compose LFG message…"
+                                    Command="{Binding ComposeCommand}" />
+                              </MenuFlyout>
+                            </Button.Flyout>
+                          </Button>
+                        </Grid>
                         <Separator Margin="0,0,0,6" />
                         <ItemsControl ItemsSource="{Binding TierGroups}">
                           <ItemsControl.ItemTemplate>
@@ -758,7 +778,9 @@
               FontWeight="{Binding $parent[TabItem].FontWeight}"
               IsVisible="{Binding $parent[TabItem].IsSelected}" />
         </TabItem.Header>
-        <local:SettingsView Margin="0,0,0,0" />
+        <ScrollViewer>
+          <local:SettingsView Margin="0,0,0,0" />
+        </ScrollViewer>
       </TabItem>
 
     </TabControl>

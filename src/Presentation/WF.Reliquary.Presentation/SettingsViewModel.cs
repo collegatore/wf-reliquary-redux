@@ -67,6 +67,18 @@ public sealed class SettingsViewModel : ObservableObject
     /// </summary>
     public Func<Task>? CopyLogPath { get; set; }
 
+    /// <summary>
+    /// Returns the current LFG template so it is preserved when settings are saved here.
+    /// Injected from <c>MainWindow</c> because the LFG editor manages that template separately.
+    /// </summary>
+    public Func<Application.Lfg.LfgMessageTemplate>? GetCurrentLfgTemplate { get; set; }
+
+    /// <summary>Returns true when the LFG draft has unsaved changes. Injected from MainWindow.</summary>
+    public Func<bool>? IsLfgTemplateDirty { get; set; }
+
+    /// <summary>Called by the LFG editor when its draft changes, so SaveCommand re-evaluates CanExecute.</summary>
+    public void NotifyLfgChanged() => NotifyHasUnsavedChanges();
+
     // ── Properties ─────────────────────────────────────────────────────────
 
     public string SourceUrlText
@@ -110,7 +122,8 @@ public sealed class SettingsViewModel : ObservableObject
     public bool HasUnsavedChanges =>
         !string.Equals(sourceUrlText, savedSourceUrl, StringComparison.Ordinal) ||
         selectedFontSize != savedFontSize ||
-        relicsPanelHeight != savedRelicsPanelHeight;
+        relicsPanelHeight != savedRelicsPanelHeight ||
+        (IsLfgTemplateDirty?.Invoke() ?? false);
 
     public string UrlValidationError
     {
@@ -154,7 +167,8 @@ public sealed class SettingsViewModel : ObservableObject
             WindowWidth: 0,   // will be refreshed from window on close; safe to leave 0 here
             WindowHeight: 0,
             FontSize: ToApplication(SelectedFontSize),
-            RelicsPanelHeight: RelicsPanelHeight);
+            RelicsPanelHeight: RelicsPanelHeight,
+            LfgTemplate: GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default);
 
         await settingsStore.SaveAsync(newSettings);
 
@@ -166,8 +180,8 @@ public sealed class SettingsViewModel : ObservableObject
         // Apply font size immediately
         ApplyFontSize(SelectedFontSize);
 
-        NotifyHasUnsavedChanges();
         OnSaved?.Invoke(newSettings);
+        NotifyHasUnsavedChanges();
     }
 
     public async Task BackAsync()

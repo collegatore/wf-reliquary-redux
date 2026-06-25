@@ -27,7 +27,8 @@ public sealed class MainWindowShellViewModel : ObservableObject
         WishlistRelicsViewModel wishlistRelics,
         WishlistFarmingMissionsViewModel wishlistFarming,
         ProfileViewModel profiles,
-        SettingsViewModel settings)
+        SettingsViewModel settings,
+        LfgTemplateEditorViewModel lfgEditor)
     {
         DropTables = dropTables;
         PrimeGear = primeGear;
@@ -36,6 +37,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
         WishlistFarming = wishlistFarming;
         Profiles = profiles;
         Settings = settings;
+        LfgEditor = lfgEditor;
 
         NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
         NavigateToDropTablesCommand = new RelayCommand(NavigateToDropTables);
@@ -101,6 +103,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
     public WishlistFarmingMissionsViewModel WishlistFarming { get; }
     public ProfileViewModel Profiles { get; }
     public SettingsViewModel Settings { get; }
+    public LfgTemplateEditorViewModel LfgEditor { get; }
 
     public ICommand NavigateToSettingsCommand { get; }
     public ICommand NavigateToDropTablesCommand { get; }
@@ -185,5 +188,10 @@ public sealed class MainWindowShellViewModel : ObservableObject
         // If the user saved a relics panel height, sync it back so the splitter
         // reflects the persisted value on next open (e.g. after Reset to default).
         RelicsPanelHeight = saved.RelicsPanelHeight;
+
+        // The LFG template is persisted through the main Settings Save (no separate
+        // LFG Save button), so update the editor's saved baseline and clear its
+        // dirty state — otherwise the leave-guard would still flag unsaved changes.
+        LfgEditor.NotifySaved(saved.LfgTemplate);
     }
 }

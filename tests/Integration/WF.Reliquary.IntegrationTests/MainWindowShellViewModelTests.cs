@@ -1,6 +1,7 @@
 using Moq;
 using NUnit.Framework;
 using WF.Reliquary.Application.DropTables;
+using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.PrimeGear;
 using WF.Reliquary.Application.Profiles;
@@ -67,7 +68,45 @@ public sealed class MainWindowShellViewModelTests
         Assert.That(shell.SelectedTabIndex, Is.EqualTo(PrimeGearTabIndex));
     }
 
-    private static MainWindowShellViewModel CreateShell(string? importedVersion = null)
+    [Test]
+    public async Task SettingsSave_ClearsLfgEditorDirtyState()
+    {
+        // Regression: the shell wires settings.OnSaved = OnSettingsSaved, which
+        // overwrites any OnSaved set elsewhere. That handler must clear the LFG
+        // editor's dirty state, otherwise the leave-guard keeps flagging unsaved
+        // changes after a successful save.
+        var store = new Mock<IUserSettingsStore>();
+        store.Setup(s => s.SaveAsync(It.IsAny<UserSettings>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var settings = new SettingsViewModel(store.Object, DefaultSettings);
+        var lfgEditor = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+
+        // Replicate MainWindow's LFG↔Settings wiring (the dirty-state bridge).
+        settings.GetCurrentLfgTemplate = () => lfgEditor.CurrentDraftTemplate();
+        settings.IsLfgTemplateDirty = () => lfgEditor.HasUnsavedChanges;
+        lfgEditor.OnDirtyChanged = settings.NotifyLfgChanged;
+
+        // The shell wires settings.OnSaved (the path under test).
+        _ = CreateShell(settings: settings, lfgEditor: lfgEditor);
+
+        // Dirty the LFG editor.
+        lfgEditor.PatternText = "{participation} [{relic_name}]";
+        lfgEditor.ParseCommand.Execute(null);
+        Assert.That(lfgEditor.HasUnsavedChanges, Is.True);
+        Assert.That(settings.HasUnsavedChanges, Is.True);
+
+        // Save through the main Settings Save button.
+        await settings.SaveAsync();
+
+        Assert.That(lfgEditor.HasUnsavedChanges, Is.False, "LFG dirty state should clear after save");
+        Assert.That(settings.HasUnsavedChanges, Is.False, "Settings should report no unsaved changes after save");
+    }
+
+    private static MainWindowShellViewModel CreateShell(
+        string? importedVersion = null,
+        SettingsViewModel? settings = null,
+        LfgTemplateEditorViewModel? lfgEditor = null)
     {
         var importMetadataReader = new Mock<IImportMetadataReader>();
         importMetadataReader
@@ -106,10 +145,12 @@ public sealed class MainWindowShellViewModelTests
 
         var profiles = new ProfileViewModel(ProfileStore().Object, _ => Task.FromResult<string?>(null));
 
-        var settings = new SettingsViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
+        settings ??= new SettingsViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
+
+        lfgEditor ??= new LfgTemplateEditorViewModel(Mock.Of<IUserSettingsStore>(), LfgMessageTemplate.Default);
 
         return new MainWindowShellViewModel(
-            dropTables, primeGear, wishlist, relics, farming, profiles, settings);
+            dropTables, primeGear, wishlist, relics, farming, profiles, settings, lfgEditor);
     }
 
     private static UserSettings DefaultSettings { get; } = new(
@@ -117,7 +158,8 @@ public sealed class MainWindowShellViewModelTests
         WindowWidth: 900,
         WindowHeight: 600,
         FontSize: UserFontSize.Medium,
-        RelicsPanelHeight: null);
+        RelicsPanelHeight: null,
+        LfgTemplate: LfgMessageTemplate.Default);
 
     private static Mock<IWishlistStore> WishlistStore()
     {

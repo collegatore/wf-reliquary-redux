@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using WF.Reliquary.Application.DropTables;
+using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Infrastructure.Settings;
 
@@ -54,7 +55,8 @@ public sealed class UserSettingsStoreTests
             WindowWidth: 1280,
             WindowHeight: 800,
             FontSize: UserFontSize.Large,
-            RelicsPanelHeight: 320.5);
+            RelicsPanelHeight: 320.5,
+            LfgTemplate: LfgMessageTemplate.Default);
 
         await store.SaveAsync(original);
         var loaded = await store.LoadAsync();
@@ -103,5 +105,36 @@ public sealed class UserSettingsStoreTests
         var settings = await dropTableStore.LoadAsync();
 
         Assert.That(settings.SourceUrl.ToString(), Is.EqualTo(DropTableSourceDefaults.SourceUrl));
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenFileAbsent_ReturnsDefaultLfgTemplate()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var settings = await store.LoadAsync();
+
+        Assert.That(settings.LfgTemplate.Pattern, Is.EqualTo(LfgMessageTemplate.Default.Pattern));
+        Assert.That(settings.LfgTemplate.Groups, Has.Count.EqualTo(LfgMessageTemplate.Default.Groups.Count));
+    }
+
+    [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsLfgTemplate()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var customTemplate = new LfgMessageTemplate(
+            "{participation} [{relic_name}]",
+            [new LfgOptionGroup("participation", [new LfgOption("Host", "H")], "H")]);
+
+        await store.SaveAsync(UserSettings.Default with { LfgTemplate = customTemplate });
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.LfgTemplate.Pattern, Is.EqualTo("{participation} [{relic_name}]"));
+        Assert.That(loaded.LfgTemplate.Groups, Has.Count.EqualTo(1));
+        Assert.That(loaded.LfgTemplate.Groups[0].Placeholder, Is.EqualTo("participation"));
+        Assert.That(loaded.LfgTemplate.Groups[0].DefaultValue, Is.EqualTo("H"));
+        Assert.That(loaded.LfgTemplate.Groups[0].Options[0].Descriptor, Is.EqualTo("Host"));
+        Assert.That(loaded.LfgTemplate.Groups[0].Options[0].Value, Is.EqualTo("H"));
     }
 }

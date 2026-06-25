@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WF.Reliquary.Application.DropTables;
+using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Settings;
 
@@ -70,6 +71,7 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 WindowHeight: file.WindowHeight > 0 ? file.WindowHeight : UserSettings.Default.WindowHeight,
                 FontSize: Enum.IsDefined(file.FontSize) ? file.FontSize : UserSettings.Default.FontSize,
                 RelicsPanelHeight: file.RelicsPanelHeight > 0 ? file.RelicsPanelHeight : null,
+                LfgTemplate: ToTemplate(file.LfgTemplate),
                 WindowX: file.WindowX,
                 WindowY: file.WindowY);
         }
@@ -89,6 +91,7 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.WindowHeight,
             settings.FontSize,
             settings.RelicsPanelHeight,
+            FromTemplate(settings.LfgTemplate),
             settings.WindowX,
             settings.WindowY);
 
@@ -114,12 +117,53 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
 
     private string SettingsPath() => Path.Combine(rootPath, "user-settings.json");
 
+    private static LfgMessageTemplate ToTemplate(LfgTemplateFile? file)
+    {
+        if (file is null || string.IsNullOrWhiteSpace(file.Pattern))
+            return LfgMessageTemplate.Default;
+
+        var groups = (file.Groups ?? [])
+            .Select(g => new LfgOptionGroup(
+                g.Placeholder ?? string.Empty,
+                (g.Options ?? []).Select(o => new LfgOption(o.Descriptor ?? string.Empty, o.Value ?? string.Empty)).ToList(),
+                g.DefaultValue ?? string.Empty))
+            .ToList();
+
+        return new LfgMessageTemplate(file.Pattern, groups);
+    }
+
+    private static LfgTemplateFile FromTemplate(LfgMessageTemplate template) =>
+        new(
+            template.Pattern,
+            template.Groups
+                .Select(g => new LfgGroupFile(
+                    g.Placeholder,
+                    g.Options.Select(o => new LfgOptionFile(o.Descriptor, o.Value)).ToList(),
+                    g.DefaultValue))
+                .ToList());
+
+    // ── DTOs ────────────────────────────────────────────────────────────────
+
     private sealed record SettingsFile(
         string SourceUrl,
         double WindowWidth,
         double WindowHeight,
         UserFontSize FontSize,
         double? RelicsPanelHeight,
+        LfgTemplateFile? LfgTemplate = null,
         int? WindowX = null,
         int? WindowY = null);
+
+    private sealed record LfgTemplateFile(
+        string? Pattern,
+        List<LfgGroupFile>? Groups);
+
+    private sealed record LfgGroupFile(
+        string? Placeholder,
+        List<LfgOptionFile>? Options,
+        string? DefaultValue);
+
+    private sealed record LfgOptionFile(
+        string? Descriptor,
+        string? Value);
 }

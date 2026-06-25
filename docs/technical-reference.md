@@ -127,6 +127,16 @@ Applies to **all persistent state**: database data, settings files, config files
 - **Unit tests** — cover Application-layer logic only. One test class per service class. All ports are mocked with Moq.
 - **Integration tests** — exercise the real SQLite stack end-to-end, ViewModel wiring, and project structure. `ReadmeGuidanceTests` and `VsCodeWorkflowTests` enforce documentation and build-tooling compliance; keep README and VS Code tasks consistent with them.
 
+## LFG Message Constructor
+
+Each relic card on the Relics and Missions tab has a `⋮` overflow menu (same pattern as prime gear cards). "Compose LFG message…" opens a modal popup with per-option-group selectors, a live preview, and a copy-to-clipboard button, generating Warframe recruiting-chat messages like `LF [Axi A1 Relic] rad`.
+
+**Pattern engine** (`Application/Lfg/`): `LfgMessageTemplate` holds the pattern string and custom option groups (`LfgOptionGroup` → `LfgOption` with Descriptor/Value). `LfgPatternParser.Validate` runs a forward-scan checking for unclosed/nested/empty placeholders and requires `{relic_name}`. `LfgPatternParser.Reconcile` implements Parse-as-reconcile (keep draft group → restore from saved group → empty group). `LfgMessageBuilder` substitutes via `Regex.Replace`. System placeholders: `{relic_name}` (resolves to full display name, e.g. `Axi A1 Relic`); `{relic_reward}` is reserved but has no UI yet.
+
+**Settings**: a sub-section in the Settings tab edits the pattern and option groups with Parse / Save / Restore defaults. The template is held as a draft; Save persists; Restore defaults resets to `LfgMessageTemplate.Default` without persisting.
+
+**Persistence**: the template is stored in `user-settings.json` (nested `lfgTemplate` object). **Pre-V1 note**: existing `user-settings.json` files have no `lfgTemplate` field and will load `LfgMessageTemplate.Default` until the user opens Settings and saves. No wipe or migration needed.
+
 ## UI Design
 
 - **Card display** — the rationale behind the relic and farming-mission cards (the ~5–10s reward-match use case, verbatim names, tier accent bars, the light-theme palette, and font-scaled card widths) is documented in [card-display-design.md](card-display-design.md).

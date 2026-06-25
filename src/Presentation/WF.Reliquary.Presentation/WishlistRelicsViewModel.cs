@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using AsyncAwaitBestPractices;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Wishlist;
 
@@ -55,7 +56,8 @@ public sealed class WishlistRelicCardViewModel
         bool isVaulted,
         IEnumerable<WishlistRelicRewardViewModel> rewards,
         IEnumerable<string> rewardTiers,
-        bool showAllRewards = true)
+        bool showAllRewards = true,
+        Func<Task>? openCompose = null)
     {
         RelicName = relicName;
         Era = era;
@@ -77,12 +79,16 @@ public sealed class WishlistRelicCardViewModel
             .ToList();
 
         TierGroups = new ObservableCollection<WishlistRelicTierGroupViewModel>(groups);
+        ComposeCommand = new AsyncRelayCommand(openCompose ?? (() => Task.CompletedTask));
     }
 
     public string RelicName { get; }
     public string Era { get; }
     public bool IsVaulted { get; }
     public ObservableCollection<WishlistRelicTierGroupViewModel> TierGroups { get; }
+
+    /// <summary>Opens the LFG message dialog for this relic.</summary>
+    public AsyncRelayCommand ComposeCommand { get; }
 }
 
 public sealed class WishlistRelicsViewModel : ObservableObject
@@ -95,6 +101,11 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     private bool showAllRewards;
     private bool isEmpty = true;
     private bool isBusy;
+
+    /// <summary>
+    /// Set by MainWindow to open the LFG dialog for a given relic name.
+    /// </summary>
+    public Func<string, Task>? OpenLfgCompose { get; set; }
 
     public WishlistRelicsViewModel(IWishlistRelicsReader reader, IWishlistStore wishlistStore)
     {
@@ -200,7 +211,8 @@ public sealed class WishlistRelicsViewModel : ObservableObject
             e.IsVaulted,
             e.Rewards.Select(r => new WishlistRelicRewardViewModel(r.RewardName, r.IsWishlisted, showAllRewards)),
             e.Rewards.Select(r => r.RewardTier),
-            showAllRewards));
+            showAllRewards,
+            openCompose: OpenLfgCompose is { } fn ? () => fn(e.DisplayName) : null));
 
         foreach (var card in cards)
             Cards.Add(card);
