@@ -60,6 +60,48 @@
       "problemMatcher": "$msCompile"
     },
     {
+      "label": "dotnet: clean",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "clean"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "dotnet: force clean (bin + obj)",
+      "type": "shell",
+      "command": "Get-ChildItem -Path . -Include bin,obj -Recurse -Directory | Remove-Item -Recurse -Force",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NonInteractive", "-Command"]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "dotnet: publish (self-contained)",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj",
+        "-c", "Release",
+        "-r", "win-x64",
+        "--self-contained",
+        "-p:PublishSingleFile=true"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
       "label": "dotnet: start presentation (no build)",
       "type": "process",
       "command": "dotnet",
