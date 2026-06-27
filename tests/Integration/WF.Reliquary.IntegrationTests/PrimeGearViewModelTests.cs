@@ -145,9 +145,10 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object);
         await SettleAsync();
 
-        var ashCard = vm.ActiveCards.SingleOrDefault(c => c.GearName == "Ash Prime");
-        Assert.That(ashCard, Is.Null, "owned gear is hidden by default");
-        Assert.That(vm.ActiveCards.Any(c => c.GearName == "Mag Prime"), Is.True);
+        // Card stays in the collection; IsShown=false hides it via visibility toggling.
+        var ashCard = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
+        Assert.That(ashCard.IsShown, Is.False, "owned gear is hidden by default");
+        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Mag Prime").IsShown, Is.True);
     }
 
     [Test]
@@ -163,28 +164,31 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object);
         await SettleAsync();
 
-        Assert.That(vm.ActiveCards.Any(c => c.GearName == "Ash Prime"), Is.False);
-        Assert.That(vm.VaultedCards.Any(c => c.GearName == "Boar Prime"), Is.False);
+        // Both owned cards are in their collections but collapsed via IsShown.
+        var ashCard = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
+        var boarCard = vm.VaultedCards.Single(c => c.GearName == "Boar Prime");
+        Assert.That(ashCard.IsShown, Is.False);
+        Assert.That(boarCard.IsShown, Is.False);
 
         vm.ShowOwned = true;
 
         Assert.Multiple(() =>
         {
-            Assert.That(vm.ActiveCards.Any(c => c.GearName == "Ash Prime"), Is.True);
-            Assert.That(vm.VaultedCards.Any(c => c.GearName == "Boar Prime"), Is.True);
+            Assert.That(ashCard.IsShown, Is.True);
+            Assert.That(boarCard.IsShown, Is.True);
         });
 
         vm.ShowOwned = false;
 
         Assert.Multiple(() =>
         {
-            Assert.That(vm.ActiveCards.Any(c => c.GearName == "Ash Prime"), Is.False);
-            Assert.That(vm.VaultedCards.Any(c => c.GearName == "Boar Prime"), Is.False);
+            Assert.That(ashCard.IsShown, Is.False);
+            Assert.That(boarCard.IsShown, Is.False);
         });
     }
 
     [Test]
-    public async Task MarkingOwned_WithNoWishedParts_PersistsAndRemovesFromView()
+    public async Task MarkingOwned_WithNoWishedParts_PersistsAndHidesCard()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
@@ -200,8 +204,197 @@ public sealed class PrimeGearViewModelTests
         await SettleAsync();
 
         owned.Verify(s => s.SetOwnedAsync("Ash Prime", true, default), Times.Once);
-        Assert.That(vm.ActiveCards.Any(c => c.GearName == "Ash Prime"), Is.False,
-            "newly-owned card disappears while owned gear is hidden");
+        Assert.That(card.IsShown, Is.False, "newly-owned card is hidden while owned gear is hidden");
+    }
+
+    // ── Search filtering ──────────────────────────────────────────────────────
+
+    [Test]
+    public async Task Search_FiltersCardsByTitleSubstring()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Mag Prime", ["Systems"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "volt";
+
+        var voltCard = vm.ActiveCards.Single(c => c.GearName == "Volt Prime");
+        var magCard = vm.ActiveCards.Single(c => c.GearName == "Mag Prime");
+        Assert.That(voltCard.IsShown, Is.True);
+        Assert.That(magCard.IsShown, Is.False);
+    }
+
+    [Test]
+    public async Task Search_IsCaseInsensitive()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "VOLT";
+
+        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Volt Prime").IsShown, Is.True);
+    }
+
+    [Test]
+    public async Task Search_DoesNotMatchPartLabels()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics", "Systems"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "Neuroptics";
+
+        // "Neuroptics" is a part label on Ash Prime's card, but is not in the gear name.
+        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsShown, Is.False);
+    }
+
+    [Test]
+    public async Task Search_BelowThreshold_HasNoEffect()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Mag Prime", ["Systems"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "vo"; // 2 chars — below threshold
+
+        Assert.That(vm.ActiveCards.All(c => c.IsShown), Is.True, "below threshold all cards remain visible");
+    }
+
+    [Test]
+    public async Task Search_AtThreshold_Activates()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Mag Prime", ["Systems"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "vol"; // exactly 3 chars — threshold met
+
+        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Volt Prime").IsShown, Is.True);
+        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Mag Prime").IsShown, Is.False);
+    }
+
+    [Test]
+    public async Task Search_Clearing_RestoresAllCards()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Mag Prime", ["Systems"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "volt";
+        vm.SearchText = string.Empty;
+
+        Assert.That(vm.ActiveCards.All(c => c.IsShown), Is.True);
+    }
+
+    // ── Hidden-match hint and empty state ─────────────────────────────────────
+
+    [Test]
+    public async Task Search_HiddenMatchHint_CountsOwnedMatches()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+        var owned = OwnedStore("Volt Prime");
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, owned.Object);
+        await SettleAsync();
+
+        vm.SearchText = "volt";
+
+        Assert.That(vm.HiddenOwnedMatchCount, Is.EqualTo(1));
+        Assert.That(vm.HasHiddenMatches, Is.True);
+        Assert.That(vm.HiddenMatchHint, Does.Contain("owned"));
+    }
+
+    [Test]
+    public async Task Search_HiddenMatchHint_CountsVaultedMatches()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: true)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        // ShowVaulted defaults to false; "volt" matches the vaulted card.
+        vm.SearchText = "volt";
+
+        Assert.That(vm.HiddenVaultedMatchCount, Is.EqualTo(1));
+        Assert.That(vm.HasHiddenMatches, Is.True);
+        Assert.That(vm.HiddenMatchHint, Does.Contain("vaulted"));
+    }
+
+    [Test]
+    public async Task Search_HiddenMatchHint_ClearsWhenNoHiddenMatches()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "volt";
+
+        Assert.That(vm.HasHiddenMatches, Is.False);
+        Assert.That(vm.HiddenMatchHint, Is.Empty);
+    }
+
+    [Test]
+    public async Task Search_EmptyState_SetWhenNoCardsMatch()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "zzz";
+
+        Assert.That(vm.HasNoSearchResults, Is.True);
+        Assert.That(vm.HasVisibleCards, Is.False);
+    }
+
+    [Test]
+    public async Task Search_EmptyState_ClearsWhenMatchReturns()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.SearchText = "zzz";
+        Assert.That(vm.HasNoSearchResults, Is.True);
+
+        vm.SearchText = "volt";
+        Assert.That(vm.HasNoSearchResults, Is.False);
+        Assert.That(vm.HasVisibleCards, Is.True);
     }
 
     // ── Confirm-tracking dialog flow ──────────────────────────────────────────

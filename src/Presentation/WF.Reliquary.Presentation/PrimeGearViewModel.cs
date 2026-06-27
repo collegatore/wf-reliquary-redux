@@ -84,6 +84,7 @@ public sealed class PrimeGearCardViewModel : ObservableObject
     private readonly Func<Task>? onOwnedChanged;
     private bool isOwned;
     private bool isFadingOut;
+    private bool isShown = true;
 
     public PrimeGearCardViewModel(
         string gearName,
@@ -107,6 +108,17 @@ public sealed class PrimeGearCardViewModel : ObservableObject
     public string GearName { get; }
     public ObservableCollection<PrimePartViewModel> Parts { get; }
     public bool IsVaulted { get; }
+
+    public bool IsShown
+    {
+        get => isShown;
+        set
+        {
+            if (isShown == value) return;
+            isShown = value;
+            OnPropertyChanged();
+        }
+    }
 
     /// <summary>Toggles owned state — invoked from the card's overflow menu.</summary>
     public ICommand MarkOwnedCommand { get; }
@@ -200,10 +212,18 @@ public sealed class PrimeGearViewModel : ObservableObject
     private readonly IOwnedGearStore ownedGearStore;
     private readonly List<PrimeGearCardViewModel> allCards = [];
     private readonly ReloadGate reloadGate = new();
+    private CancellationTokenSource searchDebounce = new();
     private long activeWishlistId;
     private bool showVaulted;
     private bool showOwned;
     private bool isBusy;
+    private string searchText = string.Empty;
+    private int hiddenOwnedMatchCount;
+    private int hiddenVaultedMatchCount;
+    private string hiddenMatchHint = string.Empty;
+    private bool hasHiddenMatches;
+    private bool hasVisibleCards;
+    private bool hasNoSearchResults;
 
     public PrimeGearViewModel(IPrimeGearReader reader, IWishlistStore wishlistStore, IOwnedGearStore ownedGearStore)
     {
@@ -222,11 +242,17 @@ public sealed class PrimeGearViewModel : ObservableObject
     public Func<string, Task<OwnedConfirmChoice>>? ConfirmOwnedTracking { get; set; }
 
     /// <summary>
-    /// How long a card fades before it is removed after being marked owned while owned
+    /// How long a card fades before it collapses after being marked owned while owned
     /// gear is hidden. Defaults to zero (no fade) so tests update synchronously; the
     /// view sets a short non-zero duration for the visible animation.
     /// </summary>
     public TimeSpan OwnedHideFadeDuration { get; set; } = TimeSpan.Zero;
+
+    /// <summary>
+    /// How long to wait after the last SearchText change before applying the filter.
+    /// Defaults to zero so tests apply filters synchronously; the view sets ~150ms.
+    /// </summary>
+    public TimeSpan SearchDebounceDelay { get; set; } = TimeSpan.Zero;
 
     public ObservableCollection<PrimeGearCardViewModel> ActiveCards { get; }
     public ObservableCollection<PrimeGearCardViewModel> VaultedCards { get; }
@@ -251,6 +277,7 @@ public sealed class PrimeGearViewModel : ObservableObject
             if (showVaulted == value) return;
             showVaulted = value;
             OnPropertyChanged();
+            ApplyFilters();
         }
     }
 
@@ -262,8 +289,66 @@ public sealed class PrimeGearViewModel : ObservableObject
             if (showOwned == value) return;
             showOwned = value;
             OnPropertyChanged();
-            RebuildVisibleCards();
+            ApplyFilters();
         }
+    }
+
+    /// <summary>
+    /// Filters cards by a case-insensitive title substring. Active when 3+ characters;
+    /// below that threshold the search has no effect. Debounced per <see cref="SearchDebounceDelay"/>.
+    /// </summary>
+    public string SearchText
+    {
+        get => searchText;
+        set
+        {
+            if (searchText == value) return;
+            searchText = value;
+            OnPropertyChanged();
+            ScheduleSearchAsync().SafeFireAndForget();
+        }
+    }
+
+    /// <summary>Number of title matches currently hidden because they are owned and Show owned is off.</summary>
+    public int HiddenOwnedMatchCount
+    {
+        get => hiddenOwnedMatchCount;
+        private set { if (hiddenOwnedMatchCount == value) return; hiddenOwnedMatchCount = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>Number of title matches currently hidden because they are vaulted and Show vaulted is off.</summary>
+    public int HiddenVaultedMatchCount
+    {
+        get => hiddenVaultedMatchCount;
+        private set { if (hiddenVaultedMatchCount == value) return; hiddenVaultedMatchCount = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>Human-readable hint listing hidden match counts, or empty when none are hidden.</summary>
+    public string HiddenMatchHint
+    {
+        get => hiddenMatchHint;
+        private set { if (hiddenMatchHint == value) return; hiddenMatchHint = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>True while a search is active and at least one title match is hidden by a filter.</summary>
+    public bool HasHiddenMatches
+    {
+        get => hasHiddenMatches;
+        private set { if (hasHiddenMatches == value) return; hasHiddenMatches = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>True when at least one card is visible under the current filters. False only when search is active and excludes everything.</summary>
+    public bool HasVisibleCards
+    {
+        get => hasVisibleCards;
+        private set { if (hasVisibleCards == value) return; hasVisibleCards = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>True when a search is active (3+ chars) and no card title matches it under the current filters.</summary>
+    public bool HasNoSearchResults
+    {
+        get => hasNoSearchResults;
+        private set { if (hasNoSearchResults == value) return; hasNoSearchResults = value; OnPropertyChanged(); }
     }
 
     public async Task ReloadAsync()
@@ -297,6 +382,7 @@ public sealed class PrimeGearViewModel : ObservableObject
             allCards.Clear();
             ActiveCards.Clear();
             VaultedCards.Clear();
+            ApplyFilters();
             return;
         }
 
@@ -414,66 +500,107 @@ public sealed class PrimeGearViewModel : ObservableObject
         allCards.Clear();
         allCards.AddRange(built);
 
-        RebuildVisibleCards();
+        // Populate collections with the full set; ApplyFilters sets per-card IsShown.
+        ActiveCards.Clear();
+        VaultedCards.Clear();
+        foreach (var card in allCards)
+        {
+            if (card.IsVaulted) VaultedCards.Add(card);
+            else ActiveCards.Add(card);
+        }
+
+        ApplyFilters();
     }
 
     /// <summary>
-    /// Reacts to a single card's owned state changing. Rather than rebuilding the whole
-    /// grid (which regenerates every container), this adds or removes just the affected
-    /// card. When the card is being hidden it first plays a short fade so the removal —
-    /// and the overlapping database write — read as a smooth transition.
+    /// Reacts to a card's owned state changing. When the card should be hidden (just
+    /// marked owned while Show owned is off), it fades then collapses via IsShown.
+    /// Otherwise re-evaluates all visibility so the card's IsShown reflects current filters.
     /// </summary>
     private async Task OnCardOwnedChangedAsync(PrimeGearCardViewModel card)
     {
-        var target = card.IsVaulted ? VaultedCards : ActiveCards;
-
         if (card.IsOwned && !showOwned)
         {
-            if (!target.Contains(card)) return;
             if (OwnedHideFadeDuration > TimeSpan.Zero)
             {
                 card.IsFadingOut = true;
                 await Task.Delay(OwnedHideFadeDuration);
             }
-            target.Remove(card);
+            card.IsFadingOut = false;
+            card.IsShown = false;
+            // Update hint/empty-state tallies after hiding.
+            ApplyFilters();
             return;
         }
 
-        // Card should be visible — clear any fade and insert it in gear-name order.
+        // Owned state changed in a way that may make the card visible — re-evaluate all.
         card.IsFadingOut = false;
-        if (!target.Contains(card))
-            InsertInOrder(target, card);
+        ApplyFilters();
     }
 
-    /// <summary>Inserts <paramref name="card"/> into <paramref name="target"/> at the
-    /// position dictated by the full card ordering and the current visibility filter.</summary>
-    private void InsertInOrder(ObservableCollection<PrimeGearCardViewModel> target, PrimeGearCardViewModel card)
+    private async Task ScheduleSearchAsync()
     {
-        var visibleOrder = allCards
-            .Where(c => c.IsVaulted == card.IsVaulted && (showOwned || !c.IsOwned))
-            .ToList();
-        var index = visibleOrder.IndexOf(card);
-        if (index < 0 || index > target.Count) index = target.Count;
-        target.Insert(index, card);
+        searchDebounce.Cancel();
+        searchDebounce.Dispose();
+        searchDebounce = new CancellationTokenSource();
+        var token = searchDebounce.Token;
+
+        if (SearchDebounceDelay > TimeSpan.Zero)
+        {
+            try { await Task.Delay(SearchDebounceDelay, token); }
+            catch (OperationCanceledException) { return; }
+        }
+
+        if (!token.IsCancellationRequested)
+            ApplyFilters();
     }
 
     /// <summary>
-    /// Repopulates the bound Active/Vaulted collections from the full card set,
-    /// hiding owned cards unless <see cref="ShowOwned"/> is set. Used for initial load
-    /// and the Show owned gear toggle, where every card's visibility may change.
+    /// Sets IsShown on every card from the composite predicate (owned filter + search),
+    /// then updates hidden-match hint and visible-card signal.
     /// </summary>
-    private void RebuildVisibleCards()
+    private void ApplyFilters()
     {
-        ActiveCards.Clear();
-        VaultedCards.Clear();
+        var query = searchText;
+        bool searchActive = query.Length >= 3;
+        int hiddenOwned = 0, hiddenVaulted = 0, visible = 0;
+
         foreach (var card in allCards)
         {
-            if (card.IsOwned && !showOwned) continue;
-            card.IsFadingOut = false;
-            if (card.IsVaulted)
-                VaultedCards.Add(card);
-            else
-                ActiveCards.Add(card);
+            bool ownedHidden = card.IsOwned && !showOwned;
+            bool searchMatch = !searchActive || card.GearName.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+            card.IsShown = !ownedHidden && (!searchActive || searchMatch);
+
+            if (searchActive && searchMatch)
+            {
+                if (ownedHidden)
+                    hiddenOwned++;
+                else if (card.IsVaulted && !showVaulted)
+                    hiddenVaulted++;
+                else
+                    visible++;
+            }
+            else if (!searchActive && !ownedHidden)
+            {
+                // When no search, every non-owned-hidden card counts as visible
+                // (vaulted cards are visible within their section even when the section is collapsed).
+                visible++;
+            }
         }
+
+        HiddenOwnedMatchCount = hiddenOwned;
+        HiddenVaultedMatchCount = hiddenVaulted;
+
+        var hintParts = new List<string>(2);
+        if (hiddenOwned > 0) hintParts.Add($"{hiddenOwned} owned");
+        if (hiddenVaulted > 0) hintParts.Add($"{hiddenVaulted} vaulted");
+        HiddenMatchHint = hintParts.Count > 0
+            ? string.Join(" and ", hintParts) + " hidden by filters"
+            : string.Empty;
+        HasHiddenMatches = hintParts.Count > 0;
+
+        HasVisibleCards = visible > 0;
+        HasNoSearchResults = searchActive && visible == 0;
     }
 }
