@@ -73,7 +73,7 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
             context.SourceFiles.Add(new SourceFileEntity
             {
                 Content = content.Html,
-                SourceUrl = content.SourceUrl?.ToString(),
+                SourceUrl = content.SourceUrl?.ToString() ?? string.Empty,
                 DownloadedAt = content.DownloadedAt.ToString("O"),
                 SourceLastUpdate = content.LastUpdate
             });

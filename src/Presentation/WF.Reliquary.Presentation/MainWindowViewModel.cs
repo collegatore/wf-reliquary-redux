@@ -52,6 +52,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
         this.importStore = importStore;
         this.errorReporter = errorReporter ?? NoOpErrorReporter.Instance;
 
+        DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
+        ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy && HasStoredSources);
+        ReadFromFileCommand = new AsyncRelayCommand(ReadFromFileAsync, () => !IsBusy);
+        ExportSourcesCommand = new AsyncRelayCommand(ExportSourcesAsync, () => !IsBusy && HasStoredSources);
+        ClearImportCommand = new AsyncRelayCommand(ClearImportAsync, () => HasImportedData && !IsBusy);
+
         busy = new BusyScope(_ =>
         {
             OnPropertyChanged(nameof(IsBusy));
@@ -61,12 +67,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
             ExportSourcesCommand.NotifyCanExecuteChanged();
             ClearImportCommand.NotifyCanExecuteChanged();
         });
-
-        DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
-        ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy && HasStoredSources);
-        ReadFromFileCommand = new AsyncRelayCommand(ReadFromFileAsync, () => !IsBusy);
-        ExportSourcesCommand = new AsyncRelayCommand(ExportSourcesAsync, () => !IsBusy && HasStoredSources);
-        ClearImportCommand = new AsyncRelayCommand(ClearImportAsync, () => HasImportedData && !IsBusy);
     }
 
     public Func<Task>? OnImportSucceeded { get; set; }
