@@ -7,7 +7,7 @@ public sealed record UserSettings(
     Uri SourceUrl,
     double WindowWidth,
     double WindowHeight,
-    UserFontSize FontSize,
+    double FontSizePt,
     double? RelicsPanelHeight,
     LfgMessageTemplate LfgTemplate,
     int? WindowX = null,
@@ -17,7 +17,7 @@ public sealed record UserSettings(
         SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl),
         WindowWidth: 900,
         WindowHeight: 600,
-        FontSize: UserFontSize.Medium,
+        FontSizePt: 14.0,
         RelicsPanelHeight: null,
         LfgTemplate: LfgMessageTemplate.Default);
 }

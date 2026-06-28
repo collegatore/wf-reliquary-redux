@@ -39,7 +39,7 @@ public sealed class UserSettingsStoreTests
             Assert.That(settings.SourceUrl.ToString(), Is.EqualTo(DropTableSourceDefaults.SourceUrl));
             Assert.That(settings.WindowWidth, Is.EqualTo(900));
             Assert.That(settings.WindowHeight, Is.EqualTo(600));
-            Assert.That(settings.FontSize, Is.EqualTo(UserFontSize.Medium));
+            Assert.That(settings.FontSizePt, Is.EqualTo(14.0));
             Assert.That(settings.RelicsPanelHeight, Is.Null);
         });
     }
@@ -54,7 +54,7 @@ public sealed class UserSettingsStoreTests
             SourceUrl: sourceUrl,
             WindowWidth: 1280,
             WindowHeight: 800,
-            FontSize: UserFontSize.Large,
+            FontSizePt: 18.0,
             RelicsPanelHeight: 320.5,
             LfgTemplate: LfgMessageTemplate.Default);
 
@@ -66,7 +66,7 @@ public sealed class UserSettingsStoreTests
             Assert.That(loaded.SourceUrl, Is.EqualTo(sourceUrl));
             Assert.That(loaded.WindowWidth, Is.EqualTo(1280));
             Assert.That(loaded.WindowHeight, Is.EqualTo(800));
-            Assert.That(loaded.FontSize, Is.EqualTo(UserFontSize.Large));
+            Assert.That(loaded.FontSizePt, Is.EqualTo(18.0));
             Assert.That(loaded.RelicsPanelHeight, Is.EqualTo(320.5));
         });
     }

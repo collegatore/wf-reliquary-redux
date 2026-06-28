@@ -14,7 +14,7 @@ public sealed class SettingsViewModelTests
         SourceUrl: new Uri("https://example.test/drops.html"),
         WindowWidth: 900,
         WindowHeight: 600,
-        FontSize: UserFontSize.Medium,
+        FontSizePt: 14.0,
         RelicsPanelHeight: null,
         LfgTemplate: LfgMessageTemplate.Default);
 
@@ -37,13 +37,14 @@ public sealed class SettingsViewModelTests
     }
 
     [Test]
-    public void HasUnsavedChanges_IsTrue_WhenFontSizeChanged()
+    public void HasUnsavedChanges_IsFalse_WhenFontSizeChanged()
     {
+        // Font size is auto-saved on selection; it does not enter the unsaved-changes guard.
         var vm = CreateViewModel(DefaultSettings);
 
         vm.SelectedFontSize = FontSizeOption.Large;
 
-        Assert.That(vm.HasUnsavedChanges, Is.True);
+        Assert.That(vm.HasUnsavedChanges, Is.False);
     }
 
     [Test]
@@ -81,10 +82,25 @@ public sealed class SettingsViewModelTests
     }
 
     [Test]
+    public async Task BackAsync_WhenOnlyFontSizeChanged_NavigatesWithoutConfirm()
+    {
+        // Font size is auto-saved; changing it must not trigger the leave-guard.
+        var vm = CreateViewModel(DefaultSettings);
+        vm.SelectedFontSize = FontSizeOption.Small;
+        var confirmCalled = false;
+        vm.ConfirmDiscard = () => { confirmCalled = true; return Task.FromResult(true); };
+        vm.OnNavigateBack = () => Task.CompletedTask;
+
+        await vm.BackCommand.ExecuteAsync();
+
+        Assert.That(confirmCalled, Is.False);
+    }
+
+    [Test]
     public async Task BackAsync_WithUnsavedChanges_ConfirmsBeforeNavigating()
     {
         var vm = CreateViewModel(DefaultSettings);
-        vm.SelectedFontSize = FontSizeOption.Small;
+        vm.SourceUrlText = "https://changed.example/";
         var navigatedBack = false;
         vm.ConfirmDiscard = () => Task.FromResult(true);
         vm.OnNavigateBack = () => { navigatedBack = true; return Task.CompletedTask; };
@@ -98,7 +114,7 @@ public sealed class SettingsViewModelTests
     public async Task BackAsync_WithUnsavedChanges_WhenUserCancels_StaysOnSettings()
     {
         var vm = CreateViewModel(DefaultSettings);
-        vm.SelectedFontSize = FontSizeOption.Small;
+        vm.SourceUrlText = "https://changed.example/";
         var navigatedBack = false;
         vm.ConfirmDiscard = () => Task.FromResult(false);
         vm.OnNavigateBack = () => { navigatedBack = true; return Task.CompletedTask; };
@@ -112,7 +128,7 @@ public sealed class SettingsViewModelTests
     public async Task BackAsync_WithUnsavedChanges_WhenUserDiscards_RollsBackEdits()
     {
         var vm = CreateViewModel(DefaultSettings);
-        vm.SelectedFontSize = FontSizeOption.Large;
+        vm.SourceUrlText = "https://changed.example/";
         vm.ConfirmDiscard = () => Task.FromResult(true);
         vm.OnNavigateBack = () => Task.CompletedTask;
 
@@ -120,7 +136,7 @@ public sealed class SettingsViewModelTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(vm.SelectedFontSize, Is.EqualTo(FontSizeOption.Medium));
+            Assert.That(vm.SourceUrlText, Is.EqualTo(DefaultSettings.SourceUrl.ToString()));
             Assert.That(vm.HasUnsavedChanges, Is.False);
         });
     }
@@ -142,17 +158,21 @@ public sealed class SettingsViewModelTests
     }
 
     [Test]
-    public async Task SaveAsync_WithValidSettings_PersistsAndClearsUnsavedFlag()
+    public async Task SaveAsync_WithValidSettings_PersistsCurrentFontSizeAndClearsUnsavedFlag()
     {
         var store = new Mock<IUserSettingsStore>();
         UserSettings? saved = null;
+        store
+            .Setup(s => s.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultSettings);
         store
             .Setup(s => s.SaveAsync(It.IsAny<UserSettings>(), It.IsAny<CancellationToken>()))
             .Callback<UserSettings, CancellationToken>((s, _) => saved = s)
             .Returns(Task.CompletedTask);
 
         var vm = CreateViewModel(DefaultSettings, store.Object);
-        vm.SelectedFontSize = FontSizeOption.Large;
+        vm.SelectedFontSize = FontSizeOption.Large;          // auto-saved; does not dirty the form
+        vm.SourceUrlText = "https://changed.example/";       // this enables the Save button
         vm.OnSaved = _ => { };
 
         await vm.SaveCommand.ExecuteAsync();
@@ -160,7 +180,7 @@ public sealed class SettingsViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(saved, Is.Not.Null);
-            Assert.That(saved!.FontSize, Is.EqualTo(UserFontSize.Large));
+            Assert.That(saved!.FontSizePt, Is.EqualTo(18.0));
             Assert.That(vm.HasUnsavedChanges, Is.False);
         });
     }

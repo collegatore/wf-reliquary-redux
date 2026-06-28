@@ -140,6 +140,7 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
         ParseCommand = new RelayCommand(DoParse);
         SaveCommand = new AsyncRelayCommand(SaveAsync, CanSave);
         RestoreDefaultsCommand = new RelayCommand(RestoreDefaults);
+        ReloadFromSavedCommand = new RelayCommand(ReloadFromSaved);
     }
 
     public string PatternText
@@ -169,6 +170,7 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
     public RelayCommand ParseCommand { get; }
     public AsyncRelayCommand SaveCommand { get; }
     public RelayCommand RestoreDefaultsCommand { get; }
+    public RelayCommand ReloadFromSavedCommand { get; }
 
     public bool HasUnsavedChanges => isDirty;
 
@@ -246,6 +248,18 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
         ParseError = string.Empty;
         ParseWarning = string.Empty;
         NotifyDirty();
+    }
+
+    private void ReloadFromSaved()
+    {
+        patternText = savedTemplate.Pattern;
+        OnPropertyChanged(nameof(PatternText));
+        Groups.Clear();
+        foreach (var g in savedTemplate.Groups)
+            Groups.Add(new LfgGroupEditorViewModel(g, NotifyDirty));
+        ParseError = string.Empty;
+        ParseWarning = string.Empty;
+        NotifySaved(savedTemplate);
     }
 
     private void NotifyDirty()

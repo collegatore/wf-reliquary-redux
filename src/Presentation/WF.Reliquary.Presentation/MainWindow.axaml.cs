@@ -72,7 +72,7 @@ public sealed partial class MainWindow : Window
         }
 
         // Apply font size to Application resources.
-        SettingsViewModel.ApplyFontSize(initialSettings.FontSize);
+        SettingsViewModel.ApplyFontSize(initialSettings.FontSizePt);
 
         // Seed the default profile before the default wishlist, so the wishlist
         // seeding has an active profile to attach to.

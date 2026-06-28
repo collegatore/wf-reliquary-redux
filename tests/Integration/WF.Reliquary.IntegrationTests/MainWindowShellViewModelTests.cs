@@ -157,7 +157,7 @@ public sealed class MainWindowShellViewModelTests
         SourceUrl: new Uri("https://example.test/drops.html"),
         WindowWidth: 900,
         WindowHeight: 600,
-        FontSize: UserFontSize.Medium,
+        FontSizePt: 14.0,
         RelicsPanelHeight: null,
         LfgTemplate: LfgMessageTemplate.Default);
 

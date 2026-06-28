@@ -10,14 +10,17 @@ public sealed class SettingsViewModel : ObservableObject
 {
     private readonly IUserSettingsStore settingsStore;
 
-    // Last-saved values — used for unsaved-change detection
+    private const double SmallPt = 11.0;
+    private const double MediumPt = 14.0;
+    private const double LargePt = 18.0;
+
+    // Last-saved values — used for unsaved-change detection (font size excluded: auto-saved)
     private string savedSourceUrl;
-    private FontSizeOption savedFontSize;
     private double? savedRelicsPanelHeight;
 
     // Current editable values
     private string sourceUrlText;
-    private FontSizeOption selectedFontSize;
+    private double fontSizePt;          // sole font-size state; SelectedFontSize is derived
     private double? relicsPanelHeight;
 
     private string urlValidationError = string.Empty;
@@ -27,11 +30,10 @@ public sealed class SettingsViewModel : ObservableObject
         this.settingsStore = settingsStore;
 
         savedSourceUrl = initialSettings.SourceUrl.ToString();
-        savedFontSize = ToPresentation(initialSettings.FontSize);
         savedRelicsPanelHeight = initialSettings.RelicsPanelHeight;
 
         sourceUrlText = savedSourceUrl;
-        selectedFontSize = savedFontSize;
+        fontSizePt = initialSettings.FontSizePt;
         relicsPanelHeight = savedRelicsPanelHeight;
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => HasUnsavedChanges);
@@ -94,16 +96,50 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
-    public FontSizeOption SelectedFontSize
+    /// <summary>
+    /// The effective font size in points. Always visible; drives the radio selection.
+    /// Setting it auto-selects the matching preset radio, or Custom if no preset matches.
+    /// </summary>
+    public double EffectiveFontSizePt
     {
-        get => selectedFontSize;
+        get => fontSizePt;
         set
         {
-            if (SetProperty(ref selectedFontSize, value))
+            var pt = Math.Clamp(value, 8.0, 32.0);
+            if (fontSizePt == pt) return;
+
+            var prevOption = SelectedFontSize;
+            fontSizePt = pt;
+
+            OnPropertyChanged();
+            if (SelectedFontSize != prevOption)
+                OnPropertyChanged(nameof(SelectedFontSize));
+
+            ApplyFontSize(pt);
+            _ = SaveFontSizeNow();
+        }
+    }
+
+    /// <summary>
+    /// Derived from <see cref="EffectiveFontSizePt"/>: Small/Medium/Large when the value
+    /// matches a preset, Custom otherwise. Setting a preset updates <see cref="EffectiveFontSizePt"/>.
+    /// </summary>
+    public FontSizeOption SelectedFontSize
+    {
+        get => fontSizePt == SmallPt ? FontSizeOption.Small
+             : fontSizePt == LargePt ? FontSizeOption.Large
+             : fontSizePt == MediumPt ? FontSizeOption.Medium
+             : FontSizeOption.Custom;
+        set
+        {
+            var pt = value switch
             {
-                ApplyFontSize(value);   // live preview — reverted by Back if not saved
-                NotifyHasUnsavedChanges();
-            }
+                FontSizeOption.Small => SmallPt,
+                FontSizeOption.Large => LargePt,
+                FontSizeOption.Custom => fontSizePt,   // clicking Custom is a no-op
+                _ => MediumPt,
+            };
+            EffectiveFontSizePt = pt;
         }
     }
 
@@ -113,15 +149,12 @@ public sealed class SettingsViewModel : ObservableObject
         private set
         {
             if (SetProperty(ref relicsPanelHeight, value))
-            {
                 NotifyHasUnsavedChanges();
-            }
         }
     }
 
     public bool HasUnsavedChanges =>
         !string.Equals(sourceUrlText, savedSourceUrl, StringComparison.Ordinal) ||
-        selectedFontSize != savedFontSize ||
         relicsPanelHeight != savedRelicsPanelHeight ||
         (IsLfgTemplateDirty?.Invoke() ?? false);
 
@@ -138,14 +171,8 @@ public sealed class SettingsViewModel : ObservableObject
 
     // ── Called by shell to sync live splitter position ──────────────────────
 
-    /// <summary>Records the current live splitter position so an explicit Save
-    /// persists it. Called by the shell before navigating to Settings.</summary>
     public void SyncRelicsPanelHeight(double? currentHeight)
     {
-        // Sync the saved baseline to the live position first so the splitter
-        // never appears as an "unsaved change" in the leave-guard. The user
-        // cannot adjust the splitter from within Settings, so any delta between
-        // the live position and the last-persisted value is not a user edit.
         savedRelicsPanelHeight = currentHeight;
         RelicsPanelHeight = currentHeight;
     }
@@ -164,21 +191,16 @@ public sealed class SettingsViewModel : ObservableObject
 
         var newSettings = new UserSettings(
             SourceUrl: sourceUrl,
-            WindowWidth: 0,   // will be refreshed from window on close; safe to leave 0 here
+            WindowWidth: 0,
             WindowHeight: 0,
-            FontSize: ToApplication(SelectedFontSize),
+            FontSizePt: fontSizePt,
             RelicsPanelHeight: RelicsPanelHeight,
             LfgTemplate: GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default);
 
         await settingsStore.SaveAsync(newSettings);
 
-        // Update saved baselines
         savedSourceUrl = SourceUrlText;
-        savedFontSize = SelectedFontSize;
         savedRelicsPanelHeight = RelicsPanelHeight;
-
-        // Apply font size immediately
-        ApplyFontSize(SelectedFontSize);
 
         OnSaved?.Invoke(newSettings);
         NotifyHasUnsavedChanges();
@@ -187,20 +209,9 @@ public sealed class SettingsViewModel : ObservableObject
     public async Task BackAsync()
     {
         if (!await TryDiscardAsync()) return;
-
-        if (OnNavigateBack is not null)
-        {
-            await OnNavigateBack();
-        }
+        if (OnNavigateBack is not null) await OnNavigateBack();
     }
 
-    /// <summary>
-    /// If there are unsaved changes, shows the confirmation dialog. Returns
-    /// <see langword="true"/> if the caller may proceed with navigation (no
-    /// changes, or the user confirmed discard). Returns <see langword="false"/>
-    /// if the user cancelled. On discard, all in-memory edits — including the
-    /// live font-size preview — are reverted.
-    /// </summary>
     public async Task<bool> TryDiscardAsync()
     {
         if (!HasUnsavedChanges) return true;
@@ -208,14 +219,10 @@ public sealed class SettingsViewModel : ObservableObject
         var confirmed = ConfirmDiscard is not null && await ConfirmDiscard();
         if (!confirmed) return false;
 
-        // Roll back in-memory edits and undo the live font-size preview.
         sourceUrlText = savedSourceUrl;
-        selectedFontSize = savedFontSize;
         relicsPanelHeight = savedRelicsPanelHeight;
         urlValidationError = string.Empty;
-        ApplyFontSize(savedFontSize);
         OnPropertyChanged(nameof(SourceUrlText));
-        OnPropertyChanged(nameof(SelectedFontSize));
         OnPropertyChanged(nameof(RelicsPanelHeight));
         NotifyHasUnsavedChanges();
         OnPropertyChanged(nameof(UrlValidationError));
@@ -225,54 +232,25 @@ public sealed class SettingsViewModel : ObservableObject
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
-    private static void ApplyFontSize(FontSizeOption option)
+    private async Task SaveFontSizeNow()
     {
-        if (AvaloniaApp.Current?.Resources is not { } resources)
-        {
-            return;
-        }
-
-        var size = option switch
-        {
-            FontSizeOption.Small => resources["FontSizeSmall"],
-            FontSizeOption.Large => resources["FontSizeLarge"],
-            _ => resources["FontSizeMedium"],
-        };
-
-        if (size is double d)
-        {
-            resources["ContentFontSize"] = d;
-
-            // Card widths scale with the font so the per-line character budget stays
-            // roughly constant across sizes. Each card's current width is its Medium
-            // anchor; scale by the ratio to the Medium font size.
-            if (resources["FontSizeMedium"] is double medium && medium > 0)
-            {
-                var ratio = d / medium;
-                resources["RelicCardWidth"] = 300 * ratio;
-                resources["MissionCardWidth"] = 300 * ratio;
-            }
-        }
+        var current = await settingsStore.LoadAsync();
+        await settingsStore.SaveAsync(current with { FontSizePt = fontSizePt });
     }
 
-    internal static void ApplyFontSize(UserFontSize fontSize)
+    internal static void ApplyFontSize(double pt)
     {
-        ApplyFontSize(ToPresentation(fontSize));
+        if (AvaloniaApp.Current?.Resources is not { } resources) return;
+
+        resources["ContentFontSize"] = pt;
+
+        if (resources["FontSizeMedium"] is double medium && medium > 0)
+        {
+            var ratio = pt / medium;
+            resources["RelicCardWidth"] = 300 * ratio;
+            resources["MissionCardWidth"] = 300 * ratio;
+        }
     }
-
-    private static FontSizeOption ToPresentation(UserFontSize fs) => fs switch
-    {
-        UserFontSize.Small => FontSizeOption.Small,
-        UserFontSize.Large => FontSizeOption.Large,
-        _ => FontSizeOption.Medium,
-    };
-
-    private static UserFontSize ToApplication(FontSizeOption fs) => fs switch
-    {
-        FontSizeOption.Small => UserFontSize.Small,
-        FontSizeOption.Large => UserFontSize.Large,
-        _ => UserFontSize.Medium,
-    };
 
     private void NotifyHasUnsavedChanges()
     {

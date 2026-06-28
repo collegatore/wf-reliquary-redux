@@ -4,6 +4,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:WF.Reliquary.Presentation">
 
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding Settings.SaveCommand}" />
+  </UserControl.KeyBindings>
+
   <StackPanel Margin="0,12,0,0" Spacing="20" MaxWidth="600" HorizontalAlignment="Left">
 
     <!-- Profiles -->
@@ -85,7 +89,7 @@
 
     <!-- Font size -->
     <StackPanel Spacing="8">
-      <TextBlock FontWeight="SemiBold" Text="Font size" />
+      <TextBlock FontWeight="SemiBold" FontSize="{StaticResource FontSizeMedium}" Text="Font size" />
       <StackPanel Orientation="Horizontal" Spacing="16">
         <RadioButton
             Content="Small"
@@ -99,6 +103,22 @@
             Content="Large"
             IsChecked="{Binding Settings.SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Large}"
             GroupName="FontSize" />
+        <RadioButton
+            Content="Custom"
+            IsChecked="{Binding Settings.SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Custom}"
+            GroupName="FontSize" />
+        <NumericUpDown
+            Value="{Binding Settings.EffectiveFontSizePt, Mode=TwoWay}"
+            Minimum="8"
+            Maximum="32"
+            Increment="1"
+            FormatString="0"
+            Width="120"
+            VerticalAlignment="Center" />
+        <TextBlock
+            Text="pt"
+            FontSize="{StaticResource FontSizeMedium}"
+            VerticalAlignment="Center" />
       </StackPanel>
     </StackPanel>
 
@@ -219,6 +239,10 @@
             Padding="14,6"
             Command="{Binding LfgEditor.RestoreDefaultsCommand}"
             Content="Restore defaults" />
+        <Button
+            Padding="14,6"
+            Command="{Binding LfgEditor.ReloadFromSavedCommand}"
+            Content="Reload from saved" />
       </StackPanel>
     </StackPanel>
 

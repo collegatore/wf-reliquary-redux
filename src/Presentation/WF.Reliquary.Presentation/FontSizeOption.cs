@@ -5,4 +5,5 @@ public enum FontSizeOption
     Small,
     Medium,
     Large,
+    Custom,
 }
