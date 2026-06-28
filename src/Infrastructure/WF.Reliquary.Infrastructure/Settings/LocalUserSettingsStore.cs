@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
@@ -18,7 +17,6 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
     };
 
     private readonly string rootPath;
@@ -65,10 +63,7 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 ? parsed
                 : UserSettings.Default.SourceUrl;
 
-            // FontSizePt takes precedence; fall back to legacy enum for old settings files.
-            var fontSizePt = file.FontSizePt > 0
-                ? file.FontSizePt.Value
-                : LegacyFontSizeToPt(Enum.IsDefined(file.FontSize) ? file.FontSize : UserFontSize.Medium);
+            var fontSizePt = file.FontSizePt > 0 ? file.FontSizePt : UserSettings.Default.FontSizePt;
 
             return new UserSettings(
                 SourceUrl: sourceUrl,
@@ -94,12 +89,11 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.SourceUrl.ToString(),
             settings.WindowWidth,
             settings.WindowHeight,
-            PtToLegacyFontSize(settings.FontSizePt),
+            settings.FontSizePt,
             settings.RelicsPanelHeight,
             FromTemplate(settings.LfgTemplate),
             settings.WindowX,
-            settings.WindowY,
-            settings.FontSizePt);
+            settings.WindowY);
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -122,20 +116,6 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
     // ── Private ─────────────────────────────────────────────────────────────
 
     private string SettingsPath() => Path.Combine(rootPath, "user-settings.json");
-
-    private static double LegacyFontSizeToPt(UserFontSize fs) => fs switch
-    {
-        UserFontSize.Small => 11.0,
-        UserFontSize.Large => 18.0,
-        _ => 14.0,
-    };
-
-    private static UserFontSize PtToLegacyFontSize(double pt) => pt switch
-    {
-        11.0 => UserFontSize.Small,
-        18.0 => UserFontSize.Large,
-        _ => UserFontSize.Medium,
-    };
 
     private static LfgMessageTemplate ToTemplate(LfgTemplateFile? file)
     {
@@ -168,12 +148,11 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         string SourceUrl,
         double WindowWidth,
         double WindowHeight,
-        UserFontSize FontSize,
+        double FontSizePt,
         double? RelicsPanelHeight,
         LfgTemplateFile? LfgTemplate = null,
         int? WindowX = null,
-        int? WindowY = null,
-        double? FontSizePt = null);
+        int? WindowY = null);
 
     private sealed record LfgTemplateFile(
         string? Pattern,
