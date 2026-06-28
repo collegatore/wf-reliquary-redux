@@ -1,7 +1,7 @@
 ## Requirements
 
 ### Requirement: Wishlist Relics tab exists in main navigation
-The application SHALL display a tab labeled **"Relics and Missions"** in the main tab bar alongside the existing "Drop Tables" and "Prime Gear" tabs, replacing the former "Wishlist Relics" label. The tab SHALL contain two stacked panels: the relic cards panel on top and the farming missions panel below, separated by a divider. A shared control panel appears above the relic cards panel. The control panel SHALL be divided into two labelled groups: a **Relics** group containing the "Show vaulted" and "Show all rewards" checkboxes, and a **Missions** group containing the "Show exact drop chances" checkbox. The Relics group SHALL be preceded by a plain "Relics:" text label. Each panel SHALL scroll independently within its own scrollable area; the two panels share the available tab height equally.
+The application SHALL display a tab labeled **"Relics and Missions"** in the main tab bar alongside the existing "Drop Tables" and "Prime Gear" tabs, replacing the former "Wishlist Relics" label. The tab SHALL contain two stacked panels: the relic cards panel on top and the farming missions panel below, separated by a **missions separator panel**. A shared **Relics control panel** appears above the relic cards panel. The Relics control panel SHALL contain a **Relics** group with a plain "Relics:" text label followed by the "Show vaulted" and "Show all rewards" checkboxes. The **missions separator panel** SHALL share the tab's control-bar background tint and SHALL contain a **Missions** group with a plain "Missions:" text label followed by the "Show exact drop chances" checkbox. The missions separator panel SHALL be a compact divider bar (matching the height of the "Vaulted" separator bar on the Prime Gear tab) with its bottom corners squared where it meets the splitter, and SHALL be pinned to the bottom of the relic-cards section so it sits directly above the splitter. A draggable GridSplitter SHALL be placed immediately below the missions separator panel; dragging it SHALL resize the relic-cards scroll area and the farming missions scroll area (not the separator panel, whose height stays fixed). Each panel SHALL scroll independently within its own scrollable area.
 
 #### Scenario: Tab is visible in main window
 - **WHEN** the application is open
@@ -15,18 +15,26 @@ The application SHALL display a tab labeled **"Relics and Missions"** in the mai
 - **WHEN** the user scrolls in the relic cards panel
 - **THEN** the farming missions panel position is unaffected, and vice versa
 
-#### Scenario: Control panel shows Relics label
+#### Scenario: Relics control panel shows Relics label and checkboxes
 - **WHEN** the "Relics and Missions" tab is displayed
-- **THEN** the control panel shows a "Relics:" text label before the Relics-group checkboxes
+- **THEN** the top control panel shows a "Relics:" text label followed by the "Show vaulted" and "Show all rewards" checkboxes, and does NOT show a "Missions:" label or "Show exact drop chances" checkbox
 
-#### Scenario: Control panel shows Missions label
+#### Scenario: Missions separator panel shows Missions label and checkbox
 - **WHEN** the "Relics and Missions" tab is displayed
-- **THEN** the control panel shows a "Missions:" text label before the Missions-group checkboxes
+- **THEN** the missions separator panel shows a "Missions:" text label followed by the "Show exact drop chances" checkbox
+
+#### Scenario: Missions separator panel is a compact divider bar
+- **WHEN** the missions separator panel is displayed
+- **THEN** it uses the tab's control-bar background tint, is as tall as the "Vaulted" separator bar on the Prime Gear tab, and has squared bottom corners where it meets the splitter
+
+#### Scenario: GridSplitter below separator resizes the card areas
+- **WHEN** the user drags the thin strip immediately below the missions separator panel
+- **THEN** the relic cards scroll area and the farming missions scroll area resize accordingly, while the separator panel's height stays fixed
 
 ---
 
 ### Requirement: Relic cards show rewards grouped by tier with wishlisted parts highlighted
-Each relic card SHALL have the relic display name as its header, separated from the body by a single line separator. The card body SHALL group rewards by tier in order Common → Uncommon → Rare.
+Each relic card SHALL have the relic display name as its header, directly above the rewards body with **no** line separator between the header and the body. The card body SHALL group rewards by tier in order Common → Uncommon → Rare.
 
 Each tier group SHALL be preceded by a tier label showing the tier name in title case ("Common", "Uncommon", "Rare") with no trailing colon. The tier label SHALL be rendered in the default text color, in semi-bold weight, uniform across all three tiers, so it reads as a header distinct from the reward names. The tier label SHALL NOT be italic and SHALL NOT be uppercased.
 
@@ -34,7 +42,7 @@ Each tier group SHALL display a vertical accent bar in the card's left gutter sp
 
 Reward names SHALL be rendered verbatim, matching the in-game reward text, and SHALL wrap to multiple lines when too long to fit. Reward names SHALL NOT be truncated, ellipsized, or abbreviated.
 
-Line separators SHALL NOT be rendered between tier groups; tier grouping is conveyed by the accent bar and the spacing between groups. (The single separator between the card header and body is retained.)
+Line separators SHALL NOT be rendered between tier groups, nor between the card header and the body; tier grouping is conveyed by the accent bar and the spacing between groups.
 
 Wishlist status SHALL be conveyed by opacity, not font weight. When **Show all rewards** is enabled, any reward whose normalized name matches a wishlisted part SHALL be rendered at full strength, and every non-wishlisted reward SHALL be rendered dimmed (reduced opacity). No reward SHALL use bold weight to indicate wishlist status. When Show all rewards is disabled, only wishlisted rewards are shown and all SHALL be rendered at full strength.
 
@@ -42,7 +50,7 @@ By default, only wishlisted rewards are shown on each card. When Show all reward
 
 #### Scenario: Card header shows relic name
 - **WHEN** a relic card is displayed
-- **THEN** the card header contains the relic's display name (e.g., "Lith A1 Relic") separated from the rewards body by a single line separator
+- **THEN** the card header contains the relic's display name (e.g., "Lith A1 Relic") directly above the rewards body with no separator line between them
 
 #### Scenario: Card body groups rewards by tier in order
 - **WHEN** a relic card is displayed
@@ -64,9 +72,9 @@ By default, only wishlisted rewards are shown on each card. When Show all reward
 - **WHEN** a reward has a long verbatim name (e.g., "Revenant Prime Neuroptics Blueprint")
 - **THEN** the full name is displayed, wrapping as needed, with no ellipsis or abbreviation
 
-#### Scenario: No separators between tier groups
+#### Scenario: No separators between tier groups or under the header
 - **WHEN** a relic card has multiple tier groups
-- **THEN** no line separator is rendered between or after the tier groups; grouping is shown by the accent bars and spacing
+- **THEN** no line separator is rendered between or after the tier groups, nor between the card header and the body; grouping is shown by the accent bars and spacing
 
 #### Scenario: Non-wishlisted rewards are dimmed when Show all rewards is enabled
 - **WHEN** Show all rewards is checked
