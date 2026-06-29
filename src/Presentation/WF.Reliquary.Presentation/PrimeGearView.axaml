@@ -4,8 +4,124 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:WF.Reliquary.Presentation">
 
-  <ScrollViewer Margin="0,12,0,0">
-    <StackPanel>
+  <UserControl.Resources>
+    <!-- Shared gear-card template used by both the Active and Vaulted sections, so the
+         card chrome (owned outline, ✓ marker, ⋮ / selection-checkbox swap) lives in one
+         place and cannot drift between sections. -->
+    <DataTemplate x:Key="GearCardTemplate" DataType="{x:Type local:PrimeGearCardViewModel}">
+      <!-- Panel layers a transparent full-card click target over the card. In group
+           mode the overlay is shown: clicking anywhere selects the card and the inner
+           controls (parts, overflow menu) are suppressed. -->
+      <Panel IsVisible="{Binding IsShown}">
+        <Border
+            Margin="8"
+            Padding="12"
+            CornerRadius="4"
+            Width="180"
+            Classes="gear-card"
+            Classes.owned="{Binding IsOwned}"
+            Classes.selected="{Binding IsSelected}"
+            Classes.fading="{Binding IsFadingOut}">
+          <Border.Transitions>
+            <Transitions>
+              <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+            </Transitions>
+          </Border.Transitions>
+          <StackPanel Spacing="6">
+            <Grid ColumnDefinitions="*,Auto">
+              <!-- Name with the owned ✓ marker immediately after it. -->
+              <StackPanel
+                  Grid.Column="0"
+                  Orientation="Horizontal"
+                  Spacing="4"
+                  VerticalAlignment="Center">
+                <TextBlock
+                    MaxWidth="110"
+                    FontWeight="SemiBold"
+                    Text="{Binding GearName}"
+                    TextWrapping="Wrap"
+                    VerticalAlignment="Center" />
+                <TextBlock
+                    Text="✓"
+                    FontWeight="Bold"
+                    Foreground="{DynamicResource OwnedAccentBrush}"
+                    IsVisible="{Binding IsOwned}"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="Owned" />
+              </StackPanel>
+              <Button
+                  Grid.Column="1"
+                  Margin="4,0,0,0"
+                  Padding="6,2"
+                  VerticalAlignment="Center"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  FontWeight="Bold"
+                  Content="⋮"
+                  ToolTip.Tip="{Binding OwnedMenuLabel}"
+                  ToolTip.ShowDelay="1000">
+                <Button.Flyout>
+                  <!-- Right-align the menu to the button so it opens to the
+                       left, then nudge it 30px back toward the button. -->
+                  <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                    <MenuItem
+                        Header="{Binding OwnedMenuLabel}"
+                        Command="{Binding MarkOwnedCommand}" />
+                  </MenuFlyout>
+                </Button.Flyout>
+              </Button>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Parts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
+                  <Grid ColumnDefinitions="Auto,Auto,*">
+                    <CheckBox
+                        Grid.Column="0"
+                        IsChecked="{Binding IsChecked}"
+                        VerticalAlignment="Top" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Margin="2,0,0,0"
+                        IsVisible="{Binding IsGhost}"
+                        Text="⚠"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="This part is not present in the current drop table import" />
+                    <TextBlock
+                        Grid.Column="2"
+                        Margin="4,0,0,0"
+                        Text="{Binding PartName}"
+                        TextWrapping="Wrap"
+                        VerticalAlignment="Center"
+                        Classes.ghost-part="{Binding IsGhost}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <!-- Selection overlay: only hit-testable in group mode (transparent fill is
+             still clickable; collapsed otherwise so the card behaves normally). -->
+        <Button
+            Classes="card-select-overlay"
+            Margin="8"
+            Padding="0"
+            BorderThickness="0"
+            Cursor="Hand"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            VerticalContentAlignment="Stretch"
+            Command="{Binding ToggleSelectCommand}"
+            ToolTip.Tip="Click to select for group operations"
+            IsVisible="{Binding DataContext.PrimeGear.IsGroupMode, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+      </Panel>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <!-- The control panel (filter row + group-ops row) is docked to the top so it stays
+       put while only the card sections scroll. -->
+  <DockPanel Margin="0,12,0,0">
+    <StackPanel DockPanel.Dock="Top">
 
       <!-- Wishlist selector / filter row -->
       <Border
@@ -109,10 +225,42 @@
               <CheckBox IsChecked="{Binding PrimeGear.ShowOwned}" VerticalAlignment="Center" />
               <TextBlock Text="Show owned gear" VerticalAlignment="Center" />
             </StackPanel>
+            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+              <CheckBox IsChecked="{Binding PrimeGear.IsGroupMode}" VerticalAlignment="Center" />
+              <TextBlock Text="Enable group operations" VerticalAlignment="Center" />
+            </StackPanel>
           </StackPanel>
 
         </DockPanel>
       </Border>
+
+      <!-- Group-operations control row: only shown while group operations is enabled. -->
+      <Border
+          Margin="8,0,8,8"
+          Padding="12,8"
+          Background="#1A808080"
+          CornerRadius="4"
+          IsVisible="{Binding PrimeGear.IsGroupMode}">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock
+              Text="{Binding PrimeGear.SelectedCount, StringFormat='{}{0} selected'}"
+              VerticalAlignment="Center"
+              MinWidth="80" />
+          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+          <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" />
+          <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" />
+          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+          <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" />
+          <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+
+    <!-- Scrolling card area: fills the remaining space below the docked control panel. -->
+    <ScrollViewer>
+      <StackPanel>
 
       <!-- In-content busy indicator: shows which view is reloading. -->
       <TextBlock
@@ -131,89 +279,14 @@
           IsVisible="{Binding PrimeGear.HasNoSearchResults}" />
 
       <!-- Active gear section -->
-      <ItemsControl ItemsSource="{Binding PrimeGear.ActiveCards}">
+      <ItemsControl
+          ItemsSource="{Binding PrimeGear.ActiveCards}"
+          ItemTemplate="{StaticResource GearCardTemplate}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel Orientation="Horizontal" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
-            <Border
-                Margin="8"
-                Padding="12"
-                BorderBrush="Gray"
-                BorderThickness="1"
-                CornerRadius="4"
-                Width="180"
-                IsVisible="{Binding IsShown}"
-                Classes.owned="{Binding IsOwned}"
-                Classes.fading="{Binding IsFadingOut}">
-              <Border.Transitions>
-                <Transitions>
-                  <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
-                </Transitions>
-              </Border.Transitions>
-              <StackPanel Spacing="6">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock
-                      Grid.Column="0"
-                      FontWeight="SemiBold"
-                      Text="{Binding GearName}"
-                      TextWrapping="Wrap"
-                      VerticalAlignment="Center" />
-                  <Button
-                      Grid.Column="1"
-                      Margin="4,0,0,0"
-                      Padding="6,2"
-                      VerticalAlignment="Center"
-                      Background="Transparent"
-                      BorderThickness="0"
-                      FontWeight="Bold"
-                      Content="⋮"
-                      ToolTip.Tip="{Binding OwnedMenuLabel}"
-                      ToolTip.ShowDelay="1000">
-                    <Button.Flyout>
-                      <!-- Right-align the menu to the button so it opens to the
-                           left, then nudge it 30px back toward the button. -->
-                      <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
-                        <MenuItem
-                            Header="{Binding OwnedMenuLabel}"
-                            Command="{Binding MarkOwnedCommand}" />
-                      </MenuFlyout>
-                    </Button.Flyout>
-                  </Button>
-                </Grid>
-                <ItemsControl ItemsSource="{Binding Parts}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
-                      <Grid ColumnDefinitions="Auto,Auto,*">
-                        <CheckBox
-                            Grid.Column="0"
-                            IsChecked="{Binding IsChecked}"
-                            VerticalAlignment="Top" />
-                        <TextBlock
-                            Grid.Column="1"
-                            Margin="2,0,0,0"
-                            IsVisible="{Binding IsGhost}"
-                            Text="⚠"
-                            VerticalAlignment="Center"
-                            ToolTip.Tip="This part is not present in the current drop table import" />
-                        <TextBlock
-                            Grid.Column="2"
-                            Margin="4,0,0,0"
-                            Text="{Binding PartName}"
-                            TextWrapping="Wrap"
-                            VerticalAlignment="Center"
-                            Classes.ghost-part="{Binding IsGhost}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
       </ItemsControl>
 
       <!-- Vaulted section header -->
@@ -229,91 +302,16 @@
       <!-- Vaulted gear section -->
       <ItemsControl
           ItemsSource="{Binding PrimeGear.VaultedCards}"
+          ItemTemplate="{StaticResource GearCardTemplate}"
           IsVisible="{Binding PrimeGear.ShowVaulted}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel Orientation="Horizontal" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
-            <Border
-                Margin="8"
-                Padding="12"
-                BorderBrush="Gray"
-                BorderThickness="1"
-                CornerRadius="4"
-                Width="180"
-                IsVisible="{Binding IsShown}"
-                Classes.gear-vaulted="True"
-                Classes.fading="{Binding IsFadingOut}">
-              <Border.Transitions>
-                <Transitions>
-                  <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
-                </Transitions>
-              </Border.Transitions>
-              <StackPanel Spacing="6">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock
-                      Grid.Column="0"
-                      FontWeight="SemiBold"
-                      Text="{Binding GearName}"
-                      TextWrapping="Wrap"
-                      VerticalAlignment="Center" />
-                  <Button
-                      Grid.Column="1"
-                      Margin="4,0,0,0"
-                      Padding="6,2"
-                      VerticalAlignment="Center"
-                      Background="Transparent"
-                      BorderThickness="0"
-                      FontWeight="Bold"
-                      Content="⋮"
-                      ToolTip.Tip="{Binding OwnedMenuLabel}"
-                      ToolTip.ShowDelay="1000">
-                    <Button.Flyout>
-                      <!-- Right-align the menu to the button so it opens to the
-                           left, then nudge it 30px back toward the button. -->
-                      <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
-                        <MenuItem
-                            Header="{Binding OwnedMenuLabel}"
-                            Command="{Binding MarkOwnedCommand}" />
-                      </MenuFlyout>
-                    </Button.Flyout>
-                  </Button>
-                </Grid>
-                <ItemsControl ItemsSource="{Binding Parts}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
-                      <Grid ColumnDefinitions="Auto,Auto,*">
-                        <CheckBox
-                            Grid.Column="0"
-                            IsChecked="{Binding IsChecked}"
-                            VerticalAlignment="Top" />
-                        <TextBlock
-                            Grid.Column="1"
-                            Margin="2,0,0,0"
-                            IsVisible="{Binding IsGhost}"
-                            Text="⚠"
-                            VerticalAlignment="Center"
-                            ToolTip.Tip="This part is not present in the current drop table import" />
-                        <TextBlock
-                            Grid.Column="2"
-                            Margin="4,0,0,0"
-                            Text="{Binding PartName}"
-                            TextWrapping="Wrap"
-                            VerticalAlignment="Center"
-                            Classes.ghost-part="{Binding IsGhost}" />
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-    </StackPanel>
-  </ScrollViewer>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
 </UserControl>

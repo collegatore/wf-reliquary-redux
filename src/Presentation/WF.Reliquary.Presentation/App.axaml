@@ -37,5 +37,11 @@
     <SolidColorBrush x:Key="TierCommonBrush" Color="#C0772E" />
     <SolidColorBrush x:Key="TierUncommonBrush" Color="#7C8A9A" />
     <SolidColorBrush x:Key="TierRareBrush" Color="#D4A017" />
+
+    <!-- Owned-gear accent: an unintrusive muted green, used for the owned card outline
+         and the owned ✓ marker so owned reads as a positive state distinct from vaulting. -->
+    <SolidColorBrush x:Key="OwnedAccentBrush" Color="#5E9E6E" />
+    <!-- Subtle wash applied to a card selected for group operations. -->
+    <SolidColorBrush x:Key="CardSelectedBrush" Color="#332D7DC4" />
   </Application.Resources>
 </Application>

@@ -14,16 +14,38 @@
     <Style Selector="Border.vaulted">
       <Setter Property="Opacity" Value="0.45" />
     </Style>
-    <!-- Owned gear cards (visible only when "Show owned gear" is on) are muted. -->
-    <Style Selector="Border.owned">
-      <Setter Property="Opacity" Value="0.55" />
+    <!-- Base prime gear card chrome. Declared as a style (not inline on the Border) so
+         the .owned override below can win — in Avalonia a local/inline value beats a
+         style setter, which would silently defeat the gold owned outline. -->
+    <Style Selector="Border.gear-card">
+      <Setter Property="BorderBrush" Value="Gray" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <!-- Vaulted prime gear cards are muted (class-driven so the fade can override it). -->
-    <Style Selector="Border.gear-vaulted">
+    <!-- Owned gear cards (visible only when "Show owned gear" is on): muted, and given an
+         unintrusive green outline so owned reads as its own status independent of vaulting. -->
+    <Style Selector="Border.gear-card.owned">
       <Setter Property="Opacity" Value="0.55" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OwnedAccentBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <!-- Card selected for group operations: a subtle background wash. -->
+    <Style Selector="Border.gear-card.selected">
+      <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
+    </Style>
+    <!-- Full-card transparent click target shown over a card in group-operations mode:
+         clicking anywhere selects the card, and it suppresses the inner controls. The
+         chrome is neutralized so it stays invisible across hover/press. -->
+    <Style Selector="Button.card-select-overlay">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.card-select-overlay:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.card-select-overlay:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
     </Style>
     <!-- Fade a card out before it is removed when marked owned with "Show owned gear"
-         off. Declared last so its Opacity wins over the muted classes above. -->
+         off. Declared last so its Opacity wins over the muted owned style above. -->
     <Style Selector="Border.fading">
       <Setter Property="Opacity" Value="0" />
     </Style>

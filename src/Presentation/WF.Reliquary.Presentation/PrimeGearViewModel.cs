@@ -85,6 +85,7 @@ public sealed class PrimeGearCardViewModel : ObservableObject
     private bool isOwned;
     private bool isFadingOut;
     private bool isShown = true;
+    private bool isSelected;
 
     public PrimeGearCardViewModel(
         string gearName,
@@ -103,6 +104,7 @@ public sealed class PrimeGearCardViewModel : ObservableObject
         this.confirmOwned = confirmOwned;
         this.onOwnedChanged = onOwnedChanged;
         MarkOwnedCommand = new RelayCommand(() => IsOwned = !IsOwned);
+        ToggleSelectCommand = new RelayCommand(() => IsSelected = !IsSelected);
     }
 
     public string GearName { get; }
@@ -122,6 +124,51 @@ public sealed class PrimeGearCardViewModel : ObservableObject
 
     /// <summary>Toggles owned state — invoked from the card's overflow menu.</summary>
     public ICommand MarkOwnedCommand { get; }
+
+    /// <summary>Toggles selection — invoked from the full-card overlay in group mode.</summary>
+    public ICommand ToggleSelectCommand { get; }
+
+    /// <summary>Invoked (by the parent view model) whenever <see cref="IsSelected"/> changes.</summary>
+    public Action? SelectionChanged { get; set; }
+
+    /// <summary>
+    /// Whether this card is selected for group operations. Independent of <see cref="IsOwned"/>
+    /// and of the per-part wishlist check state; only meaningful while group mode is on.
+    /// </summary>
+    public bool IsSelected
+    {
+        get => isSelected;
+        set
+        {
+            if (isSelected == value) return;
+            isSelected = value;
+            OnPropertyChanged();
+            SelectionChanged?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Marks this card owned for a bulk operation, bypassing the per-card confirmation
+    /// dialog (the batch path asks once for the whole selection). When
+    /// <paramref name="releaseTracking"/> is true, the card's wished parts are unchecked
+    /// (and their wishlist removal persisted) before the owned mark is applied.
+    /// </summary>
+    internal async Task MarkOwnedForBulkAsync(bool releaseTracking)
+    {
+        if (releaseTracking)
+        {
+            foreach (var part in Parts.Where(p => p.IsChecked).ToList())
+                part.IsChecked = false;
+        }
+
+        if (isOwned) return;
+        isOwned = true;
+        RaiseOwnedChanged();
+        await PersistOwnedAsync(true);
+    }
+
+    /// <summary>True when any of this card's parts is tracked in the active wishlist.</summary>
+    internal bool HasWishedPartsForBulk => HasWishedParts;
 
     /// <summary>Overflow-menu label, reflecting the action the entry will perform.</summary>
     public string OwnedMenuLabel => isOwned ? "Unmark as owned" : "Mark as owned";
@@ -216,6 +263,8 @@ public sealed class PrimeGearViewModel : ObservableObject
     private long activeWishlistId;
     private bool showVaulted;
     private bool showOwned;
+    private bool isGroupMode;
+    private int selectedCount;
     private bool isBusy;
     private string searchText = string.Empty;
     private int hiddenOwnedMatchCount;
@@ -232,6 +281,10 @@ public sealed class PrimeGearViewModel : ObservableObject
         this.ownedGearStore = ownedGearStore;
         ActiveCards = [];
         VaultedCards = [];
+        SelectAllCommand = new RelayCommand(SelectAllVisible);
+        SelectNoneCommand = new RelayCommand(ClearSelection);
+        MarkSelectedOwnedCommand = new RelayCommand(() => MarkSelectedOwnedAsync().SafeFireAndForget());
+        UnmarkSelectedCommand = new RelayCommand(UnmarkSelected);
         // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
         ReloadAsync().SafeFireAndForget();
     }
@@ -240,6 +293,24 @@ public sealed class PrimeGearViewModel : ObservableObject
 
     /// <summary>Requests the three-way owned-confirmation dialog. Set by the view.</summary>
     public Func<string, Task<OwnedConfirmChoice>>? ConfirmOwnedTracking { get; set; }
+
+    /// <summary>
+    /// Requests the three-way tracking dialog once for a bulk mark, given the number of
+    /// selected cards that still track parts. Set by the view.
+    /// </summary>
+    public Func<int, Task<OwnedConfirmChoice>>? ConfirmOwnedTrackingBatch { get; set; }
+
+    /// <summary>Selects every currently visible card for group operations.</summary>
+    public ICommand SelectAllCommand { get; }
+
+    /// <summary>Clears the group-operations selection.</summary>
+    public ICommand SelectNoneCommand { get; }
+
+    /// <summary>Marks every selected card owned (with a single batched tracking prompt).</summary>
+    public ICommand MarkSelectedOwnedCommand { get; }
+
+    /// <summary>Clears the owned mark on every selected card.</summary>
+    public ICommand UnmarkSelectedCommand { get; }
 
     /// <summary>
     /// How long a card fades before it collapses after being marked owned while owned
@@ -277,6 +348,7 @@ public sealed class PrimeGearViewModel : ObservableObject
             if (showVaulted == value) return;
             showVaulted = value;
             OnPropertyChanged();
+            ClearSelection();
             ApplyFilters();
         }
     }
@@ -289,7 +361,36 @@ public sealed class PrimeGearViewModel : ObservableObject
             if (showOwned == value) return;
             showOwned = value;
             OnPropertyChanged();
+            ClearSelection();
             ApplyFilters();
+        }
+    }
+
+    /// <summary>
+    /// Whether group-operations mode is active. Ephemeral — it always starts off and is
+    /// never persisted. Turning it off clears any current selection.
+    /// </summary>
+    public bool IsGroupMode
+    {
+        get => isGroupMode;
+        set
+        {
+            if (isGroupMode == value) return;
+            isGroupMode = value;
+            OnPropertyChanged();
+            if (!value) ClearSelection();
+        }
+    }
+
+    /// <summary>Number of cards currently selected for group operations.</summary>
+    public int SelectedCount
+    {
+        get => selectedCount;
+        private set
+        {
+            if (selectedCount == value) return;
+            selectedCount = value;
+            OnPropertyChanged();
         }
     }
 
@@ -305,6 +406,7 @@ public sealed class PrimeGearViewModel : ObservableObject
             if (searchText == value) return;
             searchText = value;
             OnPropertyChanged();
+            ClearSelection();
             ScheduleSearchAsync().SafeFireAndForget();
         }
     }
@@ -492,6 +594,7 @@ public sealed class PrimeGearViewModel : ObservableObject
                 confirmOwned: gn => ConfirmOwnedTracking?.Invoke(gn)
                     ?? Task.FromResult(OwnedConfirmChoice.KeepTracking),
                 onOwnedChanged: () => OnCardOwnedChangedAsync(card));
+            card.SelectionChanged = RecountSelected;
             built.Add(card);
         }
 
@@ -509,6 +612,8 @@ public sealed class PrimeGearViewModel : ObservableObject
             else ActiveCards.Add(card);
         }
 
+        // Freshly built cards start unselected; reset the count (e.g. after a wishlist switch).
+        RecountSelected();
         ApplyFilters();
     }
 
@@ -536,6 +641,73 @@ public sealed class PrimeGearViewModel : ObservableObject
         // Owned state changed in a way that may make the card visible — re-evaluate all.
         card.IsFadingOut = false;
         ApplyFilters();
+    }
+
+    // --- Group operations -------------------------------------------------
+
+    /// <summary>Recomputes <see cref="SelectedCount"/> from the current card selection.</summary>
+    private void RecountSelected() => SelectedCount = allCards.Count(c => c.IsSelected);
+
+    /// <summary>Clears the selection on every card and resets the count.</summary>
+    private void ClearSelection()
+    {
+        foreach (var card in allCards)
+            card.IsSelected = false;
+        RecountSelected();
+    }
+
+    /// <summary>
+    /// Selects every card that is currently visible: shown by the owned/search filters and,
+    /// for vaulted cards, only when the Vaulted section is expanded. Hidden cards stay unselected.
+    /// </summary>
+    private void SelectAllVisible()
+    {
+        foreach (var card in allCards)
+            card.IsSelected = card.IsShown && (!card.IsVaulted || showVaulted);
+        RecountSelected();
+    }
+
+    /// <summary>Clears the owned mark on every selected, currently-owned card.</summary>
+    private void UnmarkSelected()
+    {
+        var targets = allCards.Where(c => c.IsSelected && c.IsOwned).ToList();
+
+        // Each setter persists the change and triggers the owned-changed re-evaluation.
+        foreach (var card in targets)
+            card.IsOwned = false;
+
+        ClearSelection();
+    }
+
+    /// <summary>
+    /// Marks every selected, not-yet-owned card owned. If any selected card still tracks
+    /// parts, asks once (Keep / Release / Cancel) and applies that choice to the whole batch.
+    /// </summary>
+    private async Task MarkSelectedOwnedAsync()
+    {
+        var targets = allCards.Where(c => c.IsSelected && !c.IsOwned).ToList();
+        if (targets.Count == 0)
+        {
+            ClearSelection();
+            return;
+        }
+
+        var withParts = targets.Where(c => c.HasWishedPartsForBulk).ToList();
+        var choice = OwnedConfirmChoice.KeepTracking;
+        if (withParts.Count > 0 && ConfirmOwnedTrackingBatch is not null)
+        {
+            choice = await ConfirmOwnedTrackingBatch(withParts.Count);
+            // Cancel aborts the whole bulk mark and leaves the selection untouched.
+            if (choice == OwnedConfirmChoice.Cancel)
+                return;
+        }
+
+        var releaseTracking = choice == OwnedConfirmChoice.ReleaseTracking;
+        // Run concurrently so the fade-outs (when owned gear is hidden) overlap rather
+        // than cascading one card at a time.
+        await Task.WhenAll(targets.Select(card => card.MarkOwnedForBulkAsync(releaseTracking)));
+
+        ClearSelection();
     }
 
     private async Task ScheduleSearchAsync()

@@ -463,7 +463,262 @@ public sealed class PrimeGearViewModelTests
         Assert.That(vm.ActiveCards.Any(c => c.GearName == "Ash Prime"), Is.True);
     }
 
+    // ── Group operations: selection ───────────────────────────────────────────
+
+    [Test]
+    public async Task IsGroupMode_DefaultsOff_AndIsEphemeral()
+    {
+        var reader = ReaderWith([new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)]);
+        var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
+        await SettleAsync();
+
+        Assert.That(vm.IsGroupMode, Is.False);
+    }
+
+    [Test]
+    public async Task SelectingCards_UpdatesSelectedCount()
+    {
+        var vm = await MakeMultiCardVm();
+        var ash = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
+        var banshee = vm.ActiveCards.Single(c => c.GearName == "Banshee Prime");
+
+        ash.IsSelected = true;
+        banshee.IsSelected = true;
+        Assert.That(vm.SelectedCount, Is.EqualTo(2));
+
+        ash.IsSelected = false;
+        Assert.That(vm.SelectedCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task SelectAll_SelectsOnlyVisibleCards()
+    {
+        // Ember Prime is owned; with Show owned off it is hidden and must not be selected.
+        var vm = await MakeMultiCardVm(ownedGear: "Ember Prime");
+
+        vm.SelectAllCommand.Execute(null);
+
+        var ember = vm.ActiveCards.Single(c => c.GearName == "Ember Prime");
+        Assert.Multiple(() =>
+        {
+            Assert.That(ember.IsSelected, Is.False, "hidden owned card is not selected");
+            Assert.That(vm.ActiveCards.Where(c => c.IsShown).All(c => c.IsSelected), Is.True);
+            Assert.That(vm.SelectedCount, Is.EqualTo(vm.ActiveCards.Count(c => c.IsShown)));
+        });
+    }
+
+    [Test]
+    public async Task SelectNone_ClearsSelection()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.SelectAllCommand.Execute(null);
+        Assert.That(vm.SelectedCount, Is.GreaterThan(0));
+
+        vm.SelectNoneCommand.Execute(null);
+        Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
+    // ── Group operations: bulk mark / unmark ──────────────────────────────────
+
+    [Test]
+    public async Task BulkMark_WithNoWishedParts_MarksDirectly_NoPrompt()
+    {
+        var promptCount = 0;
+        var owned = OwnedStore();
+        var vm = await MakeMultiCardVm(owned: owned, onBatchPrompt: () => promptCount++);
+
+        var ash = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
+        ash.IsSelected = true;
+        vm.MarkSelectedOwnedCommand.Execute(null);
+        await SettleAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(promptCount, Is.EqualTo(0), "no tracked parts → no dialog");
+            Assert.That(ash.IsOwned, Is.True);
+            Assert.That(vm.SelectedCount, Is.EqualTo(0), "selection empty after bulk action");
+        });
+        owned.Verify(s => s.SetOwnedAsync("Ash Prime", true, default), Times.Once);
+    }
+
+    [Test]
+    public async Task BulkMark_WithWishedParts_PromptsOnce_KeepAppliesToWholeBatch()
+    {
+        var promptCount = 0;
+        var owned = OwnedStore();
+        var store = StoreWithItems([
+            new WishlistItem(ActiveWishlistId, "BANSHEE PRIME NEUROPTICS", "Banshee Prime", "Neuroptics", IsGhost: false),
+            new WishlistItem(ActiveWishlistId, "VOLT PRIME NEUROPTICS", "Volt Prime", "Neuroptics", IsGhost: false)
+        ]);
+        var vm = await MakeMultiCardVm(owned: owned, store: store,
+            batchChoice: OwnedConfirmChoice.KeepTracking, onBatchPrompt: () => promptCount++);
+
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+        vm.ActiveCards.Single(c => c.GearName == "Volt Prime").IsSelected = true;
+        vm.MarkSelectedOwnedCommand.Execute(null);
+        await SettleAsync();
+
+        Assert.That(promptCount, Is.EqualTo(1), "a single dialog for the whole batch");
+        owned.Verify(s => s.SetOwnedAsync("Banshee Prime", true, default), Times.Once);
+        owned.Verify(s => s.SetOwnedAsync("Volt Prime", true, default), Times.Once);
+        store.Verify(s => s.RemoveItemAsync(It.IsAny<long>(), It.IsAny<string>(), default), Times.Never);
+    }
+
+    [Test]
+    public async Task BulkMark_WithWishedParts_ReleaseRemovesPartsForWholeBatch()
+    {
+        var owned = OwnedStore();
+        var store = StoreWithItems([
+            new WishlistItem(ActiveWishlistId, "BANSHEE PRIME NEUROPTICS", "Banshee Prime", "Neuroptics", IsGhost: false),
+            new WishlistItem(ActiveWishlistId, "VOLT PRIME NEUROPTICS", "Volt Prime", "Neuroptics", IsGhost: false)
+        ]);
+        var vm = await MakeMultiCardVm(owned: owned, store: store,
+            batchChoice: OwnedConfirmChoice.ReleaseTracking);
+
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+        vm.ActiveCards.Single(c => c.GearName == "Volt Prime").IsSelected = true;
+        vm.MarkSelectedOwnedCommand.Execute(null);
+        await SettleAsync();
+
+        owned.Verify(s => s.SetOwnedAsync("Banshee Prime", true, default), Times.Once);
+        owned.Verify(s => s.SetOwnedAsync("Volt Prime", true, default), Times.Once);
+        store.Verify(s => s.RemoveItemAsync(ActiveWishlistId,
+            It.Is<string>(n => n.Contains("BANSHEE", StringComparison.OrdinalIgnoreCase)), default), Times.Once);
+        store.Verify(s => s.RemoveItemAsync(ActiveWishlistId,
+            It.Is<string>(n => n.Contains("VOLT", StringComparison.OrdinalIgnoreCase)), default), Times.Once);
+    }
+
+    [Test]
+    public async Task BulkMark_Cancel_MarksNothing_AndLeavesSelection()
+    {
+        var owned = OwnedStore();
+        var store = StoreWithItems([
+            new WishlistItem(ActiveWishlistId, "BANSHEE PRIME NEUROPTICS", "Banshee Prime", "Neuroptics", IsGhost: false)
+        ]);
+        var vm = await MakeMultiCardVm(owned: owned, store: store,
+            batchChoice: OwnedConfirmChoice.Cancel);
+
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+        vm.MarkSelectedOwnedCommand.Execute(null);
+        await SettleAsync();
+
+        Assert.That(vm.SelectedCount, Is.EqualTo(1), "Cancel leaves the selection unchanged");
+        owned.Verify(s => s.SetOwnedAsync(It.IsAny<string>(), It.IsAny<bool>(), default), Times.Never);
+    }
+
+    [Test]
+    public async Task BulkUnmark_ClearsOwnedForAllSelected()
+    {
+        var owned = OwnedStore("Ember Prime", "Volt Prime");
+        var vm = await MakeMultiCardVm(owned: owned);
+        vm.ShowOwned = true; // reveal owned cards so they can be selected
+        await SettleAsync();
+
+        vm.ActiveCards.Single(c => c.GearName == "Ember Prime").IsSelected = true;
+        vm.ActiveCards.Single(c => c.GearName == "Volt Prime").IsSelected = true;
+        vm.UnmarkSelectedCommand.Execute(null);
+        await SettleAsync();
+
+        owned.Verify(s => s.SetOwnedAsync("Ember Prime", false, default), Times.Once);
+        owned.Verify(s => s.SetOwnedAsync("Volt Prime", false, default), Times.Once);
+        Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task BulkMark_WithShowOwnedOff_HidesCards_AndEmptiesSelection()
+    {
+        var vm = await MakeMultiCardVm();
+        var ash = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
+        ash.IsSelected = true;
+        vm.MarkSelectedOwnedCommand.Execute(null);
+        await SettleAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ash.IsOwned, Is.True);
+            Assert.That(ash.IsShown, Is.False, "marked-owned card is hidden when Show owned is off");
+            Assert.That(vm.SelectedCount, Is.EqualTo(0));
+        });
+    }
+
+    // ── Group operations: selection clears on view changes ────────────────────
+
+    [Test]
+    public async Task ChangingSearch_ClearsSelection()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.ActiveCards.First().IsSelected = true;
+
+        vm.SearchText = "prime";
+        Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task TogglingShowVaulted_ClearsSelection()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.ActiveCards.First().IsSelected = true;
+
+        vm.ShowVaulted = true;
+        Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task TogglingShowOwned_ClearsSelection()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.ActiveCards.First().IsSelected = true;
+
+        vm.ShowOwned = true;
+        Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task LeavingGroupMode_ClearsSelection()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        vm.ActiveCards.First().IsSelected = true;
+
+        vm.IsGroupMode = false;
+        Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds a view model with several active cards (Ash, Banshee, Volt, Ember) and
+    /// optional owned gear, an owned-store mock, a wishlist-store mock, and a batched
+    /// tracking-prompt hook recording invocations and returning <paramref name="batchChoice"/>.
+    /// </summary>
+    private static async Task<PrimeGearViewModel> MakeMultiCardVm(
+        string? ownedGear = null,
+        Mock<IOwnedGearStore>? owned = null,
+        Mock<IWishlistStore>? store = null,
+        OwnedConfirmChoice batchChoice = OwnedConfirmChoice.KeepTracking,
+        Action? onBatchPrompt = null)
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Banshee Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Volt Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Ember Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+        owned ??= ownedGear is null ? OwnedStore() : OwnedStore(ownedGear);
+        store ??= StoreWithItems([]);
+
+        var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object)
+        {
+            ConfirmOwnedTracking = gn => Task.FromResult(batchChoice),
+            ConfirmOwnedTrackingBatch = _ =>
+            {
+                onBatchPrompt?.Invoke();
+                return Task.FromResult(batchChoice);
+            }
+        };
+        await SettleAsync();
+        return vm;
+    }
 
     private static (PrimeGearViewModel Vm, Mock<IOwnedGearStore> Owned, Mock<IWishlistStore> Store, List<string> ConfirmCalls)
         MakeConfirmScenario(OwnedConfirmChoice choice)

@@ -93,6 +93,7 @@ public sealed partial class MainWindow : Window
             wishlistStore,
             ReliquaryServiceFactory.CreateOwnedGearStore());
         primeGearVm.ConfirmOwnedTracking = gearName => OwnedGearTrackingDialog.ShowAsync(this, gearName);
+        primeGearVm.ConfirmOwnedTrackingBatch = trackedCount => OwnedGearTrackingDialog.ShowBatchAsync(this, trackedCount);
         primeGearVm.OwnedHideFadeDuration = TimeSpan.FromMilliseconds(180);
         primeGearVm.SearchDebounceDelay = TimeSpan.FromMilliseconds(150);
 
