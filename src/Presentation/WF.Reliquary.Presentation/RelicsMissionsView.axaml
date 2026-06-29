@@ -1,0 +1,314 @@
+<UserControl
+    x:Class="WF.Reliquary.Presentation.RelicsMissionsView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation">
+
+  <Grid x:Name="RelicsMissionsGrid" Margin="0,12,0,0" RowDefinitions="Auto,*,4,*">
+
+    <!-- Row 0: Control panel -->
+    <Border
+        Grid.Row="0"
+        Margin="8,0,8,8"
+        Padding="12,8"
+        Background="#1A808080"
+        CornerRadius="4">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Relics:" VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <CheckBox IsChecked="{Binding WishlistRelics.ShowVaulted}" VerticalAlignment="Center" />
+          <TextBlock Text="Show vaulted" VerticalAlignment="Center" />
+        </StackPanel>
+        <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <CheckBox IsChecked="{Binding WishlistRelics.ShowAllRewards}" VerticalAlignment="Center" />
+          <TextBlock Text="Show all rewards" VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- In-content busy indicator for the Relics/Missions reload. -->
+        <TextBlock
+            Text="Updating…"
+            Opacity="0.7"
+            FontStyle="Italic"
+            VerticalAlignment="Center"
+            IsVisible="{Binding WishlistRelics.IsBusy}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Row 1: Relics scroll + Missions separator panel pinned to its bottom.
+         The separator panel is fixed-height (Auto) inside this section so the
+         GridSplitter (outer Row 2) resizes the relic-cards scroll, not the panel. -->
+    <Grid Grid.Row="1" RowDefinitions="*,Auto">
+    <ScrollViewer x:Name="RelicsScrollViewer" Grid.Row="0">
+      <StackPanel>
+
+        <!-- Relics empty state -->
+        <TextBlock
+            Margin="8,16"
+            IsVisible="{Binding WishlistRelics.IsEmpty}"
+            Text="Add items to your wishlist to see relics here." />
+
+        <!-- Relic cards -->
+        <ItemsControl ItemsSource="{Binding WishlistRelics.Cards}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type local:WishlistRelicCardViewModel}">
+              <Border
+                  Margin="8"
+                  Padding="12"
+                  BorderBrush="Gray"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Width="{DynamicResource RelicCardWidth}"
+                  Classes.vaulted="{Binding IsVaulted}">
+                <StackPanel>
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                    <TextBlock
+                        Grid.Column="0"
+                        FontWeight="SemiBold"
+                        Text="{Binding RelicName}"
+                        TextWrapping="Wrap"
+                        VerticalAlignment="Center" />
+                    <Button
+                        Grid.Column="1"
+                        Margin="4,0,0,0"
+                        Padding="6,2"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        FontWeight="Bold"
+                        Content="⋮">
+                      <Button.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                          <MenuItem
+                              Header="Compose LFG message…"
+                              Command="{Binding ComposeCommand}" />
+                        </MenuFlyout>
+                      </Button.Flyout>
+                    </Button>
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding TierGroups}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="{x:Type local:WishlistRelicTierGroupViewModel}">
+                        <!-- Per-tier accent bar in the left gutter; color encodes the
+                             tier and the bar spans the whole group (label + wrapped
+                             reward lines), replacing per-group separators. -->
+                        <Border
+                            Margin="0,0,0,8"
+                            Padding="6,0,0,0"
+                            BorderThickness="3,0,0,0"
+                            Classes.tier-common="{Binding IsCommon}"
+                            Classes.tier-uncommon="{Binding IsUncommon}"
+                            Classes.tier-rare="{Binding IsRare}">
+                          <StackPanel>
+                            <TextBlock
+                                Margin="0,0,0,2"
+                                Classes="tier-label"
+                                Text="{Binding TierName}" />
+                            <!-- Reward names indented beneath the tier label so the
+                                 label stands out and the rewards read as its list. -->
+                            <ItemsControl ItemsSource="{Binding Rewards}" Margin="12,0,0,0">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:WishlistRelicRewardViewModel}">
+                                  <TextBlock
+                                      Text="{Binding RewardName}"
+                                      TextWrapping="Wrap"
+                                      Classes.dimmed="{Binding IsDimmed}" />
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Missions separator panel (pinned to bottom of relics section).
+         Auto-sizes to its control row exactly like the Prime Gear filter bar;
+         bottom corners are square where it meets the splitter. -->
+    <Border
+        Grid.Row="1"
+        Margin="8,4,8,0"
+        Padding="12,2"
+        Background="#1A808080"
+        CornerRadius="4,4,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Missions:" VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <CheckBox
+              IsChecked="{Binding WishlistFarming.ShowExactDropChances}"
+              VerticalAlignment="Center" />
+          <TextBlock Text="Show exact drop chances" VerticalAlignment="Center" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    </Grid>
+
+    <!-- Row 2: GridSplitter -->
+    <GridSplitter
+        x:Name="RelicsSplitter"
+        Grid.Row="2"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        ResizeDirection="Rows"
+        Background="#28808080">
+      <GridSplitter.Styles>
+        <Style Selector="GridSplitter:pointerover">
+          <Setter Property="Background" Value="#50808080" />
+        </Style>
+        <Style Selector="GridSplitter:pressed">
+          <Setter Property="Background" Value="#70808080" />
+        </Style>
+      </GridSplitter.Styles>
+    </GridSplitter>
+
+    <!-- Row 3: Missions scroll -->
+    <ScrollViewer Grid.Row="3" Margin="0,8,0,0">
+      <StackPanel>
+
+        <!-- Missions empty state -->
+        <TextBlock
+            Margin="8,16"
+            IsVisible="{Binding WishlistFarming.IsEmpty}"
+            Text="Add items to your wishlist to see farming missions here." />
+
+        <!-- Mission cards -->
+        <ItemsControl ItemsSource="{Binding WishlistFarming.Cards}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type local:WishlistFarmingMissionGroupCardViewModel}">
+              <Border
+                  Margin="8"
+                  Padding="12"
+                  BorderBrush="Gray"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Width="{DynamicResource MissionCardWidth}">
+                <StackPanel>
+
+                  <!-- Card header: mission type title + effective chance -->
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                    <TextBlock
+                        Grid.Column="0"
+                        FontWeight="SemiBold"
+                        Text="{Binding GroupTitle}"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Margin="8,0,0,0"
+                        FontWeight="SemiBold"
+                        Text="{Binding FormattedEffectiveChance}"
+                        VerticalAlignment="Top" />
+                  </Grid>
+                  <Separator Margin="0,0,0,6" />
+
+                  <!-- Nodes: member mission names (regular font), followed by a divider -->
+                  <TextBlock
+                      Margin="0,0,0,6"
+                      Text="{Binding NodesLabel}"
+                      TextWrapping="Wrap" />
+                  <Separator Margin="0,0,0,6" />
+
+                  <!-- Non-rotation: flat relic list (detailed) or compact row -->
+                  <StackPanel IsVisible="{Binding !HasRotations}">
+                    <ItemsControl
+                        ItemsSource="{Binding Relics}"
+                        IsVisible="{Binding ShowExactDropChances}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:WishlistFarmingMissionRelicViewModel}">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock
+                                Grid.Column="0"
+                                Text="{Binding RelicName}"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                Text="{Binding FormattedChance}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock
+                        Text="{Binding CompactRelicNames}"
+                        TextWrapping="Wrap"
+                        IsVisible="{Binding !ShowExactDropChances}" />
+                  </StackPanel>
+
+                  <!-- Rotation missions: per-rotation sections -->
+                  <ItemsControl
+                      ItemsSource="{Binding Rotations}"
+                      IsVisible="{Binding HasRotations}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="{x:Type local:WishlistFarmingRotationViewModel}">
+                        <StackPanel Margin="0,0,0,4">
+                          <!-- Rotation header: label + cumulative chance (always visible) -->
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock
+                                Grid.Column="0"
+                                FontStyle="Italic"
+                                Text="{Binding RotationLabel}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                FontStyle="Italic"
+                                Text="{Binding FormattedCumulativeChance}" />
+                          </Grid>
+                          <!-- Relics within this rotation: detailed rows -->
+                          <ItemsControl
+                              ItemsSource="{Binding Relics}"
+                              Margin="12,2,0,0"
+                              IsVisible="{Binding ShowExactDropChances}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate DataType="{x:Type local:WishlistFarmingMissionRelicViewModel}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                  <TextBlock
+                                      Grid.Column="0"
+                                      Text="{Binding RelicName}"
+                                      TextWrapping="Wrap" />
+                                  <TextBlock
+                                      Grid.Column="1"
+                                      Margin="8,0,0,0"
+                                      Text="{Binding FormattedChance}" />
+                                </Grid>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <!-- Relics within this rotation: compact row -->
+                          <TextBlock
+                              Margin="12,2,0,0"
+                              Text="{Binding CompactRelicNames}"
+                              TextWrapping="Wrap"
+                              IsVisible="{Binding !ShowExactDropChances}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+</UserControl>

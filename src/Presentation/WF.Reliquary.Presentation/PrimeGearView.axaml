@@ -1,0 +1,319 @@
+<UserControl
+    x:Class="WF.Reliquary.Presentation.PrimeGearView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation">
+
+  <ScrollViewer Margin="0,12,0,0">
+    <StackPanel>
+
+      <!-- Wishlist selector / filter row -->
+      <Border
+          Margin="8,0,8,8"
+          Padding="12,8"
+          Background="#1A808080"
+          CornerRadius="4">
+        <DockPanel>
+
+          <!-- Right side: search box and hidden-match hint -->
+          <StackPanel
+              DockPanel.Dock="Right"
+              Orientation="Vertical"
+              Spacing="2"
+              VerticalAlignment="Center">
+            <TextBox
+                Text="{Binding PrimeGear.SearchText, Mode=TwoWay}"
+                PlaceholderText="Search gear…"
+                Width="200" />
+            <TextBlock
+                Text="{Binding PrimeGear.HiddenMatchHint}"
+                IsVisible="{Binding PrimeGear.HasHiddenMatches}"
+                Opacity="0.65"
+                FontSize="11"
+                FontStyle="Italic" />
+          </StackPanel>
+
+          <!-- Left side: wishlist selector and toggles -->
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <TextBlock Text="Wishlist:" VerticalAlignment="Center" />
+            <Button
+                x:Name="WishlistDropdownButton"
+                MinWidth="160"
+                Padding="10,6"
+                Background="Transparent"
+                BorderBrush="Gray"
+                BorderThickness="1">
+              <TextBlock
+                  MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                  Text="{Binding Wishlist.ActiveWishlistName}"
+                  TextTrimming="CharacterEllipsis"
+                  ToolTip.Tip="{Binding Wishlist.ActiveWishlistName}" />
+              <Button.Flyout>
+                <Flyout Placement="Bottom">
+                  <StackPanel MinWidth="200" Spacing="0">
+
+                    <!-- Existing wishlists -->
+                    <ItemsControl ItemsSource="{Binding Wishlist.Wishlists}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:WishlistEntryViewModel}">
+                          <Button
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Left"
+                              Padding="12,6"
+                              Command="{Binding SelectCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                              <TextBlock Text="✓" IsVisible="{Binding IsActive}" Width="14" />
+                              <TextBlock Text=" " IsVisible="{Binding !IsActive}" Width="14" />
+                              <TextBlock Text="{Binding Name}" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Separator -->
+                    <Separator Margin="0,4" />
+
+                    <!-- Management actions -->
+                    <Button
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        Padding="12,6"
+                        Command="{Binding Wishlist.RenameCommand}"
+                        Content="Rename this list…" />
+                    <Button
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        Padding="12,6"
+                        Command="{Binding Wishlist.DeleteCommand}"
+                        IsEnabled="{Binding Wishlist.CanDelete}"
+                        Content="Delete this list" />
+                    <Button
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        Padding="12,6"
+                        Command="{Binding Wishlist.CreateCommand}"
+                        Content="+ New list" />
+
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+              <CheckBox IsChecked="{Binding PrimeGear.ShowVaulted}" VerticalAlignment="Center" />
+              <TextBlock Text="Show vaulted gear" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+              <CheckBox IsChecked="{Binding PrimeGear.ShowOwned}" VerticalAlignment="Center" />
+              <TextBlock Text="Show owned gear" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+
+        </DockPanel>
+      </Border>
+
+      <!-- In-content busy indicator: shows which view is reloading. -->
+      <TextBlock
+          Margin="8,0,8,8"
+          Text="Updating…"
+          Opacity="0.7"
+          FontStyle="Italic"
+          IsVisible="{Binding PrimeGear.IsBusy}" />
+
+      <!-- Empty-state: shown when a search is active but no card title matches. -->
+      <TextBlock
+          Margin="8,0,8,8"
+          Text="No gear matches your search."
+          Opacity="0.7"
+          FontStyle="Italic"
+          IsVisible="{Binding PrimeGear.HasNoSearchResults}" />
+
+      <!-- Active gear section -->
+      <ItemsControl ItemsSource="{Binding PrimeGear.ActiveCards}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
+            <Border
+                Margin="8"
+                Padding="12"
+                BorderBrush="Gray"
+                BorderThickness="1"
+                CornerRadius="4"
+                Width="180"
+                IsVisible="{Binding IsShown}"
+                Classes.owned="{Binding IsOwned}"
+                Classes.fading="{Binding IsFadingOut}">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                </Transitions>
+              </Border.Transitions>
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock
+                      Grid.Column="0"
+                      FontWeight="SemiBold"
+                      Text="{Binding GearName}"
+                      TextWrapping="Wrap"
+                      VerticalAlignment="Center" />
+                  <Button
+                      Grid.Column="1"
+                      Margin="4,0,0,0"
+                      Padding="6,2"
+                      VerticalAlignment="Center"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      FontWeight="Bold"
+                      Content="⋮"
+                      ToolTip.Tip="{Binding OwnedMenuLabel}"
+                      ToolTip.ShowDelay="1000">
+                    <Button.Flyout>
+                      <!-- Right-align the menu to the button so it opens to the
+                           left, then nudge it 30px back toward the button. -->
+                      <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                        <MenuItem
+                            Header="{Binding OwnedMenuLabel}"
+                            Command="{Binding MarkOwnedCommand}" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Parts}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
+                      <Grid ColumnDefinitions="Auto,Auto,*">
+                        <CheckBox
+                            Grid.Column="0"
+                            IsChecked="{Binding IsChecked}"
+                            VerticalAlignment="Top" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Margin="2,0,0,0"
+                            IsVisible="{Binding IsGhost}"
+                            Text="⚠"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="This part is not present in the current drop table import" />
+                        <TextBlock
+                            Grid.Column="2"
+                            Margin="4,0,0,0"
+                            Text="{Binding PartName}"
+                            TextWrapping="Wrap"
+                            VerticalAlignment="Center"
+                            Classes.ghost-part="{Binding IsGhost}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Vaulted section header -->
+      <Border
+          Margin="8,8,8,0"
+          Padding="12,8"
+          Background="#1A808080"
+          CornerRadius="4"
+          IsVisible="{Binding PrimeGear.ShowVaulted}">
+        <TextBlock FontWeight="SemiBold" Text="Vaulted" />
+      </Border>
+
+      <!-- Vaulted gear section -->
+      <ItemsControl
+          ItemsSource="{Binding PrimeGear.VaultedCards}"
+          IsVisible="{Binding PrimeGear.ShowVaulted}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="{x:Type local:PrimeGearCardViewModel}">
+            <Border
+                Margin="8"
+                Padding="12"
+                BorderBrush="Gray"
+                BorderThickness="1"
+                CornerRadius="4"
+                Width="180"
+                IsVisible="{Binding IsShown}"
+                Classes.gear-vaulted="True"
+                Classes.fading="{Binding IsFadingOut}">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                </Transitions>
+              </Border.Transitions>
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock
+                      Grid.Column="0"
+                      FontWeight="SemiBold"
+                      Text="{Binding GearName}"
+                      TextWrapping="Wrap"
+                      VerticalAlignment="Center" />
+                  <Button
+                      Grid.Column="1"
+                      Margin="4,0,0,0"
+                      Padding="6,2"
+                      VerticalAlignment="Center"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      FontWeight="Bold"
+                      Content="⋮"
+                      ToolTip.Tip="{Binding OwnedMenuLabel}"
+                      ToolTip.ShowDelay="1000">
+                    <Button.Flyout>
+                      <!-- Right-align the menu to the button so it opens to the
+                           left, then nudge it 30px back toward the button. -->
+                      <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                        <MenuItem
+                            Header="{Binding OwnedMenuLabel}"
+                            Command="{Binding MarkOwnedCommand}" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Parts}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
+                      <Grid ColumnDefinitions="Auto,Auto,*">
+                        <CheckBox
+                            Grid.Column="0"
+                            IsChecked="{Binding IsChecked}"
+                            VerticalAlignment="Top" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Margin="2,0,0,0"
+                            IsVisible="{Binding IsGhost}"
+                            Text="⚠"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="This part is not present in the current drop table import" />
+                        <TextBlock
+                            Grid.Column="2"
+                            Margin="4,0,0,0"
+                            Text="{Binding PartName}"
+                            TextWrapping="Wrap"
+                            VerticalAlignment="Center"
+                            Classes.ghost-part="{Binding IsGhost}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
