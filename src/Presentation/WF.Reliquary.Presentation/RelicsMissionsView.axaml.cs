@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using WF.Reliquary.Application.Settings;
 
 namespace WF.Reliquary.Presentation;
 
@@ -21,6 +22,7 @@ public sealed partial class RelicsMissionsView : UserControl
         DataContextChanged += OnDataContextChanged;
         RelicsMissionsGrid.SizeChanged += OnRelicsGridFirstMeasured;
         RelicsSplitter.DragCompleted += OnSplitterDragCompleted;
+        SideBySideSplitter.DragCompleted += OnSideBySideSplitterDragCompleted;
     }
 
     private void OnDataContextChanged(object? sender, System.EventArgs e)
@@ -37,6 +39,10 @@ public sealed partial class RelicsMissionsView : UserControl
         {
             _shell.PropertyChanged += OnShellPropertyChanged;
             _shell.WishlistRelics.PropertyChanged += OnWishlistRelicsPropertyChanged;
+
+            // Restore column ratio immediately if starting in side-by-side orientation.
+            if (_shell.Orientation == RelicsMissionsOrientation.SideBySide)
+                ApplySideBySideRelicsWidth();
         }
     }
 
@@ -77,6 +83,12 @@ public sealed partial class RelicsMissionsView : UserControl
         if (e.PropertyName == nameof(MainWindowShellViewModel.RelicsPanelHeight))
         {
             Dispatcher.UIThread.Post(ApplyRelicsPanelHeight);
+        }
+        else if (e.PropertyName == nameof(MainWindowShellViewModel.Orientation)
+            && _shell?.Orientation == RelicsMissionsOrientation.SideBySide)
+        {
+            // Restore the saved column ratio whenever switching to side-by-side.
+            ApplySideBySideRelicsWidth();
         }
     }
 
@@ -122,6 +134,25 @@ public sealed partial class RelicsMissionsView : UserControl
         return grid.Bounds.Height
             - grid.RowDefinitions[0].ActualHeight
             - grid.RowDefinitions[2].ActualHeight;
+    }
+
+    private void OnSideBySideSplitterDragCompleted(object? sender, VectorEventArgs e)
+    {
+        if (_shell is null) return;
+
+        var width = SideBySideGrid.ColumnDefinitions[0].ActualWidth;
+        if (width > 0)
+            _shell.SideBySideRelicsWidth = width;
+    }
+
+    // Restores the relics column to its saved pixel width; the missions column
+    // takes the remaining space as a star (so it stretches on window resize).
+    private void ApplySideBySideRelicsWidth()
+    {
+        if (_shell?.SideBySideRelicsWidth is not { } width || width <= 0) return;
+
+        SideBySideGrid.ColumnDefinitions[0].Width = new GridLength(width, GridUnitType.Pixel);
+        SideBySideGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
     }
 
     /// <summary>

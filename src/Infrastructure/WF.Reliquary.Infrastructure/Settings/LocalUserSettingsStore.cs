@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
@@ -73,7 +74,9 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 RelicsPanelHeight: file.RelicsPanelHeight > 0 ? file.RelicsPanelHeight : null,
                 LfgTemplate: ToTemplate(file.LfgTemplate),
                 WindowX: file.WindowX,
-                WindowY: file.WindowY);
+                WindowY: file.WindowY,
+                Orientation: file.Orientation ?? RelicsMissionsOrientation.Stacked,
+                SideBySideRelicsWidth: file.SideBySideRelicsWidth > 0 ? file.SideBySideRelicsWidth : null);
         }
         catch (JsonException)
         {
@@ -93,7 +96,9 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.RelicsPanelHeight,
             FromTemplate(settings.LfgTemplate),
             settings.WindowX,
-            settings.WindowY);
+            settings.WindowY,
+            settings.Orientation,
+            settings.SideBySideRelicsWidth);
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -152,7 +157,10 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         double? RelicsPanelHeight,
         LfgTemplateFile? LfgTemplate = null,
         int? WindowX = null,
-        int? WindowY = null);
+        int? WindowY = null,
+        [property: JsonConverter(typeof(JsonStringEnumConverter))]
+        RelicsMissionsOrientation? Orientation = null,
+        double? SideBySideRelicsWidth = null);
 
     private sealed record LfgTemplateFile(
         string? Pattern,

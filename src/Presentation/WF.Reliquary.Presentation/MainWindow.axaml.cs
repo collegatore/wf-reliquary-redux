@@ -190,9 +190,11 @@ public sealed partial class MainWindow : Window
             settingsVm,
             lfgEditorVm);
 
-        // Sync saved relics panel height into the shell so the grid initializer
-        // can read it when the Relics tab is first shown.
+        // Sync saved relics panel height and orientation into the shell so the
+        // grid initializer can read them when the Relics/Missions tab is first shown.
         shell.RelicsPanelHeight = initialSettings.RelicsPanelHeight;
+        shell.Orientation = initialSettings.Orientation;
+        shell.SideBySideRelicsWidth = initialSettings.SideBySideRelicsWidth;
 
         DataContext = shell;
         _ = shell.InitializeAsync();
@@ -291,6 +293,8 @@ public sealed partial class MainWindow : Window
             var size = ClientSize;
             var pos = Position;
             var relicsHeight = shell?.RelicsPanelHeight;
+            var orientation = shell?.Orientation ?? Application.Settings.RelicsMissionsOrientation.Stacked;
+            var splitRatio = shell?.SideBySideRelicsWidth;
             Task.Run(() => store.SaveAsync(current with
             {
                 WindowWidth = size.Width,
@@ -298,6 +302,8 @@ public sealed partial class MainWindow : Window
                 RelicsPanelHeight = relicsHeight,
                 WindowX = pos.X,
                 WindowY = pos.Y,
+                Orientation = orientation,
+                SideBySideRelicsWidth = splitRatio,
             })).GetAwaiter().GetResult();
         }
         catch

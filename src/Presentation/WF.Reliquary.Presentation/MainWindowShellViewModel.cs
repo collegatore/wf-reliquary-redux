@@ -3,6 +3,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Settings;
+using static WF.Reliquary.Application.Settings.RelicsMissionsOrientation;
 
 namespace WF.Reliquary.Presentation;
 
@@ -18,6 +19,8 @@ public sealed class MainWindowShellViewModel : ObservableObject
     private int selectedTabIndex;
     private int previousTabIndex;
     private double? relicsPanelHeight;
+    private RelicsMissionsOrientation orientation;
+    private double? sideBySideRelicsWidth;
     private string footerErrorText = string.Empty;
 
     public MainWindowShellViewModel(
@@ -94,6 +97,9 @@ public sealed class MainWindowShellViewModel : ObservableObject
 
         settings.OnNavigateBack = NavigateBackAsync;
         settings.OnSaved = OnSettingsSaved;
+        // Apply the layout orientation live so the Settings radio takes effect
+        // immediately on the Relics/Missions tab (mirrors font-size behavior).
+        settings.ApplyOrientation = o => Orientation = o;
     }
 
     public MainWindowViewModel DropTables { get; }
@@ -154,6 +160,33 @@ public sealed class MainWindowShellViewModel : ObservableObject
         set => SetProperty(ref relicsPanelHeight, value);
     }
 
+    /// <summary>Current Relics/Missions tab layout orientation (set from Settings → Appearance).</summary>
+    public RelicsMissionsOrientation Orientation
+    {
+        get => orientation;
+        set
+        {
+            if (SetProperty(ref orientation, value))
+            {
+                OnPropertyChanged(nameof(IsSideBySide));
+                OnPropertyChanged(nameof(IsStacked));
+            }
+        }
+    }
+
+    /// <summary>True when the Relics/Missions tab is in side-by-side layout (drives subtree visibility).</summary>
+    public bool IsSideBySide => orientation == SideBySide;
+
+    /// <summary>True when the Relics/Missions tab is in stacked layout (drives subtree visibility).</summary>
+    public bool IsStacked => orientation == Stacked;
+
+    /// <summary>Last-dragged relics column pixel width for the side-by-side layout.</summary>
+    public double? SideBySideRelicsWidth
+    {
+        get => sideBySideRelicsWidth;
+        set => SetProperty(ref sideBySideRelicsWidth, value);
+    }
+
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await DropTables.LoadStatusAsync(cancellationToken);
@@ -174,6 +207,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
     {
         previousTabIndex = selectedTabIndex;
         Settings.SyncRelicsPanelHeight(RelicsPanelHeight);
+        Settings.SyncOrientation(Orientation, SideBySideRelicsWidth);
         SelectedTabIndex = SettingsTabIndex;
     }
 
@@ -188,6 +222,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
         // If the user saved a relics panel height, sync it back so the splitter
         // reflects the persisted value on next open (e.g. after Reset to default).
         RelicsPanelHeight = saved.RelicsPanelHeight;
+        SideBySideRelicsWidth = saved.SideBySideRelicsWidth;
 
         // The LFG template is persisted through the main Settings Save (no separate
         // LFG Save button), so update the editor's saved baseline and clear its

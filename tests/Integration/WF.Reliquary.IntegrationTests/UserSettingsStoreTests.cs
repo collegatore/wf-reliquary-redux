@@ -3,6 +3,7 @@ using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Infrastructure.Settings;
+using static WF.Reliquary.Application.Settings.RelicsMissionsOrientation;
 
 namespace WF.Reliquary.IntegrationTests;
 
@@ -81,6 +82,53 @@ public sealed class UserSettingsStoreTests
         var loaded = await store.LoadAsync();
 
         Assert.That(loaded.RelicsPanelHeight, Is.Null);
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenFileAbsent_DefaultsToStackedOrientation()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var settings = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(settings.Orientation, Is.EqualTo(Stacked));
+            Assert.That(settings.SideBySideRelicsWidth, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsOrientation()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        await store.SaveAsync(UserSettings.Default with
+        {
+            Orientation = SideBySide,
+            SideBySideRelicsWidth = 0.6,
+        });
+        var loaded = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.Orientation, Is.EqualTo(SideBySide));
+            Assert.That(loaded.SideBySideRelicsWidth, Is.EqualTo(0.6));
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenOrientationMissingFromFile_DefaultsToStacked()
+    {
+        // Simulate a settings file written by an older version that lacks Orientation.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.Orientation, Is.EqualTo(Stacked));
     }
 
     [Test]

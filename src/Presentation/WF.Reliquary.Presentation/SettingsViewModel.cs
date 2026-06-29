@@ -17,11 +17,15 @@ public sealed class SettingsViewModel : ObservableObject
     // Last-saved values — used for unsaved-change detection (font size excluded: auto-saved)
     private string savedSourceUrl;
     private double? savedRelicsPanelHeight;
+    private RelicsMissionsOrientation savedOrientation;
+    private double? savedSideBySideRelicsWidth;
 
     // Current editable values
     private string sourceUrlText;
     private double fontSizePt;          // sole font-size state; SelectedFontSize is derived
     private double? relicsPanelHeight;
+    private RelicsMissionsOrientation orientation;
+    private double? sideBySideRelicsWidth;
 
     private string urlValidationError = string.Empty;
 
@@ -31,10 +35,14 @@ public sealed class SettingsViewModel : ObservableObject
 
         savedSourceUrl = initialSettings.SourceUrl.ToString();
         savedRelicsPanelHeight = initialSettings.RelicsPanelHeight;
+        savedOrientation = initialSettings.Orientation;
+        savedSideBySideRelicsWidth = initialSettings.SideBySideRelicsWidth;
 
         sourceUrlText = savedSourceUrl;
         fontSizePt = initialSettings.FontSizePt;
         relicsPanelHeight = savedRelicsPanelHeight;
+        orientation = savedOrientation;
+        sideBySideRelicsWidth = savedSideBySideRelicsWidth;
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => HasUnsavedChanges);
         BackCommand = new AsyncRelayCommand(BackAsync);
@@ -50,6 +58,12 @@ public sealed class SettingsViewModel : ObservableObject
     /// <summary>Called after a successful save. Provides the new settings so the
     /// shell can update live state (relics panel height, source URL cache).</summary>
     public Action<UserSettings>? OnSaved { get; set; }
+
+    /// <summary>
+    /// Applies the chosen Relics/Missions layout orientation to the live shell so the
+    /// switch takes effect immediately (like font size). Wired by the shell.
+    /// </summary>
+    public Action<RelicsMissionsOrientation>? ApplyOrientation { get; set; }
 
     /// <summary>Called when Back navigation should occur.</summary>
     public Func<Task>? OnNavigateBack { get; set; }
@@ -143,6 +157,27 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// The Relics/Missions layout orientation. An appearance setting that — like font
+    /// size — applies live to the shell and auto-saves on selection, so it stays out of
+    /// the unsaved-changes guard.
+    /// </summary>
+    public RelicsMissionsOrientation SelectedOrientation
+    {
+        get => orientation;
+        set
+        {
+            if (orientation == value) return;
+
+            orientation = value;
+            savedOrientation = value;   // auto-saved; keep discard baseline in sync
+            OnPropertyChanged();
+
+            ApplyOrientation?.Invoke(value);
+            _ = SaveOrientationNow();
+        }
+    }
+
     public double? RelicsPanelHeight
     {
         get => relicsPanelHeight;
@@ -177,6 +212,15 @@ public sealed class SettingsViewModel : ObservableObject
         RelicsPanelHeight = currentHeight;
     }
 
+    public void SyncOrientation(RelicsMissionsOrientation currentOrientation, double? currentRelicsWidth)
+    {
+        savedOrientation = currentOrientation;
+        orientation = currentOrientation;
+        savedSideBySideRelicsWidth = currentRelicsWidth;
+        sideBySideRelicsWidth = currentRelicsWidth;
+        OnPropertyChanged(nameof(SelectedOrientation));
+    }
+
     // ── Command implementations ─────────────────────────────────────────────
 
     public async Task SaveAsync()
@@ -195,12 +239,16 @@ public sealed class SettingsViewModel : ObservableObject
             WindowHeight: 0,
             FontSizePt: fontSizePt,
             RelicsPanelHeight: RelicsPanelHeight,
-            LfgTemplate: GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default);
+            LfgTemplate: GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default,
+            Orientation: orientation,
+            SideBySideRelicsWidth: sideBySideRelicsWidth);
 
         await settingsStore.SaveAsync(newSettings);
 
         savedSourceUrl = SourceUrlText;
         savedRelicsPanelHeight = RelicsPanelHeight;
+        savedOrientation = orientation;
+        savedSideBySideRelicsWidth = sideBySideRelicsWidth;
 
         OnSaved?.Invoke(newSettings);
         NotifyHasUnsavedChanges();
@@ -221,6 +269,8 @@ public sealed class SettingsViewModel : ObservableObject
 
         sourceUrlText = savedSourceUrl;
         relicsPanelHeight = savedRelicsPanelHeight;
+        orientation = savedOrientation;
+        sideBySideRelicsWidth = savedSideBySideRelicsWidth;
         urlValidationError = string.Empty;
         OnPropertyChanged(nameof(SourceUrlText));
         OnPropertyChanged(nameof(RelicsPanelHeight));
@@ -236,6 +286,12 @@ public sealed class SettingsViewModel : ObservableObject
     {
         var current = await settingsStore.LoadAsync();
         await settingsStore.SaveAsync(current with { FontSizePt = fontSizePt });
+    }
+
+    private async Task SaveOrientationNow()
+    {
+        var current = await settingsStore.LoadAsync();
+        await settingsStore.SaveAsync(current with { Orientation = orientation });
     }
 
     internal static void ApplyFontSize(double pt)

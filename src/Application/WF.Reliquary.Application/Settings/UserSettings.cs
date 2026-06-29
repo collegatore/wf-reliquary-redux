@@ -11,7 +11,9 @@ public sealed record UserSettings(
     double? RelicsPanelHeight,
     LfgMessageTemplate LfgTemplate,
     int? WindowX = null,
-    int? WindowY = null)
+    int? WindowY = null,
+    RelicsMissionsOrientation Orientation = RelicsMissionsOrientation.Stacked,
+    double? SideBySideRelicsWidth = null)
 {
     public static UserSettings Default { get; } = new(
         SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl),
