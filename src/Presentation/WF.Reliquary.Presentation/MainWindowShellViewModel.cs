@@ -32,6 +32,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
         WishlistFarmingMissionsViewModel wishlistFarming,
         ProfileViewModel profiles,
         SettingsViewModel settings,
+        AppearanceViewModel appearance,
         LfgTemplateEditorViewModel lfgEditor)
     {
         DropTables = dropTables;
@@ -41,10 +42,12 @@ public sealed class MainWindowShellViewModel : ObservableObject
         WishlistFarming = wishlistFarming;
         Profiles = profiles;
         Settings = settings;
+        Appearance = appearance;
         LfgEditor = lfgEditor;
 
         NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
         NavigateToDropTablesCommand = new RelayCommand(NavigateToDropTables);
+        OpenAppearanceCommand = new RelayCommand(() => OpenAppearance?.Invoke());
 
         dropTables.PropertyChanged += (_, e) =>
         {
@@ -98,12 +101,12 @@ public sealed class MainWindowShellViewModel : ObservableObject
 
         settings.OnNavigateBack = NavigateBackAsync;
         settings.OnSaved = OnSettingsSaved;
-        // Apply the layout orientation live so the Settings radio takes effect
-        // immediately on the Relics/Missions tab (mirrors font-size behavior).
-        settings.ApplyOrientation = o => Orientation = o;
+        // Apply the layout orientation live so the Appearance window's radio takes
+        // effect immediately on the Relics/Missions tab (mirrors font-size behavior).
+        appearance.ApplyOrientation = o => Orientation = o;
         // Propagate the effective (font-scaled) relic card width so the side-by-side
         // splitter's minimum width stays correct as either setting changes.
-        settings.ApplyRelicCardWidth = w => RelicCardWidth = w;
+        appearance.ApplyRelicCardWidth = w => RelicCardWidth = w;
     }
 
     public MainWindowViewModel DropTables { get; }
@@ -113,10 +116,18 @@ public sealed class MainWindowShellViewModel : ObservableObject
     public WishlistFarmingMissionsViewModel WishlistFarming { get; }
     public ProfileViewModel Profiles { get; }
     public SettingsViewModel Settings { get; }
+    public AppearanceViewModel Appearance { get; }
     public LfgTemplateEditorViewModel LfgEditor { get; }
 
     public ICommand NavigateToSettingsCommand { get; }
     public ICommand NavigateToDropTablesCommand { get; }
+    public ICommand OpenAppearanceCommand { get; }
+
+    /// <summary>
+    /// Opens (or activates, if already open) the modeless Appearance window.
+    /// Wired by <c>MainWindow</c>, which owns the window instance.
+    /// </summary>
+    public Action? OpenAppearance { get; set; }
 
     public int SelectedTabIndex
     {
@@ -222,7 +233,6 @@ public sealed class MainWindowShellViewModel : ObservableObject
     {
         previousTabIndex = selectedTabIndex;
         Settings.SyncRelicsPanelHeight(RelicsPanelHeight);
-        Settings.SyncOrientation(Orientation, SideBySideRelicsWidth);
         SelectedTabIndex = SettingsTabIndex;
     }
 

@@ -92,6 +92,9 @@
         <MenuItem
             Header="_Settings"
             Command="{Binding NavigateToSettingsCommand}" />
+        <MenuItem
+            Header="_Appearance"
+            Command="{Binding OpenAppearanceCommand}" />
       </MenuItem>
     </Menu>
 

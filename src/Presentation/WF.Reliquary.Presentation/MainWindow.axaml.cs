@@ -15,6 +15,10 @@ public sealed partial class MainWindow : Window
     private RotateTransform? _spinnerTransform;
     private DispatcherTimer? _spinnerTimer;
 
+    // Tracks the single open Appearance window, if any (File → Appearance is modeless
+    // and single-instance: a second invocation activates this one instead of opening another).
+    private AppearanceWindow? appearanceWindow;
+
     // Tracks the tab index as seen by the Settings-guard logic so we know when
     // we are leaving the Settings tab.  Updated after every guarded transition.
     private int guardedTabIndex;
@@ -66,7 +70,7 @@ public sealed partial class MainWindow : Window
         }
 
         // Apply font size (and relic card width base) to Application resources.
-        var initialRelicCardWidth = SettingsViewModel.ApplyFontSize(initialSettings.FontSizePt, initialSettings.RelicCardWidthPx);
+        var initialRelicCardWidth = AppearanceViewModel.ApplyFontSize(initialSettings.FontSizePt, initialSettings.RelicCardWidthPx);
 
         // Seed the default profile before the default wishlist, so the wishlist
         // seeding has an active profile to attach to.
@@ -132,6 +136,7 @@ public sealed partial class MainWindow : Window
             wishlistStore);
 
         var settingsVm = new SettingsViewModel(userSettingsStore, initialSettings);
+        var appearanceVm = new AppearanceViewModel(userSettingsStore, initialSettings);
         settingsVm.ConfirmDiscard = () => ConfirmDiscardDialog.ShowAsync(this);
         settingsVm.CopyLogPath = async () =>
         {
@@ -189,6 +194,7 @@ public sealed partial class MainWindow : Window
             wishlistFarmingVm,
             profileVm,
             settingsVm,
+            appearanceVm,
             lfgEditorVm);
 
         // Sync saved relics panel height and orientation into the shell so the
@@ -252,6 +258,9 @@ public sealed partial class MainWindow : Window
 
     private void Wire()
     {
+        if (shell is not null)
+            shell.OpenAppearance = OpenOrActivateAppearanceWindow;
+
         // Guard: treat clicking any tab as equivalent to the Back button when
         // on the Settings tab (prompt if unsaved changes, revert font preview).
         MainTabControl.SelectionChanged += OnTabSelectionChanged;
@@ -276,6 +285,26 @@ public sealed partial class MainWindow : Window
 
         // Save window dimensions on close.
         Closing += OnWindowClosing;
+    }
+
+    /// <summary>
+    /// Opens the modeless Appearance window, or brings the existing one to the
+    /// foreground if it's already open (File → Appearance is single-instance).
+    /// </summary>
+    private void OpenOrActivateAppearanceWindow()
+    {
+        if (appearanceWindow is not null)
+        {
+            appearanceWindow.Activate();
+            return;
+        }
+
+        appearanceWindow = new AppearanceWindow(shell!.Appearance)
+        {
+            Position = new PixelPoint(Position.X - 50, Position.Y + 50),
+        };
+        appearanceWindow.Closed += (_, _) => appearanceWindow = null;
+        appearanceWindow.Show(this);
     }
 
     // ── Event handlers ──────────────────────────────────────────────────────

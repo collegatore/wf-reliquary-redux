@@ -1,0 +1,114 @@
+<Window
+    x:Class="WF.Reliquary.Presentation.AppearanceWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation"
+    Width="498"
+    Height="225"
+    CanResize="False"
+    FontSize="{StaticResource FontSizeSmall}"
+    Title="Appearance">
+
+  <!-- This window's own controls always render at a fixed small size, regardless of
+       the app-wide font size setting it controls. FontSize on the Window root covers
+       controls that inherit it (RadioButton, etc.); TextBlock/TextBox get an explicit
+       Window.Styles override since App.axaml sets those two via a Setter bound to the
+       dynamic, user-configurable ContentFontSize resource, which otherwise wins. -->
+  <Window.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+    </Style>
+  </Window.Styles>
+
+  <StackPanel Margin="20" Spacing="20">
+
+    <!-- Font size -->
+    <StackPanel Spacing="8">
+      <TextBlock Foreground="Gray" Text="Font size" />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <RadioButton
+            Content="Small"
+            IsChecked="{Binding SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Small}"
+            GroupName="FontSize" />
+        <RadioButton
+            Content="Medium"
+            IsChecked="{Binding SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Medium}"
+            GroupName="FontSize" />
+        <RadioButton
+            Content="Large"
+            IsChecked="{Binding SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Large}"
+            GroupName="FontSize" />
+        <RadioButton
+            Content="Custom"
+            IsChecked="{Binding SelectedFontSize, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Custom}"
+            GroupName="FontSize" />
+        <NumericUpDown
+            Value="{Binding EffectiveFontSizePt, Mode=TwoWay}"
+            Minimum="8"
+            Maximum="32"
+            Increment="1"
+            FormatString="0 'pt'"
+            ButtonSpinnerLocation="Right"
+            Width="140"
+            MinHeight="0"
+            Height="24"
+            Padding="8,2"
+            VerticalAlignment="Center"            
+            VerticalContentAlignment="Center" >
+          <NumericUpDown.Resources>
+            <!-- Shrinks the inner TextBox block background -->
+            <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
+            <!-- Shrinks the target area for the up/down buttons -->
+            <x:Double x:Key="ButtonSpinnerMinHeight">0</x:Double>
+          </NumericUpDown.Resources>
+        </NumericUpDown>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Relic card width -->
+    <StackPanel Spacing="8">
+      <TextBlock Foreground="Gray" Text="Relic card width" />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <NumericUpDown
+            Value="{Binding RelicCardWidthPx, Mode=TwoWay}"
+            Minimum="180"
+            Maximum="600"
+            Increment="10"
+            FormatString="0 'px'"
+            ButtonSpinnerLocation="Right"
+            Width="140"
+            MinHeight="0"
+            Height="24"
+            Padding="8,2"
+            VerticalAlignment="Center"            
+            VerticalContentAlignment="Center">
+          <NumericUpDown.Resources>
+            <!-- Shrinks the inner TextBox block background -->
+            <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
+            <!-- Shrinks the target area for the up/down buttons -->
+            <x:Double x:Key="ButtonSpinnerMinHeight">0</x:Double>
+          </NumericUpDown.Resources>
+        </NumericUpDown>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Relics &amp; Missions layout -->
+    <StackPanel Spacing="8">
+      <TextBlock Foreground="Gray" Text="Relics &amp; Missions layout" />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <RadioButton
+            Content="Stacked"
+            IsChecked="{Binding SelectedOrientation, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Stacked}"
+            GroupName="RmLayout" />
+        <RadioButton
+            Content="Side by side"
+            IsChecked="{Binding SelectedOrientation, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=SideBySide}"
+            GroupName="RmLayout" />
+      </StackPanel>
+    </StackPanel>
+
+  </StackPanel>
+</Window>

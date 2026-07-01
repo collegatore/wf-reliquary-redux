@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using AvaloniaApp = Avalonia.Application;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Settings;
 
@@ -10,23 +9,13 @@ public sealed class SettingsViewModel : ObservableObject
 {
     private readonly IUserSettingsStore settingsStore;
 
-    private const double SmallPt = 11.0;
-    private const double MediumPt = 14.0;
-    private const double LargePt = 18.0;
-
-    // Last-saved values — used for unsaved-change detection (font size excluded: auto-saved)
+    // Last-saved values — used for unsaved-change detection
     private string savedSourceUrl;
     private double? savedRelicsPanelHeight;
-    private RelicsMissionsOrientation savedOrientation;
-    private double? savedSideBySideRelicsWidth;
 
     // Current editable values
     private string sourceUrlText;
-    private double fontSizePt;          // sole font-size state; SelectedFontSize is derived
     private double? relicsPanelHeight;
-    private RelicsMissionsOrientation orientation;
-    private double? sideBySideRelicsWidth;
-    private double relicCardWidthPx;    // base width at Medium font size; auto-saved like font size
 
     private string urlValidationError = string.Empty;
 
@@ -36,15 +25,9 @@ public sealed class SettingsViewModel : ObservableObject
 
         savedSourceUrl = initialSettings.SourceUrl.ToString();
         savedRelicsPanelHeight = initialSettings.RelicsPanelHeight;
-        savedOrientation = initialSettings.Orientation;
-        savedSideBySideRelicsWidth = initialSettings.SideBySideRelicsWidth;
 
         sourceUrlText = savedSourceUrl;
-        fontSizePt = initialSettings.FontSizePt;
         relicsPanelHeight = savedRelicsPanelHeight;
-        orientation = savedOrientation;
-        sideBySideRelicsWidth = savedSideBySideRelicsWidth;
-        relicCardWidthPx = initialSettings.RelicCardWidthPx;
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => HasUnsavedChanges);
         BackCommand = new AsyncRelayCommand(BackAsync);
@@ -60,18 +43,6 @@ public sealed class SettingsViewModel : ObservableObject
     /// <summary>Called after a successful save. Provides the new settings so the
     /// shell can update live state (relics panel height, source URL cache).</summary>
     public Action<UserSettings>? OnSaved { get; set; }
-
-    /// <summary>
-    /// Applies the chosen Relics/Missions layout orientation to the live shell so the
-    /// switch takes effect immediately (like font size). Wired by the shell.
-    /// </summary>
-    public Action<RelicsMissionsOrientation>? ApplyOrientation { get; set; }
-
-    /// <summary>
-    /// Applies the current effective (font-scaled) relic card width to the live shell,
-    /// so the side-by-side splitter's minimum width stays correct. Wired by the shell.
-    /// </summary>
-    public Action<double>? ApplyRelicCardWidth { get; set; }
 
     /// <summary>Called when Back navigation should occur.</summary>
     public Func<Task>? OnNavigateBack { get; set; }
@@ -118,96 +89,6 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// The effective font size in points. Always visible; drives the radio selection.
-    /// Setting it auto-selects the matching preset radio, or Custom if no preset matches.
-    /// </summary>
-    public double EffectiveFontSizePt
-    {
-        get => fontSizePt;
-        set
-        {
-            var pt = Math.Clamp(value, 8.0, 32.0);
-            if (fontSizePt == pt) return;
-
-            var prevOption = SelectedFontSize;
-            fontSizePt = pt;
-
-            OnPropertyChanged();
-            if (SelectedFontSize != prevOption)
-                OnPropertyChanged(nameof(SelectedFontSize));
-
-            ApplyRelicCardWidth?.Invoke(ApplyFontSize(pt, relicCardWidthPx));
-            _ = SaveFontSizeNow();
-        }
-    }
-
-    /// <summary>
-    /// The relic card's base width in pixels — its effective width at Medium font
-    /// size. Font size continues to scale the rendered width proportionally from
-    /// this base, exactly as it does from the historical fixed 300px value.
-    /// Applies live and auto-saves, like <see cref="EffectiveFontSizePt"/>.
-    /// </summary>
-    public double RelicCardWidthPx
-    {
-        get => relicCardWidthPx;
-        set
-        {
-            var px = Math.Clamp(value, 180.0, 600.0);
-            if (relicCardWidthPx == px) return;
-
-            relicCardWidthPx = px;
-            OnPropertyChanged();
-
-            ApplyRelicCardWidth?.Invoke(ApplyFontSize(fontSizePt, relicCardWidthPx));
-            _ = SaveRelicCardWidthNow();
-        }
-    }
-
-    /// <summary>
-    /// Derived from <see cref="EffectiveFontSizePt"/>: Small/Medium/Large when the value
-    /// matches a preset, Custom otherwise. Setting a preset updates <see cref="EffectiveFontSizePt"/>.
-    /// </summary>
-    public FontSizeOption SelectedFontSize
-    {
-        get => fontSizePt == SmallPt ? FontSizeOption.Small
-             : fontSizePt == LargePt ? FontSizeOption.Large
-             : fontSizePt == MediumPt ? FontSizeOption.Medium
-             : FontSizeOption.Custom;
-        set
-        {
-            var pt = value switch
-            {
-                FontSizeOption.Small => SmallPt,
-                FontSizeOption.Large => LargePt,
-                FontSizeOption.Custom => fontSizePt,   // clicking Custom is a no-op
-                _ => MediumPt,
-            };
-            EffectiveFontSizePt = pt;
-        }
-    }
-
-    /// <summary>
-    /// The Relics/Missions layout orientation. An appearance setting that — like font
-    /// size — applies live to the shell and auto-saves on selection, so it stays out of
-    /// the unsaved-changes guard.
-    /// </summary>
-    public RelicsMissionsOrientation SelectedOrientation
-    {
-        get => orientation;
-        set
-        {
-            if (orientation == value) return;
-
-            orientation = value;
-            savedOrientation = value;   // auto-saved; keep discard baseline in sync
-            OnPropertyChanged();
-
-            ApplyOrientation?.Invoke(value);
-            _ = SaveOrientationNow();
-        }
-    }
-
     public double? RelicsPanelHeight
     {
         get => relicsPanelHeight;
@@ -242,15 +123,6 @@ public sealed class SettingsViewModel : ObservableObject
         RelicsPanelHeight = currentHeight;
     }
 
-    public void SyncOrientation(RelicsMissionsOrientation currentOrientation, double? currentRelicsWidth)
-    {
-        savedOrientation = currentOrientation;
-        orientation = currentOrientation;
-        savedSideBySideRelicsWidth = currentRelicsWidth;
-        sideBySideRelicsWidth = currentRelicsWidth;
-        OnPropertyChanged(nameof(SelectedOrientation));
-    }
-
     // ── Command implementations ─────────────────────────────────────────────
 
     public async Task SaveAsync()
@@ -263,23 +135,18 @@ public sealed class SettingsViewModel : ObservableObject
 
         UrlValidationError = string.Empty;
 
-        var newSettings = new UserSettings(
-            SourceUrl: sourceUrl,
-            WindowWidth: 0,
-            WindowHeight: 0,
-            FontSizePt: fontSizePt,
-            RelicsPanelHeight: RelicsPanelHeight,
-            LfgTemplate: GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default,
-            Orientation: orientation,
-            SideBySideRelicsWidth: sideBySideRelicsWidth,
-            RelicCardWidthPx: relicCardWidthPx);
+        var current = await settingsStore.LoadAsync();
+        var newSettings = current with
+        {
+            SourceUrl = sourceUrl,
+            RelicsPanelHeight = RelicsPanelHeight,
+            LfgTemplate = GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default,
+        };
 
         await settingsStore.SaveAsync(newSettings);
 
         savedSourceUrl = SourceUrlText;
         savedRelicsPanelHeight = RelicsPanelHeight;
-        savedOrientation = orientation;
-        savedSideBySideRelicsWidth = sideBySideRelicsWidth;
 
         OnSaved?.Invoke(newSettings);
         NotifyHasUnsavedChanges();
@@ -300,8 +167,6 @@ public sealed class SettingsViewModel : ObservableObject
 
         sourceUrlText = savedSourceUrl;
         relicsPanelHeight = savedRelicsPanelHeight;
-        orientation = savedOrientation;
-        sideBySideRelicsWidth = savedSideBySideRelicsWidth;
         urlValidationError = string.Empty;
         OnPropertyChanged(nameof(SourceUrlText));
         OnPropertyChanged(nameof(RelicsPanelHeight));
@@ -312,50 +177,6 @@ public sealed class SettingsViewModel : ObservableObject
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
-
-    private async Task SaveFontSizeNow()
-    {
-        var current = await settingsStore.LoadAsync();
-        await settingsStore.SaveAsync(current with { FontSizePt = fontSizePt });
-    }
-
-    private async Task SaveOrientationNow()
-    {
-        var current = await settingsStore.LoadAsync();
-        await settingsStore.SaveAsync(current with { Orientation = orientation });
-    }
-
-    private async Task SaveRelicCardWidthNow()
-    {
-        var current = await settingsStore.LoadAsync();
-        await settingsStore.SaveAsync(current with { RelicCardWidthPx = relicCardWidthPx });
-    }
-
-    /// <summary>
-    /// Applies font size app-wide and recomputes <c>RelicCardWidth</c> from
-    /// <paramref name="relicCardBasePx"/> — the card's effective width at Medium
-    /// font size — scaled by the current font-size ratio. <c>MissionCardWidth</c>
-    /// keeps its historical fixed 300px base (not user-configurable). Returns the
-    /// resulting effective relic card width, so callers can propagate it live
-    /// (e.g. to the side-by-side layout's minimum column width).
-    /// </summary>
-    internal static double ApplyFontSize(double pt, double relicCardBasePx)
-    {
-        if (AvaloniaApp.Current?.Resources is not { } resources) return relicCardBasePx;
-
-        resources["ContentFontSize"] = pt;
-
-        if (resources["FontSizeMedium"] is double medium && medium > 0)
-        {
-            var ratio = pt / medium;
-            var relicCardWidth = relicCardBasePx * ratio;
-            resources["RelicCardWidth"] = relicCardWidth;
-            resources["MissionCardWidth"] = 300 * ratio;
-            return relicCardWidth;
-        }
-
-        return relicCardBasePx;
-    }
 
     private void NotifyHasUnsavedChanges()
     {

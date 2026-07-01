@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Lets the user configure the base width of relic cards from Settings → Appearance, so relic
+Lets the user configure the base width of relic cards from the Appearance window, so relic
 card sizing is not fixed at the historical 300px literal, while preserving the existing
 font-size-proportional scaling behavior.
 
@@ -10,16 +10,16 @@ font-size-proportional scaling behavior.
 
 ### Requirement: Relic Card Width Control
 
-The application SHALL provide a user control, located in Settings under the Appearance group alongside the font-size and Relics/Missions layout controls, to set the base width (in pixels) of relic cards — the effective card width when font size is Medium (14pt). The control SHALL be a numeric input with an up/down spinner positioned on the right, accepting values between 180 and 600, inclusive. Values entered outside this range SHALL be clamped to the nearest bound.
+The application SHALL provide a user control, located in the Appearance window (opened via File → Appearance) alongside the font-size and Relics/Missions layout controls, to set the base width (in pixels) of relic cards — the effective card width when font size is Medium (14pt). The control SHALL be a numeric input with an up/down spinner positioned on the right, accepting values between 180 and 600, inclusive. Values entered outside this range SHALL be clamped to the nearest bound.
 
 #### Scenario: Relic card width control is present
 
-- **WHEN** the Settings tab is open
-- **THEN** a "Relic card width" numeric input is visible under Appearance, alongside the font-size and Relics/Missions layout controls
+- **WHEN** the Appearance window is open
+- **THEN** a "Relic card width" numeric input is visible, alongside the font-size and Relics/Missions layout controls
 
 #### Scenario: Spinner is positioned on the right
 
-- **WHEN** the Settings tab is open
+- **WHEN** the Appearance window is open
 - **THEN** the relic card width control's up/down spinner is positioned to the right of the numeric value
 
 #### Scenario: Spinner up steps the value up
@@ -39,24 +39,17 @@ The application SHALL provide a user control, located in Settings under the Appe
 
 ### Requirement: Relic Card Width Applied Immediately
 
-The selected relic card base width SHALL apply to all relic cards immediately when the user changes the numeric input in the Settings tab, scaled by the current font-size ratio per the Font-Size-Proportional Scaling requirement. The change SHALL be saved automatically without requiring the user to press the Save button, and SHALL NOT mark the Settings tab as having unsaved changes.
+The selected relic card base width SHALL apply to all relic cards immediately when the user changes the numeric input in the Appearance window, scaled by the current font-size ratio per the Font-Size-Proportional Scaling requirement. The change SHALL be saved automatically without requiring a Save button.
 
 #### Scenario: Relic card width applied immediately on input change
 
 - **WHEN** the user changes the numeric pixel value in the relic card width control
 - **THEN** all relic cards immediately reflect the new effective width
 
-#### Scenario: Relic card width auto-saved without Save button
+#### Scenario: Relic card width auto-saved without a Save button
 
-- **WHEN** the user changes the relic card width value
-- **THEN** the new base width is written to persistent storage immediately
-- **AND** the Settings Save button state is unaffected by the change
-
-#### Scenario: Relic card width not included in unsaved-changes guard
-
-- **WHEN** the user changes the relic card width and then navigates away from Settings without pressing Save
-- **THEN** no discard-confirmation dialog appears on account of the relic card width change
-- **AND** the selected relic card base width remains active after navigation
+- **WHEN** the user changes the relic card width value in the Appearance window
+- **THEN** the new base width is written to persistent storage immediately, with no Save action required
 
 ### Requirement: Relic Card Width Persistence and Default
 

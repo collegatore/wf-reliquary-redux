@@ -76,6 +76,8 @@ public sealed class MainWindowShellViewModelTests
         // editor's dirty state, otherwise the leave-guard keeps flagging unsaved
         // changes after a successful save.
         var store = new Mock<IUserSettingsStore>();
+        store.Setup(s => s.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultSettings);
         store.Setup(s => s.SaveAsync(It.IsAny<UserSettings>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -112,14 +114,14 @@ public sealed class MainWindowShellViewModelTests
     }
 
     [Test]
-    public void SettingsRelicCardWidthChange_PropagatesToShell()
+    public void AppearanceRelicCardWidthChange_PropagatesToShell()
     {
-        // The shell wires settings.ApplyRelicCardWidth so the side-by-side layout's
+        // The shell wires appearance.ApplyRelicCardWidth so the side-by-side layout's
         // minimum column width stays in sync as the setting changes live.
-        var settings = new SettingsViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
-        var shell = CreateShell(settings: settings);
+        var appearance = new AppearanceViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
+        var shell = CreateShell(appearance: appearance);
 
-        settings.RelicCardWidthPx = 450;
+        appearance.RelicCardWidthPx = 450;
 
         Assert.That(shell.RelicCardWidth, Is.EqualTo(450.0));
     }
@@ -127,6 +129,7 @@ public sealed class MainWindowShellViewModelTests
     private static MainWindowShellViewModel CreateShell(
         string? importedVersion = null,
         SettingsViewModel? settings = null,
+        AppearanceViewModel? appearance = null,
         LfgTemplateEditorViewModel? lfgEditor = null)
     {
         var importMetadataReader = new Mock<IImportMetadataReader>();
@@ -168,10 +171,12 @@ public sealed class MainWindowShellViewModelTests
 
         settings ??= new SettingsViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
 
+        appearance ??= new AppearanceViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
+
         lfgEditor ??= new LfgTemplateEditorViewModel(Mock.Of<IUserSettingsStore>(), LfgMessageTemplate.Default);
 
         return new MainWindowShellViewModel(
-            dropTables, primeGear, wishlist, relics, farming, profiles, settings, lfgEditor);
+            dropTables, primeGear, wishlist, relics, farming, profiles, settings, appearance, lfgEditor);
     }
 
     private static UserSettings DefaultSettings { get; } = new(
