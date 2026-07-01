@@ -103,6 +103,27 @@ public sealed class MainWindowShellViewModelTests
         Assert.That(settings.HasUnsavedChanges, Is.False, "Settings should report no unsaved changes after save");
     }
 
+    [Test]
+    public void RelicCardWidth_DefaultsTo300_OnConstruction()
+    {
+        var shell = CreateShell();
+
+        Assert.That(shell.RelicCardWidth, Is.EqualTo(300.0));
+    }
+
+    [Test]
+    public void SettingsRelicCardWidthChange_PropagatesToShell()
+    {
+        // The shell wires settings.ApplyRelicCardWidth so the side-by-side layout's
+        // minimum column width stays in sync as the setting changes live.
+        var settings = new SettingsViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
+        var shell = CreateShell(settings: settings);
+
+        settings.RelicCardWidthPx = 450;
+
+        Assert.That(shell.RelicCardWidth, Is.EqualTo(450.0));
+    }
+
     private static MainWindowShellViewModel CreateShell(
         string? importedVersion = null,
         SettingsViewModel? settings = null,

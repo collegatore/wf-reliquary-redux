@@ -76,7 +76,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 WindowX: file.WindowX,
                 WindowY: file.WindowY,
                 Orientation: file.Orientation ?? RelicsMissionsOrientation.Stacked,
-                SideBySideRelicsWidth: file.SideBySideRelicsWidth > 0 ? file.SideBySideRelicsWidth : null);
+                SideBySideRelicsWidth: file.SideBySideRelicsWidth > 0 ? file.SideBySideRelicsWidth : null,
+                RelicCardWidthPx: file.RelicCardWidthPx > 0 ? file.RelicCardWidthPx : UserSettings.Default.RelicCardWidthPx);
         }
         catch (JsonException)
         {
@@ -98,7 +99,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.WindowX,
             settings.WindowY,
             settings.Orientation,
-            settings.SideBySideRelicsWidth);
+            settings.SideBySideRelicsWidth,
+            settings.RelicCardWidthPx);
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -160,7 +162,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         int? WindowY = null,
         [property: JsonConverter(typeof(JsonStringEnumConverter))]
         RelicsMissionsOrientation? Orientation = null,
-        double? SideBySideRelicsWidth = null);
+        double? SideBySideRelicsWidth = null,
+        double RelicCardWidthPx = 0);
 
     private sealed record LfgTemplateFile(
         string? Pattern,

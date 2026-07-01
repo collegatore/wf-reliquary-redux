@@ -48,6 +48,37 @@ public sealed class SettingsViewModelTests
     }
 
     [Test]
+    public void HasUnsavedChanges_IsFalse_WhenRelicCardWidthChanged()
+    {
+        // Relic card width is auto-saved on change; it does not enter the unsaved-changes guard.
+        var vm = CreateViewModel(DefaultSettings);
+
+        vm.RelicCardWidthPx = 450;
+
+        Assert.That(vm.HasUnsavedChanges, Is.False);
+    }
+
+    [Test]
+    public void RelicCardWidthPx_ClampsBelowMinimum()
+    {
+        var vm = CreateViewModel(DefaultSettings);
+
+        vm.RelicCardWidthPx = 50;
+
+        Assert.That(vm.RelicCardWidthPx, Is.EqualTo(180.0));
+    }
+
+    [Test]
+    public void RelicCardWidthPx_ClampsAboveMaximum()
+    {
+        var vm = CreateViewModel(DefaultSettings);
+
+        vm.RelicCardWidthPx = 9000;
+
+        Assert.That(vm.RelicCardWidthPx, Is.EqualTo(600.0));
+    }
+
+    [Test]
     public void SyncRelicsPanelHeight_UpdatesRelicsPanelHeight_DoesNotMarkUnsaved()
     {
         // The splitter cannot be adjusted from within Settings, so syncing the
@@ -87,6 +118,21 @@ public sealed class SettingsViewModelTests
         // Font size is auto-saved; changing it must not trigger the leave-guard.
         var vm = CreateViewModel(DefaultSettings);
         vm.SelectedFontSize = FontSizeOption.Small;
+        var confirmCalled = false;
+        vm.ConfirmDiscard = () => { confirmCalled = true; return Task.FromResult(true); };
+        vm.OnNavigateBack = () => Task.CompletedTask;
+
+        await vm.BackCommand.ExecuteAsync();
+
+        Assert.That(confirmCalled, Is.False);
+    }
+
+    [Test]
+    public async Task BackAsync_WhenOnlyRelicCardWidthChanged_NavigatesWithoutConfirm()
+    {
+        // Relic card width is auto-saved; changing it must not trigger the leave-guard.
+        var vm = CreateViewModel(DefaultSettings);
+        vm.RelicCardWidthPx = 450;
         var confirmCalled = false;
         vm.ConfirmDiscard = () => { confirmCalled = true; return Task.FromResult(true); };
         vm.OnNavigateBack = () => Task.CompletedTask;
@@ -183,6 +229,31 @@ public sealed class SettingsViewModelTests
             Assert.That(saved!.FontSizePt, Is.EqualTo(18.0));
             Assert.That(vm.HasUnsavedChanges, Is.False);
         });
+    }
+
+    [Test]
+    public async Task SaveAsync_WithValidSettings_PersistsCurrentRelicCardWidth()
+    {
+        // A plain Save (triggered by an unrelated guarded field) must not clobber the
+        // already-auto-saved relic card width back to the record's default.
+        var store = new Mock<IUserSettingsStore>();
+        UserSettings? saved = null;
+        store
+            .Setup(s => s.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultSettings);
+        store
+            .Setup(s => s.SaveAsync(It.IsAny<UserSettings>(), It.IsAny<CancellationToken>()))
+            .Callback<UserSettings, CancellationToken>((s, _) => saved = s)
+            .Returns(Task.CompletedTask);
+
+        var vm = CreateViewModel(DefaultSettings, store.Object);
+        vm.RelicCardWidthPx = 450;                            // auto-saved; does not dirty the form
+        vm.SourceUrlText = "https://changed.example/";        // this enables the Save button
+        vm.OnSaved = _ => { };
+
+        await vm.SaveCommand.ExecuteAsync();
+
+        Assert.That(saved!.RelicCardWidthPx, Is.EqualTo(450.0));
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

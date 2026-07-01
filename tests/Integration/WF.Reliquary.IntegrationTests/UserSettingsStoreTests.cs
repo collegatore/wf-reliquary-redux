@@ -132,6 +132,41 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
+    public async Task LoadAsync_WhenFileAbsent_DefaultsRelicCardWidthTo300()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var settings = await store.LoadAsync();
+
+        Assert.That(settings.RelicCardWidthPx, Is.EqualTo(300.0));
+    }
+
+    [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsRelicCardWidth()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        await store.SaveAsync(UserSettings.Default with { RelicCardWidthPx = 420.0 });
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.RelicCardWidthPx, Is.EqualTo(420.0));
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenRelicCardWidthMissingFromFile_DefaultsTo300()
+    {
+        // Simulate a settings file written by an older version that lacks RelicCardWidthPx.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.RelicCardWidthPx, Is.EqualTo(300.0));
+    }
+
+    [Test]
     public async Task AsDropTableSourceSettingsStore_LoadAsync_ReturnsSourceUrl()
     {
         var store = new LocalUserSettingsStore(tempDir);

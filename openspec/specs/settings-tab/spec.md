@@ -23,7 +23,7 @@ The application SHALL provide a top-level **File** menu in an OS-level menu bar.
 
 ### Requirement: Settings Tab Content
 
-The Settings tab SHALL display controls for: font size selection (Small, Medium, Large, Custom), relics panel height, and the drop-tables source URL. It SHALL display **Save** and **Back** buttons. A numeric input (range 8–32) for the pixel value SHALL always be visible inline next to the font size radio buttons, showing the effective size for any selection. The Settings tab SHALL respond to the **Ctrl+S** keyboard shortcut by triggering the Save action while any element within the Settings tab has keyboard focus.
+The Settings tab SHALL display controls for: font size selection (Small, Medium, Large, Custom), relics panel height, relic card width, and the drop-tables source URL. It SHALL display **Save** and **Back** buttons. A numeric input (range 8–32) for the pixel value SHALL always be visible inline next to the font size radio buttons, showing the effective size for any selection, with its up/down spinner positioned on the right. The Settings tab SHALL respond to the **Ctrl+S** keyboard shortcut by triggering the Save action while any element within the Settings tab has keyboard focus.
 
 #### Scenario: Font size control is present
 
@@ -34,6 +34,11 @@ The Settings tab SHALL display controls for: font size selection (Small, Medium,
 
 - **WHEN** the Settings tab is open
 - **THEN** a numeric input showing the effective font size in points is visible alongside the font size radio buttons regardless of which option is selected
+
+#### Scenario: Font size spinner is positioned on the right
+
+- **WHEN** the Settings tab is open
+- **THEN** the font size numeric input's up/down spinner is positioned to the right of the value
 
 #### Scenario: Relics panel height control is present
 

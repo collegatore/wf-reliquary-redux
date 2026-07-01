@@ -65,8 +65,8 @@ public sealed partial class MainWindow : Window
                 Position = savedPoint;
         }
 
-        // Apply font size to Application resources.
-        SettingsViewModel.ApplyFontSize(initialSettings.FontSizePt);
+        // Apply font size (and relic card width base) to Application resources.
+        var initialRelicCardWidth = SettingsViewModel.ApplyFontSize(initialSettings.FontSizePt, initialSettings.RelicCardWidthPx);
 
         // Seed the default profile before the default wishlist, so the wishlist
         // seeding has an active profile to attach to.
@@ -196,6 +196,7 @@ public sealed partial class MainWindow : Window
         shell.RelicsPanelHeight = initialSettings.RelicsPanelHeight;
         shell.Orientation = initialSettings.Orientation;
         shell.SideBySideRelicsWidth = initialSettings.SideBySideRelicsWidth;
+        shell.RelicCardWidth = initialRelicCardWidth;
 
         DataContext = shell;
         _ = shell.InitializeAsync();

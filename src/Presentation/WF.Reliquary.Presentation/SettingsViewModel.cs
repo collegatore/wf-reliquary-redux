@@ -26,6 +26,7 @@ public sealed class SettingsViewModel : ObservableObject
     private double? relicsPanelHeight;
     private RelicsMissionsOrientation orientation;
     private double? sideBySideRelicsWidth;
+    private double relicCardWidthPx;    // base width at Medium font size; auto-saved like font size
 
     private string urlValidationError = string.Empty;
 
@@ -43,6 +44,7 @@ public sealed class SettingsViewModel : ObservableObject
         relicsPanelHeight = savedRelicsPanelHeight;
         orientation = savedOrientation;
         sideBySideRelicsWidth = savedSideBySideRelicsWidth;
+        relicCardWidthPx = initialSettings.RelicCardWidthPx;
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, () => HasUnsavedChanges);
         BackCommand = new AsyncRelayCommand(BackAsync);
@@ -64,6 +66,12 @@ public sealed class SettingsViewModel : ObservableObject
     /// switch takes effect immediately (like font size). Wired by the shell.
     /// </summary>
     public Action<RelicsMissionsOrientation>? ApplyOrientation { get; set; }
+
+    /// <summary>
+    /// Applies the current effective (font-scaled) relic card width to the live shell,
+    /// so the side-by-side splitter's minimum width stays correct. Wired by the shell.
+    /// </summary>
+    public Action<double>? ApplyRelicCardWidth { get; set; }
 
     /// <summary>Called when Back navigation should occur.</summary>
     public Func<Task>? OnNavigateBack { get; set; }
@@ -129,8 +137,30 @@ public sealed class SettingsViewModel : ObservableObject
             if (SelectedFontSize != prevOption)
                 OnPropertyChanged(nameof(SelectedFontSize));
 
-            ApplyFontSize(pt);
+            ApplyRelicCardWidth?.Invoke(ApplyFontSize(pt, relicCardWidthPx));
             _ = SaveFontSizeNow();
+        }
+    }
+
+    /// <summary>
+    /// The relic card's base width in pixels — its effective width at Medium font
+    /// size. Font size continues to scale the rendered width proportionally from
+    /// this base, exactly as it does from the historical fixed 300px value.
+    /// Applies live and auto-saves, like <see cref="EffectiveFontSizePt"/>.
+    /// </summary>
+    public double RelicCardWidthPx
+    {
+        get => relicCardWidthPx;
+        set
+        {
+            var px = Math.Clamp(value, 180.0, 600.0);
+            if (relicCardWidthPx == px) return;
+
+            relicCardWidthPx = px;
+            OnPropertyChanged();
+
+            ApplyRelicCardWidth?.Invoke(ApplyFontSize(fontSizePt, relicCardWidthPx));
+            _ = SaveRelicCardWidthNow();
         }
     }
 
@@ -241,7 +271,8 @@ public sealed class SettingsViewModel : ObservableObject
             RelicsPanelHeight: RelicsPanelHeight,
             LfgTemplate: GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default,
             Orientation: orientation,
-            SideBySideRelicsWidth: sideBySideRelicsWidth);
+            SideBySideRelicsWidth: sideBySideRelicsWidth,
+            RelicCardWidthPx: relicCardWidthPx);
 
         await settingsStore.SaveAsync(newSettings);
 
@@ -294,18 +325,36 @@ public sealed class SettingsViewModel : ObservableObject
         await settingsStore.SaveAsync(current with { Orientation = orientation });
     }
 
-    internal static void ApplyFontSize(double pt)
+    private async Task SaveRelicCardWidthNow()
     {
-        if (AvaloniaApp.Current?.Resources is not { } resources) return;
+        var current = await settingsStore.LoadAsync();
+        await settingsStore.SaveAsync(current with { RelicCardWidthPx = relicCardWidthPx });
+    }
+
+    /// <summary>
+    /// Applies font size app-wide and recomputes <c>RelicCardWidth</c> from
+    /// <paramref name="relicCardBasePx"/> — the card's effective width at Medium
+    /// font size — scaled by the current font-size ratio. <c>MissionCardWidth</c>
+    /// keeps its historical fixed 300px base (not user-configurable). Returns the
+    /// resulting effective relic card width, so callers can propagate it live
+    /// (e.g. to the side-by-side layout's minimum column width).
+    /// </summary>
+    internal static double ApplyFontSize(double pt, double relicCardBasePx)
+    {
+        if (AvaloniaApp.Current?.Resources is not { } resources) return relicCardBasePx;
 
         resources["ContentFontSize"] = pt;
 
         if (resources["FontSizeMedium"] is double medium && medium > 0)
         {
             var ratio = pt / medium;
-            resources["RelicCardWidth"] = 300 * ratio;
+            var relicCardWidth = relicCardBasePx * ratio;
+            resources["RelicCardWidth"] = relicCardWidth;
             resources["MissionCardWidth"] = 300 * ratio;
+            return relicCardWidth;
         }
+
+        return relicCardBasePx;
     }
 
     private void NotifyHasUnsavedChanges()

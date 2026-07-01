@@ -320,16 +320,20 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════
          SIDE-BY-SIDE LAYOUT (hidden when stacked is active)
-         MinWidth per column = RelicCardWidth (300) + 2 × card margin (8) = 316.
-         Relics (col 0) is a FIXED pixel column so it stays static on window
-         resize; Missions (col 2) is the lone star column and absorbs all the
-         slack. The GridSplitter drags the relics pixel width; code-behind
-         persists/restores it (see SideBySideRelicsWidth). -->
+         Relics (col 0) MinWidth is set from code-behind (UpdateSideBySideMinWidth),
+         derived from the current effective RelicCardWidth (config base × font-size
+         ratio) + 2 × card margin (8), since card width is user-configurable and can
+         no longer be a fixed literal. Missions (col 2) MinWidth stays the literal
+         316 (RelicCardWidth's old fixed 300 + margin), since MissionCardWidth is
+         not user-configurable. Relics (col 0) is a FIXED pixel column so it stays
+         static on window resize; Missions (col 2) is the lone star column and
+         absorbs all the slack. The GridSplitter drags the relics pixel width;
+         code-behind persists/restores it (see SideBySideRelicsWidth). -->
     <Grid
         x:Name="SideBySideGrid"
         IsVisible="{Binding IsSideBySide}">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="640" MinWidth="316" />
+        <ColumnDefinition Width="640" />
         <ColumnDefinition Width="4" />
         <ColumnDefinition Width="*" MinWidth="316" />
       </Grid.ColumnDefinitions>

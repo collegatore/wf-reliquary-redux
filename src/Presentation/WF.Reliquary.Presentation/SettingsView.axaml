@@ -117,10 +117,31 @@
               Maximum="32"
               Increment="1"
               FormatString="0"
+              ButtonSpinnerLocation="Right"
               Width="120"
               VerticalAlignment="Center" />
           <TextBlock
               Text="pt"
+              FontSize="{StaticResource FontSizeMedium}"
+              VerticalAlignment="Center" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Relic card width -->
+      <StackPanel Spacing="8">
+        <TextBlock Foreground="Gray" Text="Relic card width" />
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <NumericUpDown
+              Value="{Binding Settings.RelicCardWidthPx, Mode=TwoWay}"
+              Minimum="180"
+              Maximum="600"
+              Increment="10"
+              FormatString="0"
+              ButtonSpinnerLocation="Right"
+              Width="120"
+              VerticalAlignment="Center" />
+          <TextBlock
+              Text="px"
               FontSize="{StaticResource FontSizeMedium}"
               VerticalAlignment="Center" />
         </StackPanel>

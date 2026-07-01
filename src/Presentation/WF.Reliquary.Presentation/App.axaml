@@ -19,8 +19,9 @@
     <x:Double x:Key="ContentFontSize">14</x:Double>
 
     <!-- Card widths track the font size at runtime (see SettingsViewModel.ApplyFontSize);
-         these are the Medium-font anchors. Relic cards are wide enough for the longest
-         reward name to fit on a single line. -->
+         these are the Medium-font anchors. RelicCardWidth's anchor is user-configurable
+         (Settings -> Appearance -> Relic card width); MissionCardWidth's anchor is fixed.
+         Relic cards are wide enough for the longest reward name to fit on a single line. -->
     <x:Double x:Key="RelicCardWidth">300</x:Double>
     <x:Double x:Key="MissionCardWidth">300</x:Double>
 

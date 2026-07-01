@@ -21,6 +21,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
     private double? relicsPanelHeight;
     private RelicsMissionsOrientation orientation;
     private double? sideBySideRelicsWidth;
+    private double relicCardWidth = 300.0;
     private string footerErrorText = string.Empty;
 
     public MainWindowShellViewModel(
@@ -100,6 +101,9 @@ public sealed class MainWindowShellViewModel : ObservableObject
         // Apply the layout orientation live so the Settings radio takes effect
         // immediately on the Relics/Missions tab (mirrors font-size behavior).
         settings.ApplyOrientation = o => Orientation = o;
+        // Propagate the effective (font-scaled) relic card width so the side-by-side
+        // splitter's minimum width stays correct as either setting changes.
+        settings.ApplyRelicCardWidth = w => RelicCardWidth = w;
     }
 
     public MainWindowViewModel DropTables { get; }
@@ -185,6 +189,17 @@ public sealed class MainWindowShellViewModel : ObservableObject
     {
         get => sideBySideRelicsWidth;
         set => SetProperty(ref sideBySideRelicsWidth, value);
+    }
+
+    /// <summary>
+    /// Current effective (font-scaled) relic card width in pixels, mirroring the
+    /// live <c>RelicCardWidth</c> Avalonia resource. Used to keep the side-by-side
+    /// layout's Relics column minimum width correct.
+    /// </summary>
+    public double RelicCardWidth
+    {
+        get => relicCardWidth;
+        set => SetProperty(ref relicCardWidth, value);
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)

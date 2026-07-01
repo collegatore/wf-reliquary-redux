@@ -43,6 +43,8 @@ public sealed partial class RelicsMissionsView : UserControl
             // Restore column ratio immediately if starting in side-by-side orientation.
             if (_shell.Orientation == RelicsMissionsOrientation.SideBySide)
                 ApplySideBySideRelicsWidth();
+
+            UpdateSideBySideMinWidth();
         }
     }
 
@@ -89,6 +91,10 @@ public sealed partial class RelicsMissionsView : UserControl
         {
             // Restore the saved column ratio whenever switching to side-by-side.
             ApplySideBySideRelicsWidth();
+        }
+        else if (e.PropertyName == nameof(MainWindowShellViewModel.RelicCardWidth))
+        {
+            Dispatcher.UIThread.Post(UpdateSideBySideMinWidth);
         }
     }
 
@@ -153,6 +159,16 @@ public sealed partial class RelicsMissionsView : UserControl
 
         SideBySideGrid.ColumnDefinitions[0].Width = new GridLength(width, GridUnitType.Pixel);
         SideBySideGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
+    }
+
+    // Keeps the side-by-side Relics column's minimum width one full card wide,
+    // derived from the current effective (font-scaled) relic card width rather
+    // than a fixed literal — recomputed whenever card width or font size changes.
+    private void UpdateSideBySideMinWidth()
+    {
+        if (_shell is null) return;
+
+        SideBySideGrid.ColumnDefinitions[0].MinWidth = _shell.RelicCardWidth + 16;
     }
 
     /// <summary>
