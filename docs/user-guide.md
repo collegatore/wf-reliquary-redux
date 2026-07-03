@@ -28,7 +28,7 @@ Most players need exactly one profile and one wishlist; the defaults ("Default"/
 - **Vaulted** gear is collected in its own section (hidden by default — toggle **Show vaulted** to expand it); vault status comes from the imported tables.
 - Marking gear **Owned** moves it to a separate group; if the item still has wishlisted parts, the app asks whether to keep tracking them.
 - Cards can be **selected** (click to toggle) for group operations: select all visible, mark selected owned (one confirmation for the whole batch), or unmark selected.
-- The search box filters as you type.
+- The search box filters as you type (more than 2 symbols)
 
 ## Relic view modes
 
