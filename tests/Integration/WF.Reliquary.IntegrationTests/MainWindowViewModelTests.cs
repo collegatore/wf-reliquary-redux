@@ -170,9 +170,6 @@ public sealed class MainWindowViewModelTests
             .Setup(workflow => workflow.GetStatusAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(status);
         workflow
-            .Setup(workflow => workflow.GetSettingsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DropTableSourceSettings(new Uri(DropTableSourceDefaults.SourceUrl)));
-        workflow
             .Setup(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DropTableRefreshResult.Success(status));
         workflow

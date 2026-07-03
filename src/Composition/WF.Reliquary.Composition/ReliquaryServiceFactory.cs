@@ -16,8 +16,7 @@ public static class ReliquaryServiceFactory
 
     public static IDropTableSourceRefreshWorkflow CreateDropTableSourceRefreshService(IUserSettingsStore? userSettingsStore = null)
     {
-        var settingsStore = (userSettingsStore as IDropTableSourceSettingsStore)
-            ?? new LocalUserSettingsStore();
+        var settingsStore = (IDropTableSourceSettingsStore)(userSettingsStore ?? new LocalUserSettingsStore());
 
         return new DropTableSourceRefreshService(
             new HttpDropTableSourceClient(new HttpClient()),

@@ -32,8 +32,8 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
 
         return new DropTableSourceStatus(
             true,
-            stored.Provenance.DownloadedAt,
-            stored.Provenance.LastUpdate);
+            stored.DownloadedAt,
+            stored.LastUpdate);
     }
 
     public async Task<DropTableRefreshResult> RefreshAsync(CancellationToken cancellationToken = default)
@@ -68,13 +68,4 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
         return sourceStore.HasAnyAsync(cancellationToken);
     }
 
-    public Task<DropTableSourceSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
-    {
-        return settingsStore.LoadAsync(cancellationToken);
-    }
-
-    public Task SaveSettingsAsync(DropTableSourceSettings settings, CancellationToken cancellationToken = default)
-    {
-        return settingsStore.SaveAsync(settings, cancellationToken);
-    }
 }

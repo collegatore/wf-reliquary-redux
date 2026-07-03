@@ -148,7 +148,6 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
             entity.Property(e => e.SourceUrl).HasColumnName("source_url");
-            entity.Property(e => e.SourceFilePath).HasColumnName("source_file_path");
             entity.Property(e => e.DownloadedAt).HasColumnName("downloaded_at");
             entity.Property(e => e.SourceLastUpdate).HasColumnName("source_last_update");
             entity.Property(e => e.ImportedAt).HasColumnName("imported_at").IsRequired();

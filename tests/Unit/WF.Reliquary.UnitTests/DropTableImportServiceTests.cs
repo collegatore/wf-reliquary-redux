@@ -23,7 +23,7 @@ public sealed class DropTableImportServiceTests
             Assert.That(result.Succeeded, Is.False);
             Assert.That(result.ErrorMessage, Does.Contain("downloaded before import"));
         });
-        parser.Verify(parser => parser.ParseAsync(It.IsAny<StoredDropTableSource>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        parser.Verify(parser => parser.ParseAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
         importStore.Verify(store => store.ReplaceAsync(It.IsAny<ParsedDropTableImport>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -131,14 +131,13 @@ public sealed class DropTableImportServiceTests
             now);
     }
 
-    private static StoredDropTableSource StoredSource()
+    private static DropTableSourceContent StoredSource()
     {
-        return new StoredDropTableSource(
+        return new DropTableSourceContent(
+            new Uri(DropTableSourceDefaults.SourceUrl),
             "<html></html>",
-            new DropTableSourceProvenance(
-                new Uri(DropTableSourceDefaults.SourceUrl),
-                DateTimeOffset.UnixEpoch,
-                "08 April, 2026"));
+            DateTimeOffset.UnixEpoch,
+            "08 April, 2026");
     }
 
     private static ParsedDropTableImport SampleImport()

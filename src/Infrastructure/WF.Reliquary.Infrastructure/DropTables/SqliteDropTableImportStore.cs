@@ -158,7 +158,6 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
             {
                 Id = 1,
                 SourceUrl = import.SourceUrl.ToString(),
-                SourceFilePath = null,
                 DownloadedAt = import.DownloadedAt.ToString("O"),
                 SourceLastUpdate = import.SourceLastUpdate,
                 ImportedAt = import.ImportedAt.ToString("O")

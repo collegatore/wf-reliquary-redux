@@ -29,9 +29,7 @@ public sealed class DropTableSourceRefreshServiceTests
         var downloadedAt = new DateTimeOffset(2026, 4, 19, 12, 0, 0, TimeSpan.Zero);
         var configuredSourceUrl = new Uri("https://example.test/custom.html");
         var download = new DropTableDownload(configuredSourceUrl, "<b>Last Update:</b> 08 April, 2026", downloadedAt);
-        var stored = new StoredDropTableSource(
-            download.Html,
-            new DropTableSourceProvenance(configuredSourceUrl, downloadedAt, "08 April, 2026"));
+        var stored = new DropTableSourceContent(configuredSourceUrl, download.Html, downloadedAt, "08 April, 2026");
         var client = new Mock<IDropTableSourceClient>();
         var store = new Mock<IDropTableSourceStore>();
         var metadataReader = new Mock<IDropTableMetadataReader>();
@@ -105,9 +103,7 @@ public sealed class DropTableSourceRefreshServiceTests
     public async Task RefreshAsync_WhenDownloadFails_KeepsExistingStatus()
     {
         var defaultUrl = new Uri(DropTableSourceDefaults.SourceUrl);
-        var stored = new StoredDropTableSource(
-            "<b>Last Update:</b> 08 April, 2026",
-            new DropTableSourceProvenance(defaultUrl, DateTimeOffset.UnixEpoch, "08 April, 2026"));
+        var stored = new DropTableSourceContent(defaultUrl, "<b>Last Update:</b> 08 April, 2026", DateTimeOffset.UnixEpoch, "08 April, 2026");
         var client = new Mock<IDropTableSourceClient>();
         var store = new Mock<IDropTableSourceStore>();
         var metadataReader = new Mock<IDropTableMetadataReader>();
@@ -133,24 +129,6 @@ public sealed class DropTableSourceRefreshServiceTests
         store.Verify(
             store => store.SaveAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<CancellationToken>()),
             Times.Never);
-    }
-
-    [Test]
-    public async Task SaveSettingsAsync_PersistsUserEditableSourceUrl()
-    {
-        var settingsStore = new Mock<IDropTableSourceSettingsStore>();
-        var customSettings = new DropTableSourceSettings(new Uri("https://example.test/drop-tables.html"));
-        settingsStore
-            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(customSettings);
-        var service = CreateService(settingsStore: settingsStore.Object);
-
-        await service.SaveSettingsAsync(customSettings);
-
-        var loaded = await service.GetSettingsAsync();
-
-        Assert.That(loaded.SourceUrl, Is.EqualTo(customSettings.SourceUrl));
-        settingsStore.Verify(store => store.SaveAsync(customSettings, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static DropTableSourceRefreshService CreateService(

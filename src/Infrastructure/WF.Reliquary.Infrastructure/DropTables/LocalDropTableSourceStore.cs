@@ -32,8 +32,8 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
     public static string DefaultDatabasePath()
         => Path.Combine(DefaultRootPath(), "drop-table-import.sqlite");
 
-    public Task<StoredDropTableSource?> LoadAsync(CancellationToken cancellationToken = default)
-        => executor.RunAsync<StoredDropTableSource?>(async (context, ct) =>
+    public Task<DropTableSourceContent?> LoadAsync(CancellationToken cancellationToken = default)
+        => executor.RunAsync<DropTableSourceContent?>(async (context, ct) =>
         {
             if (!File.Exists(databasePath))
             {
@@ -51,12 +51,11 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
                 return null;
             }
 
-            var provenance = new DropTableSourceProvenance(
+            return new DropTableSourceContent(
                 new Uri(entity.SourceUrl),
+                entity.Content,
                 DateTimeOffset.Parse(entity.DownloadedAt, null, System.Globalization.DateTimeStyles.RoundtripKind),
                 entity.SourceLastUpdate);
-
-            return new StoredDropTableSource(entity.Content, provenance);
         }, cancellationToken);
 
     public Task SaveAsync(DropTableSourceContent content, CancellationToken cancellationToken = default)

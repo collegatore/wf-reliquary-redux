@@ -161,9 +161,8 @@ public sealed class WishlistFarmingMissionsDedupeTests
     {
         var samplePath = Path.Combine(AppContext.BaseDirectory, "TestData", "warframe-drop-tables-sample.html");
         var html = await File.ReadAllTextAsync(samplePath);
-        var source = new StoredDropTableSource(
-            html,
-            new DropTableSourceProvenance(new Uri(DropTableSourceDefaults.SourceUrl), DateTimeOffset.UnixEpoch, "08 April, 2026"));
+        var source = new DropTableSourceContent(
+            new Uri(DropTableSourceDefaults.SourceUrl), html, DateTimeOffset.UnixEpoch, "08 April, 2026");
         var import = new HtmlDropTableParser().Parse(source, DateTimeOffset.UnixEpoch);
         await new SqliteDropTableImportStore(dbPath).ReplaceAsync(import);
     }

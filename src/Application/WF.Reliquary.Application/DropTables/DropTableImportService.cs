@@ -23,7 +23,7 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
 
     public async Task<DropTableImportResult> ImportAsync(CancellationToken cancellationToken = default)
     {
-        StoredDropTableSource? stored;
+        DropTableSourceContent? stored;
 
         try
         {
@@ -47,7 +47,7 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return DropTableImportResult.Failure(ex.Message, stored.Provenance.LastUpdate);
+            return DropTableImportResult.Failure(ex.Message, stored.LastUpdate);
         }
 
         try

@@ -237,14 +237,13 @@ public sealed class DropTableImportInfrastructureTests
         Assert.That(item.ItemKind, Is.EqualTo("PrimePart"));
     }
 
-    private static StoredDropTableSource StoredSource(string html)
+    private static DropTableSourceContent StoredSource(string html)
     {
-        return new StoredDropTableSource(
+        return new DropTableSourceContent(
+            new Uri(DropTableSourceDefaults.SourceUrl),
             html,
-            new DropTableSourceProvenance(
-                new Uri(DropTableSourceDefaults.SourceUrl),
-                DateTimeOffset.UnixEpoch,
-                "08 April, 2026"));
+            DateTimeOffset.UnixEpoch,
+            "08 April, 2026");
     }
 
     private static string FocusedHtml()

@@ -8,7 +8,7 @@ public interface IDropTableParser
     /// Parses the stored HTML source into the import model asynchronously.
     /// </summary>
     Task<ParsedDropTableImport> ParseAsync(
-        StoredDropTableSource source,
+        DropTableSourceContent source,
         DateTimeOffset importedAt,
         CancellationToken cancellationToken = default);
 }

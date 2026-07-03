@@ -46,10 +46,6 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("imported_at");
 
-                    b.Property<string>("SourceFilePath")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("source_file_path");
-
                     b.Property<string>("SourceLastUpdate")
                         .HasColumnType("TEXT")
                         .HasColumnName("source_last_update");

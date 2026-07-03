@@ -12,7 +12,7 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
     /// Offloads the synchronous, regex-heavy <see cref="Parse"/> onto a Task
     /// </summary>
     public Task<ParsedDropTableImport> ParseAsync(
-        StoredDropTableSource source,
+        DropTableSourceContent source,
         DateTimeOffset importedAt,
         CancellationToken cancellationToken = default)
         => Task.Run(() => Parse(source, importedAt), cancellationToken);
@@ -21,7 +21,7 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
     /// Synchronous parse core. Kept public for direct, in-process testing; production
     /// callers go through <see cref="ParseAsync"/> via the <see cref="IDropTableParser"/> port.
     /// </summary>
-    public ParsedDropTableImport Parse(StoredDropTableSource source, DateTimeOffset importedAt)
+    public ParsedDropTableImport Parse(DropTableSourceContent source, DateTimeOffset importedAt)
     {
         ArgumentNullException.ThrowIfNull(source);
 
@@ -46,9 +46,9 @@ public sealed partial class HtmlDropTableParser : IDropTableParser
         }
 
         return new ParsedDropTableImport(
-            source.Provenance.SourceUrl,
-            source.Provenance.DownloadedAt,
-            source.Provenance.LastUpdate,
+            source.SourceUrl,
+            source.DownloadedAt,
+            source.LastUpdate,
             importedAt,
             rewardItems.Values.OrderBy(item => item.NormalizedName, StringComparer.Ordinal).ToArray(),
             relicData.Relics,

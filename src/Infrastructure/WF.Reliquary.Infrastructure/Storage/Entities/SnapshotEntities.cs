@@ -74,7 +74,6 @@ internal sealed class ImportMetadataEntity
 {
     public long Id { get; set; }
     public string? SourceUrl { get; set; }
-    public string? SourceFilePath { get; set; }
     public string? DownloadedAt { get; set; }
     public string? SourceLastUpdate { get; set; }
     public string ImportedAt { get; set; } = string.Empty;

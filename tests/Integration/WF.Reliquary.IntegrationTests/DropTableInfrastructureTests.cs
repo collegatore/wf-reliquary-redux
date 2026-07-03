@@ -25,9 +25,9 @@ public sealed class DropTableInfrastructureTests
         {
             Assert.That(stored, Is.Not.Null);
             Assert.That(stored!.Html, Does.Contain("08 April, 2026"));
-            Assert.That(stored.Provenance.SourceUrl, Is.EqualTo(sourceUrl));
-            Assert.That(stored.Provenance.DownloadedAt, Is.EqualTo(downloadedAt));
-            Assert.That(stored.Provenance.LastUpdate, Is.EqualTo("08 April, 2026"));
+            Assert.That(stored.SourceUrl, Is.EqualTo(sourceUrl));
+            Assert.That(stored.DownloadedAt, Is.EqualTo(downloadedAt));
+            Assert.That(stored.LastUpdate, Is.EqualTo("08 April, 2026"));
         });
     }
 
@@ -69,7 +69,7 @@ public sealed class DropTableInfrastructureTests
 
         var stored = await store.LoadAsync();
 
-        Assert.That(stored?.Provenance?.LastUpdate, Is.EqualTo("08 April, 2026"));
+        Assert.That(stored?.LastUpdate, Is.EqualTo("08 April, 2026"));
     }
 
     [Test]
@@ -84,7 +84,7 @@ public sealed class DropTableInfrastructureTests
 
         var stored = await store.LoadAsync();
 
-        Assert.That(stored?.Provenance?.SourceUrl, Is.EqualTo(fileUri));
+        Assert.That(stored?.SourceUrl, Is.EqualTo(fileUri));
     }
 
     [Test]
@@ -121,31 +121,6 @@ public sealed class DropTableInfrastructureTests
             Assert.That(content.Html, Is.EqualTo("<html>drop table</html>"));
             Assert.That(content.DownloadedAt, Is.EqualTo(downloadedAt));
         });
-    }
-
-    [Test]
-    public async Task LocalSettingsStore_SavesUserEditableSourceUrl()
-    {
-        var root = CreateTempDirectory();
-        var store = new LocalDropTableSourceSettingsStore(root);
-        var sourceUrl = new Uri("https://example.test/custom-drop-tables.html");
-
-        await store.SaveAsync(new DropTableSourceSettings(sourceUrl));
-
-        var loaded = await store.LoadAsync();
-
-        Assert.That(loaded.SourceUrl, Is.EqualTo(sourceUrl));
-    }
-
-    [Test]
-    public async Task LocalSettingsStore_UsesDefaultUrlWhenSettingsDoNotExist()
-    {
-        var root = CreateTempDirectory();
-        var store = new LocalDropTableSourceSettingsStore(root);
-
-        var loaded = await store.LoadAsync();
-
-        Assert.That(loaded.SourceUrl.ToString(), Is.EqualTo(DropTableSourceDefaults.SourceUrl));
     }
 
     private static string CreateTempDirectory()
