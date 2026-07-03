@@ -28,7 +28,7 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 {
                     id = table.Column<long>(type: "INTEGER", nullable: false),
                     source_url = table.Column<string>(type: "TEXT", nullable: true),
-                    source_file_path = table.Column<string>(type: "TEXT", nullable: false),
+                    source_file_path = table.Column<string>(type: "TEXT", nullable: true),
                     downloaded_at = table.Column<string>(type: "TEXT", nullable: true),
                     source_last_update = table.Column<string>(type: "TEXT", nullable: true),
                     imported_at = table.Column<string>(type: "TEXT", nullable: false)
@@ -90,17 +90,19 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "wishlists",
+                name: "source_files",
                 columns: table => new
                 {
                     id = table.Column<long>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    name = table.Column<string>(type: "TEXT", nullable: false),
-                    created_at = table.Column<string>(type: "TEXT", nullable: false)
+                    content = table.Column<string>(type: "TEXT", nullable: false),
+                    source_url = table.Column<string>(type: "TEXT", nullable: false),
+                    downloaded_at = table.Column<string>(type: "TEXT", nullable: false),
+                    source_last_update = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_wishlists", x => x.id);
+                    table.PrimaryKey("PK_source_files", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -175,22 +177,72 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "owned_gear",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    profile_id = table.Column<long>(type: "INTEGER", nullable: false),
+                    gear_name = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_owned_gear", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "profiles",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    name = table.Column<string>(type: "TEXT", nullable: false),
+                    created_at = table.Column<string>(type: "TEXT", nullable: false),
+                    active_wishlist_id = table.Column<long>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_profiles", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "user_preferences",
                 columns: table => new
                 {
                     id = table.Column<long>(type: "INTEGER", nullable: false),
-                    last_wishlist_id = table.Column<long>(type: "INTEGER", nullable: true)
+                    last_profile_id = table.Column<long>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_user_preferences", x => x.id);
                     table.CheckConstraint("CK_user_preferences_singleton", "id = 1");
                     table.ForeignKey(
-                        name: "FK_user_preferences_wishlists_last_wishlist_id",
-                        column: x => x.last_wishlist_id,
-                        principalTable: "wishlists",
+                        name: "FK_user_preferences_profiles_last_profile_id",
+                        column: x => x.last_profile_id,
+                        principalTable: "profiles",
                         principalColumn: "id",
                         onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "wishlists",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    profile_id = table.Column<long>(type: "INTEGER", nullable: false),
+                    name = table.Column<string>(type: "TEXT", nullable: false),
+                    created_at = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_wishlists", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_wishlists_profiles_profile_id",
+                        column: x => x.profile_id,
+                        principalTable: "profiles",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -222,6 +274,23 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 column: "mission_source_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_owned_gear_profile_id_gear_name",
+                table: "owned_gear",
+                columns: new[] { "profile_id", "gear_name" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_profiles_active_wishlist_id",
+                table: "profiles",
+                column: "active_wishlist_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_profiles_name",
+                table: "profiles",
+                column: "name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_relic_rewards_relic_id",
                 table: "relic_rewards",
                 column: "relic_id");
@@ -245,20 +314,68 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_user_preferences_last_wishlist_id",
+                name: "IX_user_preferences_last_profile_id",
                 table: "user_preferences",
-                column: "last_wishlist_id");
+                column: "last_profile_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_wishlist_items_wishlist_id_part_normalized_name",
                 table: "wishlist_items",
                 columns: new[] { "wishlist_id", "part_normalized_name" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_wishlists_profile_id",
+                table: "wishlists",
+                column: "profile_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_wishlists_profile_id_name",
+                table: "wishlists",
+                columns: new[] { "profile_id", "name" },
+                unique: true);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_owned_gear_profiles_profile_id",
+                table: "owned_gear",
+                column: "profile_id",
+                principalTable: "profiles",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_profiles_wishlists_active_wishlist_id",
+                table: "profiles",
+                column: "active_wishlist_id",
+                principalTable: "wishlists",
+                principalColumn: "id",
+                onDelete: ReferentialAction.SetNull);
+
+            // Deduplicate rewards that appear more than once within a single mission pool
+            // or rotation by summing their chances. mission_rewards remains the raw source.
+            migrationBuilder.Sql("""
+                CREATE VIEW mission_rewards_merged AS
+                SELECT
+                    mission_source_id,
+                    rotation_id,
+                    reward_item_id,
+                    relic_id,
+                    SUM(chance_percent) AS chance_percent,
+                    MIN(source_order)   AS source_order
+                FROM mission_rewards
+                GROUP BY mission_source_id, rotation_id, reward_item_id;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DROP VIEW mission_rewards_merged;");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_wishlists_profiles_profile_id",
+                table: "wishlists");
+
             migrationBuilder.DropTable(
                 name: "gear_vault_status");
 
@@ -269,6 +386,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 name: "mission_rewards");
 
             migrationBuilder.DropTable(
+                name: "owned_gear");
+
+            migrationBuilder.DropTable(
                 name: "relic_rewards");
 
             migrationBuilder.DropTable(
@@ -276,6 +396,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "reward_rotations");
+
+            migrationBuilder.DropTable(
+                name: "source_files");
 
             migrationBuilder.DropTable(
                 name: "user_preferences");
@@ -288,6 +411,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "mission_sources");
+
+            migrationBuilder.DropTable(
+                name: "profiles");
 
             migrationBuilder.DropTable(
                 name: "wishlists");

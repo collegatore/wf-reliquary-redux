@@ -38,8 +38,8 @@ public sealed class UserSettingsStoreTests
         Assert.Multiple(() =>
         {
             Assert.That(settings.SourceUrl.ToString(), Is.EqualTo(DropTableSourceDefaults.SourceUrl));
-            Assert.That(settings.WindowWidth, Is.EqualTo(900));
-            Assert.That(settings.WindowHeight, Is.EqualTo(600));
+            Assert.That(settings.WindowWidth, Is.EqualTo(1280));
+            Assert.That(settings.WindowHeight, Is.EqualTo(800));
             Assert.That(settings.FontSizePt, Is.EqualTo(14.0));
             Assert.That(settings.RelicsPanelHeight, Is.Null);
         });
@@ -85,7 +85,7 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
-    public async Task LoadAsync_WhenFileAbsent_DefaultsToStackedOrientation()
+    public async Task LoadAsync_WhenFileAbsent_DefaultsToSideBySideOrientation()
     {
         var store = new LocalUserSettingsStore(tempDir);
 
@@ -93,7 +93,7 @@ public sealed class UserSettingsStoreTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(settings.Orientation, Is.EqualTo(Stacked));
+            Assert.That(settings.Orientation, Is.EqualTo(SideBySide));
             Assert.That(settings.SideBySideRelicsWidth, Is.Null);
         });
     }
@@ -118,7 +118,7 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
-    public async Task LoadAsync_WhenOrientationMissingFromFile_DefaultsToStacked()
+    public async Task LoadAsync_WhenOrientationMissingFromFile_DefaultsToSideBySide()
     {
         // Simulate a settings file written by an older version that lacks Orientation.
         var path = Path.Combine(tempDir, "user-settings.json");
@@ -128,7 +128,7 @@ public sealed class UserSettingsStoreTests
 
         var loaded = await store.LoadAsync();
 
-        Assert.That(loaded.Orientation, Is.EqualTo(Stacked));
+        Assert.That(loaded.Orientation, Is.EqualTo(SideBySide));
     }
 
     [Test]
@@ -167,13 +167,13 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
-    public async Task LoadAsync_WhenFileAbsent_DefaultsRelicCardWidthTo300()
+    public async Task LoadAsync_WhenFileAbsent_DefaultsRelicCardWidthTo200()
     {
         var store = new LocalUserSettingsStore(tempDir);
 
         var settings = await store.LoadAsync();
 
-        Assert.That(settings.RelicCardWidthPx, Is.EqualTo(300.0));
+        Assert.That(settings.RelicCardWidthPx, Is.EqualTo(200.0));
     }
 
     [Test]
@@ -188,7 +188,7 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
-    public async Task LoadAsync_WhenRelicCardWidthMissingFromFile_DefaultsTo300()
+    public async Task LoadAsync_WhenRelicCardWidthMissingFromFile_DefaultsTo200()
     {
         // Simulate a settings file written by an older version that lacks RelicCardWidthPx.
         var path = Path.Combine(tempDir, "user-settings.json");
@@ -198,7 +198,7 @@ public sealed class UserSettingsStoreTests
 
         var loaded = await store.LoadAsync();
 
-        Assert.That(loaded.RelicCardWidthPx, Is.EqualTo(300.0));
+        Assert.That(loaded.RelicCardWidthPx, Is.EqualTo(200.0));
     }
 
     [Test]

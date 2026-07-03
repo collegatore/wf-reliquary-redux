@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Enables users to compose Looking-for-Group (LFG) chat messages for specific relics. A template-driven engine substitutes system placeholders (relic identity) and user-selected options (participation style, refinement level) into a pattern, producing a ready-to-paste message. The template is configurable in Settings and persisted with user settings.
+Enables users to compose Recruiting Chat (looking-for-group) messages for specific relics. A template-driven engine substitutes system placeholders (relic identity) and user-selected options (participation style, refinement level) into a pattern, producing a ready-to-paste message. The template is configurable in Settings and persisted with user settings.
 
 ## Requirements
 
@@ -163,7 +163,7 @@ A **Reload from saved** action SHALL be available in the Recruiting Chat message
 
 #### Scenario: Save persists the template via main Settings Save
 
-- **WHEN** the user presses the main Settings Save button with a valid LFG template
+- **WHEN** the user presses the main Settings Save button with a valid Recruiting Chat message template
 - **THEN** the pattern and option groups are written to the settings file together with the other settings
 - **AND** subsequent popups use the saved template
 - **AND** the Settings Save button disables and the leave-guard considers the page clean

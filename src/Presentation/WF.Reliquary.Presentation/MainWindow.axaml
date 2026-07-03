@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:WF.Reliquary.Presentation"
     Icon="avares://WF.Reliquary.Presentation/Assets/icon.ico"
-    Title="WF Reliquary Redux"
+    Title="{Binding DropTables.Title}"
     Width="900"
     Height="600">
   <Window.KeyBindings>

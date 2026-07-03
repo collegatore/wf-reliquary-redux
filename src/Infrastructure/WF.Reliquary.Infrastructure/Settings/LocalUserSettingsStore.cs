@@ -75,10 +75,10 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 RecruitingMessageTemplate: ToTemplate(file.RecruitingMessageTemplate),
                 WindowX: file.WindowX,
                 WindowY: file.WindowY,
-                Orientation: file.Orientation ?? RelicsMissionsOrientation.Stacked,
+                Orientation: file.Orientation ?? UserSettings.Default.Orientation,
                 SideBySideRelicsWidth: file.SideBySideRelicsWidth > 0 ? file.SideBySideRelicsWidth : null,
                 RelicCardWidthPx: file.RelicCardWidthPx > 0 ? file.RelicCardWidthPx : UserSettings.Default.RelicCardWidthPx,
-                ViewMode: file.ViewMode ?? RelicViewMode.Compact);
+                ViewMode: file.ViewMode ?? UserSettings.Default.ViewMode);
         }
         catch (JsonException)
         {

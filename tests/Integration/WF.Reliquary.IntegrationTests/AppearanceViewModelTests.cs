@@ -72,9 +72,9 @@ public sealed class AppearanceViewModelTests
         RelicsMissionsOrientation? applied = null;
         vm.ApplyOrientation = o => applied = o;
 
-        vm.SelectedOrientation = RelicsMissionsOrientation.SideBySide;
+        vm.SelectedOrientation = RelicsMissionsOrientation.Stacked;
 
-        Assert.That(applied, Is.EqualTo(RelicsMissionsOrientation.SideBySide));
+        Assert.That(applied, Is.EqualTo(RelicsMissionsOrientation.Stacked));
     }
 
     [Test]

@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using WF.Reliquary.Application;
 using WF.Reliquary.Infrastructure.Logging;
 
 namespace WF.Reliquary.IntegrationTests;
@@ -42,17 +43,17 @@ public sealed class ErrorLogTests
     }
 
     [Test]
-    public async Task AppendAsync_WritesTimestampedEntry()
+    public async Task AppendAsync_WritesTimestampedEntryWithVersion()
     {
         var log = new FileErrorLog(tempPath);
-        var before = DateTimeOffset.UtcNow;
 
         await log.AppendAsync("something went wrong");
 
         var content = await File.ReadAllTextAsync(tempPath);
         Assert.That(content, Does.Contain("something went wrong"));
-        // Entry starts with an ISO 8601 timestamp bracket
+        // Entry starts with an ISO 8601 timestamp bracket followed by the app version
         Assert.That(content, Does.Match(@"\[\d{4}-\d{2}-\d{2}T"));
+        Assert.That(content, Does.Contain(ApplicationInfo.Version));
     }
 
     [Test]

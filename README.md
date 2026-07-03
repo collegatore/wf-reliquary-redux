@@ -21,10 +21,10 @@ For stack decisions, project layout, build commands, and architecture, see [docs
 The application can download and store the official drop table HTML files. The default source URL is:
 
 ```text
-https://warframe-web-assets.nyc3.cdn.digitaloceanspaces.com/uploads/cms/hnfvc0o3jnfvc873njb03enrf56.html
+https://www.warframe.com/droptables
 ```
 
-Edit the source URL in the application settings UI to override the default if it changes, or if you don't trust the anonymous internet citizen (there's no auto-download and auto-import here either). The configured URL is stored in the user settings file, downloaded table data is stored as raw HTML content within the app database and can be exported to a file for cross-checking (or if anyone wants to peek at their history).
+This is DE's canonical address; it redirects to the current CDN location of the drop-table HTML (a `warframe-web-assets` DigitalOcean asset at the time of writing), and the download follows that redirect automatically. Edit the source URL in the application settings UI to override the default if it changes, or if you don't trust the anonymous internet citizen (there's no auto-download and auto-import here either). The configured URL is stored in the user settings file, downloaded table data is stored as raw HTML content within the app database and can be exported to a file for cross-checking (or if anyone wants to peek at their history).
 
 ## Initial Setup
 
@@ -39,3 +39,7 @@ The import action does not download or refresh the source file, and vice versa -
 ## App Data
 
 The app stores its configs in `%LOCALAPPDATA%\WF Reliquary Redux\`, I think it should be available on almost every gaming PC without UAC elevation and other mess.
+
+## User Guide
+
+The behaviors that aren't self-evident from the UI — ghost wishlist entries, profiles, relic view modes, the Recruiting Chat message constructor, and friends — are covered in the [User Guide](docs/user-guide.md).

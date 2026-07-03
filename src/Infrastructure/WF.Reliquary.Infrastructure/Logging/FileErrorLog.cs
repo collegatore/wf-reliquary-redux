@@ -1,4 +1,5 @@
 using System.Text;
+using WF.Reliquary.Application;
 using WF.Reliquary.Application.Ports;
 
 namespace WF.Reliquary.Infrastructure.Logging;
@@ -40,7 +41,7 @@ public sealed class FileErrorLog : IErrorLog
     private static string FormatEntry(string message, Exception? exception)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"[{DateTimeOffset.UtcNow:O}] {message}");
+        sb.AppendLine($"[{DateTimeOffset.UtcNow:O} {ApplicationInfo.Version}] {message}");
         if (exception is not null)
             sb.AppendLine(exception.ToString());
         sb.AppendLine();

@@ -13,13 +13,19 @@ public sealed class SqliteWishlistStore : IWishlistStore
 
     public SqliteWishlistStore(string? databasePath = null)
     {
-        var path = databasePath ?? SqliteDropTableImportStore.DefaultDatabasePath();
-        executor = new ReliquaryDbExecutor(ReliquaryDbContext.BuildOptions(path));
+        DatabasePath = databasePath ?? SqliteDropTableImportStore.DefaultDatabasePath();
+        executor = new ReliquaryDbExecutor(ReliquaryDbContext.BuildOptions(DatabasePath));
     }
+
+    private string DatabasePath { get; }
 
     public Task SeedDefaultAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync(async (context, ct) =>
         {
+            var directory = Path.GetDirectoryName(DatabasePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+                Directory.CreateDirectory(directory);
+
             await context.Database.MigrateAsync(ct).ConfigureAwait(false);
 
             // Ensure a profile exists so seeding is not order-dependent on the profile store,

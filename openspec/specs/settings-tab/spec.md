@@ -52,21 +52,21 @@ The Settings tab SHALL display controls for: relics panel height and the drop-ta
 
 ### Requirement: Settings Save Action
 
-The Settings tab SHALL persist the drop-tables source URL, relics panel height, and LFG template atomically when the user activates the **Save** button (or Ctrl+S). The **Save** button SHALL be disabled when there are no unsaved changes to the fields it controls.
+The Settings tab SHALL persist the drop-tables source URL, relics panel height, and Recruiting Chat message template atomically when the user activates the **Save** button (or Ctrl+S). The **Save** button SHALL be disabled when there are no unsaved changes to the fields it controls.
 
-#### Scenario: Save persists URL and LFG template
+#### Scenario: Save persists URL and Recruiting Chat message template
 
-- **WHEN** the user edits the source URL or LFG template and clicks Save
+- **WHEN** the user edits the source URL or Recruiting Chat message template and clicks Save
 - **THEN** those settings are written to persistent storage and the confirmation state reflects that no unsaved changes remain
 
 #### Scenario: Save disabled when unchanged
 
-- **WHEN** the user opens the Settings tab and has made no changes to URL or LFG template (or has reverted all such changes back to saved values)
+- **WHEN** the user opens the Settings tab and has made no changes to URL or Recruiting Chat message template (or has reverted all such changes back to saved values)
 - **THEN** the Save button is disabled
 
 ### Requirement: Settings Navigation with Unsaved-Changes Guard
 
-Both the **Back** button and clicking any other tab header while on the Settings tab SHALL trigger the same unsaved-changes guard for fields managed by the Save button (source URL, LFG template). If the user has made changes to guarded fields, the application SHALL prompt to confirm discarding those changes before navigating away.
+Both the **Back** button and clicking any other tab header while on the Settings tab SHALL trigger the same unsaved-changes guard for fields managed by the Save button (source URL, Recruiting Chat message template). If the user has made changes to guarded fields, the application SHALL prompt to confirm discarding those changes before navigating away.
 
 The **Back** button navigates to the tab that was active immediately before the user opened Settings. Clicking a different tab header navigates to that specific tab (not the previously active tab).
 

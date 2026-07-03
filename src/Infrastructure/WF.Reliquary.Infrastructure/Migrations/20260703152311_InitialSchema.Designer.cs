@@ -10,14 +10,14 @@ using WF.Reliquary.Infrastructure.Storage;
 namespace WF.Reliquary.Infrastructure.Migrations
 {
     [DbContext(typeof(ReliquaryDbContext))]
-    [Migration("20260609154952_AddOwnedGear")]
-    partial class AddOwnedGear
+    [Migration("20260703152311_InitialSchema")]
+    partial class InitialSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.GearVaultStatusEntity", b =>
                 {
@@ -50,7 +50,6 @@ namespace WF.Reliquary.Infrastructure.Migrations
                         .HasColumnName("imported_at");
 
                     b.Property<string>("SourceFilePath")
-                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("source_file_path");
 
@@ -199,6 +198,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
 
                     b.HasIndex("ActiveWishlistId");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("profiles", (string)null);
                 });
 
@@ -345,6 +347,38 @@ namespace WF.Reliquary.Infrastructure.Migrations
                     b.ToTable("reward_rotations", (string)null);
                 });
 
+            modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.SourceFileEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("content");
+
+                    b.Property<string>("DownloadedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("downloaded_at");
+
+                    b.Property<string>("SourceLastUpdate")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source_last_update");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source_url");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("source_files", (string)null);
+                });
+
             modelBuilder.Entity("WF.Reliquary.Infrastructure.Storage.Entities.UserPreferencesEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -389,6 +423,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProfileId");
+
+                    b.HasIndex("ProfileId", "Name")
+                        .IsUnique();
 
                     b.ToTable("wishlists", (string)null);
                 });

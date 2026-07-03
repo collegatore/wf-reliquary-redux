@@ -53,12 +53,12 @@ The selected relic card base width SHALL apply to all relic cards immediately wh
 
 ### Requirement: Relic Card Width Persistence and Default
 
-The relic card base width SHALL be persisted in user settings and restored on the next launch. When no relic card width preference is saved, the default base width SHALL be 300 pixels, matching the application's historical fixed card width.
+The relic card base width SHALL be persisted in user settings and restored on the next launch. When no relic card width preference is saved, the default base width SHALL be 200 pixels.
 
 #### Scenario: Default relic card width on first launch
 
 - **WHEN** the application starts and no relic card width preference is saved
-- **THEN** relic cards are rendered at 300 pixels wide at Medium font size
+- **THEN** relic cards are rendered at 200 pixels wide at Medium font size
 
 #### Scenario: Relic card width restored from settings
 

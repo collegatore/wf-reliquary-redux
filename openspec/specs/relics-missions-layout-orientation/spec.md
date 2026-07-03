@@ -71,7 +71,7 @@ elements), this SHALL NOT require runtime measurement of card sizes.
 
 #### Scenario: Relics minimum width follows the configured relic card width
 
-- **WHEN** the user sets a relic card base width other than the default 300 pixels
+- **WHEN** the user sets a relic card base width other than the default 200 pixels
 - **THEN** the Relics panel's minimum width in the side-by-side layout is recalculated
   from the new effective (font-scaled) width, so the panel still cannot be dragged
   narrower than one full relic card column
@@ -84,10 +84,10 @@ elements), this SHALL NOT require runtime measurement of card sizes.
 
 ### Requirement: Default Layout Orientation
 
-The Relics and Missions tab SHALL open in the stacked layout when no layout orientation
-has been chosen or persisted, preserving today's default behavior.
+The Relics and Missions tab SHALL open in the side-by-side layout when no layout orientation
+has been chosen or persisted.
 
-#### Scenario: First run defaults to stacked
+#### Scenario: First run defaults to side-by-side
 
 - **WHEN** the application starts and no layout orientation preference exists
-- **THEN** the Relics and Missions tab opens in the stacked layout
+- **THEN** the Relics and Missions tab opens in the side-by-side layout

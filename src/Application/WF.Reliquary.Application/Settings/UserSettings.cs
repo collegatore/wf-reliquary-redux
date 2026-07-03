@@ -12,15 +12,15 @@ public sealed record UserSettings(
     RecruitingMessageTemplate RecruitingMessageTemplate,
     int? WindowX = null,
     int? WindowY = null,
-    RelicsMissionsOrientation Orientation = RelicsMissionsOrientation.Stacked,
+    RelicsMissionsOrientation Orientation = RelicsMissionsOrientation.SideBySide,
     double? SideBySideRelicsWidth = null,
-    double RelicCardWidthPx = 300.0,
+    double RelicCardWidthPx = 200.0,
     RelicViewMode ViewMode = RelicViewMode.Compact)
 {
     public static UserSettings Default { get; } = new(
         SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl),
-        WindowWidth: 900,
-        WindowHeight: 600,
+        WindowWidth: 1280,
+        WindowHeight: 800,
         FontSizePt: 14.0,
         RelicsPanelHeight: null,
         RecruitingMessageTemplate: RecruitingMessageTemplate.Default);

@@ -7,6 +7,18 @@ namespace WF.Reliquary.UnitTests;
 public sealed class ApplicationInfoTests
 {
     [Test]
+    public void Version_DoesNotContainBuildMetadataSuffix()
+    {
+        Assert.That(ApplicationInfo.Version, Does.Not.Contain("+"));
+    }
+
+    [Test]
+    public void Version_IsNotEmpty()
+    {
+        Assert.That(ApplicationInfo.Version, Is.Not.Empty);
+    }
+
+    [Test]
     public void GetStartupSummary_ReturnsApplicationNameAndVersion()
     {
         var summary = ApplicationInfo.GetStartupSummary();

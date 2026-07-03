@@ -4,6 +4,8 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using AsyncAwaitBestPractices;
+using WF.Reliquary.Application;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Composition;
 
@@ -55,6 +57,9 @@ public sealed partial class MainWindow : Window
             setFooterStatus: text => { if (shell is not null) shell.FooterErrorText = text; });
         errorReporter.SetToastPanel(ToastPanel);
         AppErrors.Reporter = errorReporter;
+
+        // Log name + version so bug reports are traceable to a build.
+        errorLog.AppendAsync(ApplicationInfo.GetStartupSummary()).SafeFireAndForget();
 
         // Apply saved window size after InitializeComponent (styled properties
         // are fully wired up at this point).
@@ -327,7 +332,7 @@ public sealed partial class MainWindow : Window
             var size = ClientSize;
             var pos = Position;
             var relicsHeight = shell?.RelicsPanelHeight;
-            var orientation = shell?.Orientation ?? Application.Settings.RelicsMissionsOrientation.Stacked;
+            var orientation = shell?.Orientation ?? UserSettings.Default.Orientation;
             var splitRatio = shell?.SideBySideRelicsWidth;
             Task.Run(() => store.SaveAsync(current with
             {

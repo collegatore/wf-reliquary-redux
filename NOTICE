@@ -1,0 +1,50 @@
+WF Reliquary Redux
+Copyright 2025-2026 collegatore
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product is inspired by the original Warframe Reliquary website
+(https://wf.xuerian.net/) — long live the author of the original idea.
+
+Warframe and its drop tables are the property of Digital Extremes Ltd.
+This is an unofficial fan-made companion tool, not affiliated with or
+endorsed by Digital Extremes.
+
+================================================================================
+Third-party software distributed with this product
+================================================================================
+
+Avalonia (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent,
+Avalonia.Fonts.Inter)
+  https://github.com/AvaloniaUI/Avalonia
+  License: MIT
+
+Inter font (bundled via Avalonia.Fonts.Inter)
+  https://github.com/rsms/inter
+  License: SIL Open Font License 1.1
+
+Caly.Avalonia.Controls.TreeDataGrid
+  Community-maintained fork of AvaloniaUI TreeDataGrid
+  https://github.com/CalyPdf/Caly.Avalonia.Controls.TreeDataGrid
+  Original: https://github.com/AvaloniaUI/Avalonia.Controls.TreeDataGrid
+  License: MIT
+
+CommunityToolkit.Mvvm
+  https://github.com/CommunityToolkit/dotnet
+  License: MIT
+
+AsyncAwaitBestPractices
+  https://github.com/brminnick/AsyncAwaitBestPractices
+  License: MIT
+
+Microsoft Entity Framework Core (Microsoft.EntityFrameworkCore.Sqlite)
+  https://github.com/dotnet/efcore
+  License: MIT
+
+SQLitePCLRaw (SQLitePCLRaw.bundle_e_sqlite3)
+  https://github.com/ericsink/SQLitePCL.raw
+  License: Apache-2.0
+
+SQLite (native engine bundled via SQLitePCLRaw)
+  https://www.sqlite.org/
+  License: Public Domain

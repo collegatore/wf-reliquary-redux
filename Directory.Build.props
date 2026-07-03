@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0-alpha</Version>
+    <Product>WF Reliquary Redux</Product>
+    <Authors>collegatore</Authors>
+    <Copyright>Copyright © 2025 collegatore</Copyright>
+    <RepositoryUrl>https://github.com/collegatore/wf-reliquary-redux</RepositoryUrl>
+  </PropertyGroup>
+</Project>

@@ -79,7 +79,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public Func<Task<bool>>? ConfirmClear { get; set; }
 
-    public string Title => ApplicationInfo.Name;
+    public string Title => ApplicationInfo.GetStartupSummary();
 
     /// <summary>True while a source operation runs; gates commands and the footer spinner.</summary>
     public bool IsBusy => busy.IsBusy;
