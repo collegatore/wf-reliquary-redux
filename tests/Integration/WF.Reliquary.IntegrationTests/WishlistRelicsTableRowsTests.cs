@@ -93,10 +93,10 @@ public sealed class WishlistRelicsTableRowsTests
     }
 
     [Test]
-    public async Task Rows_FollowEraThenInputOrder()
+    public async Task Rows_FollowEraSort_WithDefaultSettings()
     {
-        // Reader returns era-ordered (Lith before Meso); rows mirror that, like the cards.
-        var vm = await LoadedViewModelAsync(LithA1, MesoB2Vaulted);
+        // Default sort is Era ascending; ViewModel sorts regardless of reader input order.
+        var vm = await LoadedViewModelAsync(MesoB2Vaulted, LithA1); // Meso first in reader output
         vm.ShowVaulted = true;
 
         Assert.That(vm.TableRows.Select(r => r.DisplayName), Is.EqualTo(new[] { "Lith A1", "Meso B2" }));

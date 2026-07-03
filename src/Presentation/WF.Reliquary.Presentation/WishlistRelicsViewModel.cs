@@ -128,7 +128,11 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     private bool showAllRewards;
     private bool isEmpty = true;
     private bool isBusy;
+    private bool isFilterPanelOpen;
+    private bool isSortPanelOpen;
     private RelicViewMode viewMode = RelicViewMode.Compact;
+    private RelicSortMode sortMode = RelicSortMode.Era;
+    private bool sortDescending;
 
     /// <summary>
     /// Set by MainWindow to open the Recruiting Chat message dialog for a given relic name.
@@ -141,12 +145,21 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     /// </summary>
     public Func<WishlistRelicCardViewModel, Task>? OpenRewardsModal { get; set; }
 
+    /// <summary>
+    /// Set by MainWindow to persist sort mode and direction when they change.
+    /// Called fire-and-forget after each user-initiated sort change.
+    /// </summary>
+    public Func<Task>? SaveSortSettingsAsync { get; set; }
+
     public WishlistRelicsViewModel(IWishlistRelicsReader reader, IWishlistStore wishlistStore)
     {
         this.reader = reader;
         this.wishlistStore = wishlistStore;
         Cards = [];
         TableRows = [];
+        ToggleFilterPanelCommand = new RelayCommand(() => IsFilterPanelOpen = !IsFilterPanelOpen);
+        ToggleSortPanelCommand = new RelayCommand(() => IsSortPanelOpen = !IsSortPanelOpen);
+        ToggleSortDirectionCommand = new RelayCommand(() => SortDescending = !SortDescending);
         // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
         ReloadAsync().SafeFireAndForget();
     }
@@ -225,6 +238,113 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     public bool IsViewModeCompact => viewMode == RelicViewMode.Compact;
     public bool IsViewModeTable => viewMode == RelicViewMode.Table;
 
+    /// <summary>
+    /// Whether the collapsible filter panel is currently visible. Ephemeral — not persisted.
+    /// </summary>
+    public bool IsFilterPanelOpen
+    {
+        get => isFilterPanelOpen;
+        set
+        {
+            if (isFilterPanelOpen == value) return;
+            isFilterPanelOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Whether the collapsible sorting panel is currently visible. Ephemeral — not persisted.
+    /// </summary>
+    public bool IsSortPanelOpen
+    {
+        get => isSortPanelOpen;
+        set
+        {
+            if (isSortPanelOpen == value) return;
+            isSortPanelOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Toggles the filter panel open or closed.</summary>
+    public IRelayCommand ToggleFilterPanelCommand { get; }
+
+    /// <summary>Toggles the sorting panel open or closed.</summary>
+    public IRelayCommand ToggleSortPanelCommand { get; }
+
+    /// <summary>Toggles the sort direction between ascending and descending.</summary>
+    public IRelayCommand ToggleSortDirectionCommand { get; }
+
+    /// <summary>
+    /// Active sort mode. Changing to a different mode applies that mode's default direction
+    /// (ascending for Era/Alphabetical, descending for WishlistScore). Re-selecting the same
+    /// mode leaves direction unchanged.
+    /// </summary>
+    public RelicSortMode SortMode
+    {
+        get => sortMode;
+        set
+        {
+            if (sortMode == value) return;
+            sortMode = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SortModeIndex));
+            // Apply the new mode's default direction directly on the backing field so that
+            // RebuildViews is called only once (not once per field change).
+            sortDescending = value == RelicSortMode.WishlistScore;
+            OnPropertyChanged(nameof(SortDescending));
+            OnPropertyChanged(nameof(SortDirectionLabel));
+            RebuildViews();
+            SaveSortSettingsAsync?.Invoke().SafeFireAndForget();
+        }
+    }
+
+    /// <summary>
+    /// Zero-based index into the three sort modes (Era=0, Alphabetical=1, WishlistScore=2),
+    /// for binding to a ComboBox.SelectedIndex.
+    /// </summary>
+    public int SortModeIndex
+    {
+        get => sortMode switch { RelicSortMode.Era => 0, RelicSortMode.Alphabetical => 1, _ => 2 };
+        set => SortMode = value switch { 0 => RelicSortMode.Era, 1 => RelicSortMode.Alphabetical, _ => RelicSortMode.WishlistScore };
+    }
+
+    /// <summary>
+    /// Whether the active sort is descending. Toggling triggers a view rebuild and persists.
+    /// </summary>
+    public bool SortDescending
+    {
+        get => sortDescending;
+        set
+        {
+            if (sortDescending == value) return;
+            sortDescending = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SortDirectionLabel));
+            RebuildViews();
+            SaveSortSettingsAsync?.Invoke().SafeFireAndForget();
+        }
+    }
+
+    /// <summary>Human-readable direction label for the sort direction toggle button.</summary>
+    public string SortDirectionLabel => sortDescending ? "Descending" : "Ascending";
+
+    /// <summary>
+    /// Restores persisted sort settings at startup without triggering the default-direction
+    /// logic that fires on user-initiated mode changes.
+    /// </summary>
+    public void LoadSortSettings(RelicSortMode mode, bool descending)
+    {
+        sortMode = mode;
+        sortDescending = descending;
+        OnPropertyChanged(nameof(SortMode));
+        OnPropertyChanged(nameof(SortModeIndex));
+        OnPropertyChanged(nameof(SortDescending));
+        OnPropertyChanged(nameof(SortDirectionLabel));
+        if (allEntries.Count > 0)
+            RebuildViews();
+    }
+
     public async Task ReloadAsync()
     {
         var token = reloadGate.Begin();
@@ -259,17 +379,63 @@ public sealed class WishlistRelicsViewModel : ObservableObject
 
     private void RebuildViews()
     {
-        // Same filtered/ordered relic set feeds every view mode, so the modes stay
-        // consistent (order comes from the reader: era Lith→Meso→Neo→Axi, then name).
+        // Same filtered/sorted relic set feeds every view mode, so the modes stay
+        // consistent. Reader guarantees grouping contiguity (display_name ORDER BY) and
+        // within-relic reward order (tier + source_order); ViewModel owns relic-level ordering.
         var visible = (showVaulted
             ? allEntries
             : allEntries.Where(e => !e.IsVaulted)).ToList();
 
-        RebuildCards(visible);
-        RebuildTableRows(visible);
+        var sorted = ApplySort(visible);
+
+        RebuildCards(sorted);
+        RebuildTableRows(sorted);
 
         IsEmpty = Cards.Count == 0;
     }
+
+    private IReadOnlyList<WishlistRelicEntry> ApplySort(IReadOnlyList<WishlistRelicEntry> entries)
+    {
+        return sortMode switch
+        {
+            RelicSortMode.Alphabetical => sortDescending
+                ? [.. entries.OrderByDescending(e => e.DisplayName)]
+                : [.. entries.OrderBy(e => e.DisplayName)],
+
+            RelicSortMode.WishlistScore => sortDescending
+                ? [.. entries
+                    .OrderByDescending(ComputeWishlistScore)
+                    .ThenByDescending(e => EraRank(e.Era))
+                    .ThenBy(e => e.DisplayName)]
+                : [.. entries
+                    .OrderBy(ComputeWishlistScore)
+                    .ThenBy(e => EraRank(e.Era))
+                    .ThenBy(e => e.DisplayName)],
+
+            // Era (default)
+            _ => sortDescending
+                ? [.. entries.OrderByDescending(e => EraRank(e.Era)).ThenBy(e => e.DisplayName)]
+                : [.. entries.OrderBy(e => EraRank(e.Era)).ThenBy(e => e.DisplayName)],
+        };
+    }
+
+    private static int EraRank(string era) => era switch
+    {
+        "Lith" => 1,
+        "Meso" => 2,
+        "Neo" => 3,
+        "Axi" => 4,
+        _ => 99
+    };
+
+    private static int ComputeWishlistScore(WishlistRelicEntry entry) =>
+        entry.Rewards.Where(r => r.IsWishlisted).Sum(r => r.RewardTier switch
+        {
+            "Common" => 3,
+            "Uncommon" => 4,
+            "Rare" => 5,
+            _ => 0
+        });
 
     private void RebuildCards(IReadOnlyList<WishlistRelicEntry> visible)
     {

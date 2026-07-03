@@ -78,7 +78,9 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 Orientation: file.Orientation ?? UserSettings.Default.Orientation,
                 SideBySideRelicsWidth: file.SideBySideRelicsWidth > 0 ? file.SideBySideRelicsWidth : null,
                 RelicCardWidthPx: file.RelicCardWidthPx > 0 ? file.RelicCardWidthPx : UserSettings.Default.RelicCardWidthPx,
-                ViewMode: file.ViewMode ?? UserSettings.Default.ViewMode);
+                ViewMode: file.ViewMode ?? UserSettings.Default.ViewMode,
+                SortMode: file.SortMode ?? UserSettings.Default.SortMode,
+                SortDescending: file.SortDescending ?? UserSettings.Default.SortDescending);
         }
         catch (JsonException)
         {
@@ -102,7 +104,9 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.Orientation,
             settings.SideBySideRelicsWidth,
             settings.RelicCardWidthPx,
-            settings.ViewMode);
+            settings.ViewMode,
+            settings.SortMode,
+            settings.SortDescending);
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -167,7 +171,10 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         double? SideBySideRelicsWidth = null,
         double RelicCardWidthPx = 0,
         [property: JsonConverter(typeof(JsonStringEnumConverter))]
-        RelicViewMode? ViewMode = null);
+        RelicViewMode? ViewMode = null,
+        [property: JsonConverter(typeof(JsonStringEnumConverter))]
+        RelicSortMode? SortMode = null,
+        bool? SortDescending = null);
 
     private sealed record RecruitingMessageTemplateFile(
         string? Pattern,

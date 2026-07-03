@@ -202,6 +202,57 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
+    public async Task LoadAsync_WhenFileAbsent_DefaultsToEraSortModeAscending()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var settings = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(settings.SortMode, Is.EqualTo(RelicSortMode.Era));
+            Assert.That(settings.SortDescending, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsSortModeAndDirection()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        await store.SaveAsync(UserSettings.Default with
+        {
+            SortMode = RelicSortMode.WishlistScore,
+            SortDescending = true,
+        });
+        var loaded = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.SortMode, Is.EqualTo(RelicSortMode.WishlistScore));
+            Assert.That(loaded.SortDescending, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenSortFieldsMissingFromFile_DefaultsToEraAscending()
+    {
+        // Simulate a settings file written by an older version that lacks SortMode/SortDescending.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.SortMode, Is.EqualTo(RelicSortMode.Era));
+            Assert.That(loaded.SortDescending, Is.False);
+        });
+    }
+
+    [Test]
     public async Task AsDropTableSourceSettingsStore_LoadAsync_ReturnsSourceUrl()
     {
         var store = new LocalUserSettingsStore(tempDir);

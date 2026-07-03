@@ -20,7 +20,6 @@ LEFT JOIN wishlist_items wi
     ON wi.part_normalized_name = ri.normalized_name
     AND wi.wishlist_id = @wishlist_id
 ORDER BY
-    CASE r.era WHEN 'Lith' THEN 1 WHEN 'Meso' THEN 2 WHEN 'Neo' THEN 3 WHEN 'Axi' THEN 4 END,
     r.display_name,
     CASE rr.reward_tier WHEN 'Common' THEN 1 WHEN 'Uncommon' THEN 2 WHEN 'Rare' THEN 3 ELSE 4 END,
     rr.source_order

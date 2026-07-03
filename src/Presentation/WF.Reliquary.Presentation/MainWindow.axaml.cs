@@ -211,6 +211,16 @@ public sealed partial class MainWindow : Window
         shell.SideBySideRelicsWidth = initialSettings.SideBySideRelicsWidth;
         shell.RelicCardWidth = initialRelicCardWidth;
         wishlistRelicsVm.ViewMode = initialSettings.ViewMode;
+        wishlistRelicsVm.LoadSortSettings(initialSettings.SortMode, initialSettings.SortDescending);
+        wishlistRelicsVm.SaveSortSettingsAsync = async () =>
+        {
+            var current = await userSettingsStore.LoadAsync();
+            await userSettingsStore.SaveAsync(current with
+            {
+                SortMode = wishlistRelicsVm.SortMode,
+                SortDescending = wishlistRelicsVm.SortDescending,
+            });
+        };
 
         DataContext = shell;
         _ = shell.InitializeAsync();
