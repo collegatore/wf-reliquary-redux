@@ -2,11 +2,13 @@
 
 ## Project Description
 
-WF Reliquary Redux is a companion app for glorious [Warframe](https://www.warframe.com) grinders, specifically aimed at Relics and Primes. In the good old days, when there were like 10 Prime warframes and a couple dozen weapons, it was manageable. When it tripled, it became problematic. When DE started to drop a new batch every three months... Well, it's not funny anymore. 
+Hey, Dreamers.
 
-As you probably know, DE, in their generosity, gives away the official drop tables for everything. I've seen a dozen tools that help players to navigate these tables, but none has been as helpful and comfortable as [Warframe Reliquary](https://wf.xuerian.net/), long live the author of the original idea. It had been very reliable when I first discovered the site, but as time passed, it started to lag on new item updates. Then it went off for a couple of months, and this repeated. I have no idea if it will be available when you read this text. So I decided to make a remake, just this time it has to be as independent from the developer as possible. That's why it is a desktop app, and everyone can have their own copy. It gets the raw tables and parses them locally, so the DE site remains the only external source of truth. And unless DE decides to change the format significantly, it should be highly resilient in the face of future releases.
+WF Reliquary Redux is a companion app for [Warframe](https://www.warframe.com) grinders, specifically aimed at Relics and Primes. In the good old days, when there were like 10 Prime warframes and a couple dozen weapons, it was manageable. When it tripled, it became problematic. When DE started to drop a new batch every three months... Well, it's not funny anymore. 
 
-The drill is simple: you want some gear, the app gives you a rundown on missions where you can get the corresponding relics. It supports wishlists as did the original site, but I personally never needed more than one. It supports player profiles for those who manage to actually keep more than one game account (I give you my deepest respects). It would store all drop table versions you encounter on your journey (for sentimental reasons), but everything not downloaded locally will be lost to time, like tears in rain.
+As you probably know, DE, in their generosity, gives away the official drop tables for everything. I've seen a dozen tools that help players to navigate these tables, but none has been as helpful and comfortable as [Warframe Reliquary](https://wf.xuerian.net/), long live the author of the original idea. It had been very reliable when I first discovered the site, but as time passed, it started to lag on new item updates. Then it went off for a couple of months, and this repeated. I have no idea if it will be available when you read this text. So I decided to make a remake, just this time it has to be as independent from the developer as possible. That's why it is a desktop app, and everyone can have their own copy. It gets the raw tables and parses them locally, so the DE site remains the only external dependency. And unless DE decides to change the format significantly, it should be highly resilient in the face of future releases.
+
+The drill is simple: you want some gear, the app gives you a rundown on missions where you can get the corresponding relics. It supports wishlists as did the original site, but I personally never needed more than one. It supports player profiles for those who manage to actually keep more than one game account (I give them my deepest respects). It would store all drop table versions you encounter on your journey (for sentimental reasons), but everything not downloaded locally will be lost to time, like tears in rain.
 
 ## Technical overview
 
@@ -22,6 +24,18 @@ The application can download and store the official drop table HTML files. The d
 https://warframe-web-assets.nyc3.cdn.digitaloceanspaces.com/uploads/cms/hnfvc0o3jnfvc873njb03enrf56.html
 ```
 
-Edit the source URL in the application settings UI to override the default if it changes, or if you don't trust the anonymous internet citizen (there's no auto-download and auto-import here either). The configured URL is stored as the application-level user settings file in the current user's local application data folder. Downloaded table data is stored as raw HTML content within the app database and can be exported to a file for cross-checking (or if anyone wants to peek at their history).
+Edit the source URL in the application settings UI to override the default if it changes, or if you don't trust the anonymous internet citizen (there's no auto-download and auto-import here either). The configured URL is stored in the user settings file, downloaded table data is stored as raw HTML content within the app database and can be exported to a file for cross-checking (or if anyone wants to peek at their history).
 
-Use **Import stored source** in the Drop Tables UI to parse the downloaded HTML into the queryable tables. The import action does not download or refresh the source file, so when a new version comes out, press the download button.
+## Initial Setup
+
+Open `File -> Drop Tables` to get the tables data. 
+
+`Download from URL` fetches raw data from CDN source. It gets timestamped, which is the main sign of whether you have the latest version or not. `Read from file` is a more paranoid version, but it also can be used when you exported the history of downloads into a folder and then want it back.
+
+`Import stored source` parses the raw HTML into the queryable database tables. 
+
+The import action does not download or refresh the source file, and vice versa - download dows not import anything. Therefore, when a new version comes out, repeat both steps. I intentionally made this a manual action to ~~reduce the carbon footprint~~ avoid anxiety of "my app does something without my command" (we have enough of that already on our PCs I guess).
+
+## App Data
+
+The app stores its configs in `%LOCALAPPDATA%\WF Reliquary Redux\`, I think it should be available on almost every gaming PC without UAC elevation and other mess.
