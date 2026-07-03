@@ -1,0 +1,160 @@
+<UserControl
+    x:Class="WF.Reliquary.Presentation.RelicsPanelView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation">
+
+  <!-- The Verbatim card DataTemplate is application-scoped (see App.axaml) so the
+       rewards modal can also host it via a plain ContentControl. -->
+
+  <!-- Compact card template — explicitly keyed (WishlistRelicCardViewModel's
+       implicit template, app-scoped, is the Verbatim one) and set as the
+       ItemTemplate on the Compact ItemsControl below. Keeps the card border,
+       clipped header + ⋮ flyout, width scaling, and vaulted styling; the body
+       is a flat list of reward lines with a bold tier letter marker in place
+       of tier group headings. -->
+  <UserControl.Resources>
+    <DataTemplate x:Key="CompactRelicCardTemplate" DataType="{x:Type local:WishlistRelicCardViewModel}">
+      <Border
+          Margin="8"
+          Padding="12"
+          BorderBrush="Gray"
+          BorderThickness="1"
+          CornerRadius="4"
+          Width="{DynamicResource RelicCardWidth}"
+          Classes.vaulted="{Binding IsVaulted}">
+        <StackPanel>
+          <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+            <TextBlock
+                Grid.Column="0"
+                FontWeight="SemiBold"
+                Text="{Binding CompactRelicName}"
+                TextWrapping="Wrap"
+                VerticalAlignment="Center" />
+            <Button
+                Grid.Column="1"
+                Margin="4,0,0,0"
+                Padding="6,2"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderThickness="0"
+                FontWeight="Bold"
+                Content="⋮">
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                  <MenuItem
+                      Header="Compose LFG message…"
+                      Command="{Binding ComposeCommand}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+          </Grid>
+          <!-- Flat reward lines (no per-tier label rows). Each line leads with a
+               bold tier letter marker instead of a group heading. -->
+          <ItemsControl ItemsSource="{Binding Rewards}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type local:WishlistRelicRewardViewModel}">
+                <TextBlock Margin="0,0,0,2" TextWrapping="Wrap" Classes.dimmed="{Binding IsDimmed}">
+                  <Run Text="{Binding TierLetter}" FontWeight="Bold" />
+                  <Run Text=" " />
+                  <Run Text="{Binding CompactName}" />
+                </TextBlock>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <!-- Control bar (Auto) above the relic-cards scroll (*). -->
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- Relics control bar -->
+    <Border
+        Grid.Row="0"
+        Margin="8,0,8,8"
+        Padding="12,8"
+        Background="#1A808080"
+        CornerRadius="4">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Relics:" VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <CheckBox IsChecked="{Binding WishlistRelics.ShowVaulted}" VerticalAlignment="Center" />
+          <TextBlock Text="Show vaulted" VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- Show all rewards applies only to the card modes; hidden (with its
+             divider) while Table mode is active. Its checked state is retained. -->
+        <Border
+            Width="1"
+            Background="Gray"
+            Margin="4,0"
+            VerticalAlignment="Stretch"
+            IsVisible="{Binding !WishlistRelics.IsViewModeTable}" />
+        <StackPanel
+            Orientation="Horizontal"
+            Spacing="4"
+            VerticalAlignment="Center"
+            IsVisible="{Binding !WishlistRelics.IsViewModeTable}">
+          <CheckBox IsChecked="{Binding WishlistRelics.ShowAllRewards}" VerticalAlignment="Center" />
+          <TextBlock Text="Show all rewards" VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- In-content busy indicator for the Relics/Missions reload. -->
+        <TextBlock
+            Text="Updating…"
+            Opacity="0.7"
+            FontStyle="Italic"
+            VerticalAlignment="Center"
+            IsVisible="{Binding WishlistRelics.IsBusy}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Row 1 hosts the per-view-mode subtrees as siblings, toggled by IsViewMode*.
+         The two card modes share one ScrollViewer (they scroll their WrapPanel); the
+         Table mode's TreeDataGrid scrolls itself, so it sits beside the ScrollViewer
+         rather than inside it. -->
+    <Panel Grid.Row="1">
+
+      <!-- Card modes (Verbatim / Compact) -->
+      <ScrollViewer IsVisible="{Binding !WishlistRelics.IsViewModeTable}">
+        <StackPanel>
+          <TextBlock
+              Margin="8,16"
+              IsVisible="{Binding WishlistRelics.IsEmpty}"
+              Text="Add items to your wishlist to see relics here." />
+
+          <!-- Verbatim mode -->
+          <ItemsControl
+              ItemsSource="{Binding WishlistRelics.Cards}"
+              IsVisible="{Binding WishlistRelics.IsViewModeVerbatim}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+          </ItemsControl>
+
+          <!-- Compact mode -->
+          <ItemsControl
+              ItemsSource="{Binding WishlistRelics.Cards}"
+              ItemTemplate="{StaticResource CompactRelicCardTemplate}"
+              IsVisible="{Binding WishlistRelics.IsViewModeCompact}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Table mode: source (columns + hierarchy) is built in code-behind. -->
+      <TreeDataGrid
+          x:Name="RelicsTable"
+          Margin="8,0"
+          ShowColumnHeaders="False"
+          IsVisible="{Binding WishlistRelics.IsViewModeTable}" />
+    </Panel>
+
+  </Grid>
+</UserControl>

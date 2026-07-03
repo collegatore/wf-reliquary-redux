@@ -131,6 +131,8 @@ public sealed partial class MainWindow : Window
                 });
         };
 
+        wishlistRelicsVm.OpenRewardsModal = card => RewardsModalWindow.ShowAsync(this, card);
+
         var wishlistFarmingVm = new WishlistFarmingMissionsViewModel(
             ReliquaryServiceFactory.CreateWishlistFarmingMissionsReader(),
             wishlistStore);
@@ -203,6 +205,7 @@ public sealed partial class MainWindow : Window
         shell.Orientation = initialSettings.Orientation;
         shell.SideBySideRelicsWidth = initialSettings.SideBySideRelicsWidth;
         shell.RelicCardWidth = initialRelicCardWidth;
+        wishlistRelicsVm.ViewMode = initialSettings.ViewMode;
 
         DataContext = shell;
         _ = shell.InitializeAsync();

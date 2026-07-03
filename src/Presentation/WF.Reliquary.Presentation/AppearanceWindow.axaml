@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:WF.Reliquary.Presentation"
     Width="498"
-    Height="225"
+    Height="310"
     CanResize="False"
     FontSize="{StaticResource FontSizeSmall}"
     Title="Appearance">
@@ -68,6 +68,40 @@
       </StackPanel>
     </StackPanel>
 
+    <!-- Relics &amp; Missions layout -->
+    <StackPanel Spacing="8">
+      <TextBlock Foreground="Gray" Text="Relics &amp; Missions layout" />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <RadioButton
+            Content="Stacked"
+            IsChecked="{Binding SelectedOrientation, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Stacked}"
+            GroupName="RmLayout" />
+        <RadioButton
+            Content="Side by side"
+            IsChecked="{Binding SelectedOrientation, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=SideBySide}"
+            GroupName="RmLayout" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Relic view mode -->
+    <StackPanel Spacing="8">
+      <TextBlock Foreground="Gray" Text="Relic view mode" />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <RadioButton
+            Content="Verbatim"
+            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Verbatim}"
+            GroupName="RelicViewMode" />
+        <RadioButton
+            Content="Compact"
+            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Compact}"
+            GroupName="RelicViewMode" />
+        <RadioButton
+            Content="Table"
+            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Table}"
+            GroupName="RelicViewMode" />
+      </StackPanel>
+    </StackPanel>
+
     <!-- Relic card width -->
     <StackPanel Spacing="8">
       <TextBlock Foreground="Gray" Text="Relic card width" />
@@ -83,7 +117,7 @@
             MinHeight="0"
             Height="24"
             Padding="8,2"
-            VerticalAlignment="Center"            
+            VerticalAlignment="Center"
             VerticalContentAlignment="Center">
           <NumericUpDown.Resources>
             <!-- Shrinks the inner TextBox block background -->
@@ -92,21 +126,6 @@
             <x:Double x:Key="ButtonSpinnerMinHeight">0</x:Double>
           </NumericUpDown.Resources>
         </NumericUpDown>
-      </StackPanel>
-    </StackPanel>
-
-    <!-- Relics &amp; Missions layout -->
-    <StackPanel Spacing="8">
-      <TextBlock Foreground="Gray" Text="Relics &amp; Missions layout" />
-      <StackPanel Orientation="Horizontal" Spacing="16">
-        <RadioButton
-            Content="Stacked"
-            IsChecked="{Binding SelectedOrientation, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Stacked}"
-            GroupName="RmLayout" />
-        <RadioButton
-            Content="Side by side"
-            IsChecked="{Binding SelectedOrientation, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=SideBySide}"
-            GroupName="RmLayout" />
       </StackPanel>
     </StackPanel>
 

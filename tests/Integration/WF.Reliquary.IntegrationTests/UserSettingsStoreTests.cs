@@ -132,6 +132,41 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
+    public async Task LoadAsync_WhenFileAbsent_DefaultsToCompactViewMode()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var settings = await store.LoadAsync();
+
+        Assert.That(settings.ViewMode, Is.EqualTo(RelicViewMode.Compact));
+    }
+
+    [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsViewMode()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        await store.SaveAsync(UserSettings.Default with { ViewMode = RelicViewMode.Table });
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.ViewMode, Is.EqualTo(RelicViewMode.Table));
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenViewModeMissingFromFile_DefaultsToCompact()
+    {
+        // Simulate a settings file written by an older version that lacks ViewMode.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.ViewMode, Is.EqualTo(RelicViewMode.Compact));
+    }
+
+    [Test]
     public async Task LoadAsync_WhenFileAbsent_DefaultsRelicCardWidthTo300()
     {
         var store = new LocalUserSettingsStore(tempDir);

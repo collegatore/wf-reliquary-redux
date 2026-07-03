@@ -1,0 +1,43 @@
+<Window
+    x:Class="WF.Reliquary.Presentation.RewardsModalWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    SizeToContent="WidthAndHeight"
+    CanResize="False"
+    ShowInTaskbar="False"
+    Title="Relic rewards"
+    WindowStartupLocation="CenterOwner">
+
+  <Window.Styles>
+    <!-- The tier-bar, tier-label, vaulted, and dimmed styles are defined in
+         MainWindow.axaml.Window.Styles, which is scoped to the MainWindow visual
+         tree and does NOT propagate to this separate Window. They must be restated
+         here; the brushes come from App.axaml Application.Resources (globally
+         available) so DynamicResource references resolve correctly. -->
+    <Style Selector="Border.tier-common">
+      <Setter Property="BorderBrush" Value="{DynamicResource TierCommonBrush}" />
+    </Style>
+    <Style Selector="Border.tier-uncommon">
+      <Setter Property="BorderBrush" Value="{DynamicResource TierUncommonBrush}" />
+    </Style>
+    <Style Selector="Border.tier-rare">
+      <Setter Property="BorderBrush" Value="{DynamicResource TierRareBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tier-label">
+      <Setter Property="Foreground" Value="{DynamicResource TierLabelBrush}" />
+      <Setter Property="FontWeight" Value="DemiBold" />
+    </Style>
+    <Style Selector="Border.vaulted">
+      <Setter Property="Opacity" Value="0.45" />
+    </Style>
+    <Style Selector="TextBlock.dimmed">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+  </Window.Styles>
+
+  <!-- Card is rendered via the app-scoped Verbatim DataTemplate (App.axaml
+       Application.DataTemplates), resolved implicitly from Content's type. -->
+  <ContentControl
+      Margin="10"
+      Content="{Binding Card}" />
+</Window>

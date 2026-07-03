@@ -19,6 +19,10 @@
     <PackageReference Include="Avalonia.Desktop" Version="12.0.5" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.5" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.5" />
+    <!-- Table view mode for the relics panel. Community fork of Avalonia's TreeDataGrid:
+         the official 12.x package became a paid Avalonia Accelerate product, so this
+         free fork (pre-commercial source, pinned to the app's Avalonia 12.0.x) is used. -->
+    <PackageReference Include="Caly.Avalonia.Controls.TreeDataGrid" Version="12.0.1.3" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="AsyncAwaitBestPractices" Version="10.0.0" />
   </ItemGroup>

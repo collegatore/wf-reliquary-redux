@@ -14,7 +14,8 @@ public sealed record UserSettings(
     int? WindowY = null,
     RelicsMissionsOrientation Orientation = RelicsMissionsOrientation.Stacked,
     double? SideBySideRelicsWidth = null,
-    double RelicCardWidthPx = 300.0)
+    double RelicCardWidthPx = 300.0,
+    RelicViewMode ViewMode = RelicViewMode.Compact)
 {
     public static UserSettings Default { get; } = new(
         SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl),

@@ -76,7 +76,8 @@ public sealed partial class RelicsMissionsView : UserControl
     {
         if (_shell is null) return;
 
-        var height = RelicsMissionsGrid.RowDefinitions[1].ActualHeight;
+        // Row 0 is the relics region (shared panel + missions separator).
+        var height = RelicsMissionsGrid.RowDefinitions[0].ActualHeight;
         _shell.RelicsPanelHeight = height > 0 ? height : null;
     }
 
@@ -129,17 +130,18 @@ public sealed partial class RelicsMissionsView : UserControl
     private void SetRelicsRowHeight(double relicsHeight)
     {
         var grid = RelicsMissionsGrid;
-        grid.RowDefinitions[1].Height = new GridLength(relicsHeight, GridUnitType.Pixel);
-        // Row 3 stays as 1* so the missions panel fills the remaining space.
-        grid.RowDefinitions[3].Height = new GridLength(1, GridUnitType.Star);
+        // Row 0 is the relics region; Row 2 (missions) stays 1* to fill the rest.
+        grid.RowDefinitions[0].Height = new GridLength(relicsHeight, GridUnitType.Pixel);
+        grid.RowDefinitions[2].Height = new GridLength(1, GridUnitType.Star);
     }
 
     private double AvailableRelicsHeight()
     {
         var grid = RelicsMissionsGrid;
-        return grid.Bounds.Height
-            - grid.RowDefinitions[0].ActualHeight
-            - grid.RowDefinitions[2].ActualHeight;
+        // Only the splitter (Row 1) is a fixed row; Row 0 (relics region) and Row 2
+        // (missions) split the remaining height. The control bar is now inside the
+        // relics region, so it is no longer subtracted separately.
+        return grid.Bounds.Height - grid.RowDefinitions[1].ActualHeight;
     }
 
     private void OnSideBySideSplitterDragCompleted(object? sender, VectorEventArgs e)
@@ -172,20 +174,26 @@ public sealed partial class RelicsMissionsView : UserControl
     }
 
     /// <summary>
-    /// Sets the minimum allowed height for the relics row to the tallest card
-    /// currently visible in the relics panel. Re-evaluated after ShowAllRewards
-    /// toggles and on every grid resize.
+    /// Sets the minimum allowed height for the relics region so at least one full
+    /// card stays visible in the scroll. Re-evaluated after ShowAllRewards toggles
+    /// and on every grid resize.
     /// </summary>
     private void UpdateRelicsMinHeight()
     {
         if (!_splitterInitialized) return;
 
-        // Find the WrapPanel that holds the relic cards.
-        var wrapPanel = RelicsScrollViewer
+        // The relics scroll lives inside the shared RelicsPanelView (a separate
+        // namescope), so reach it through the visual tree of the stacked instance.
+        var scroll = StackedRelicsPanel
+            .GetVisualDescendants()
+            .OfType<ScrollViewer>()
+            .FirstOrDefault();
+        if (scroll is null) return;
+
+        var wrapPanel = scroll
             .GetVisualDescendants()
             .OfType<WrapPanel>()
             .FirstOrDefault();
-
         if (wrapPanel is null) return;
 
         var maxCardHeight = wrapPanel.Children
@@ -195,11 +203,13 @@ public sealed partial class RelicsMissionsView : UserControl
             .DefaultIfEmpty(0)
             .Max();
 
-        if (maxCardHeight > 0)
-        {
-            // Row 1 is the relics scroller only — the control bar lives in row 0
-            // and must not be included in this minimum.
-            RelicsMissionsGrid.RowDefinitions[1].MinHeight = maxCardHeight + 8;
-        }
+        if (maxCardHeight <= 0) return;
+
+        // Row 0 now holds the whole relics region (control bar + scroll + missions
+        // separator). Add the region's non-scroll overhead so the minimum leaves at
+        // least one full card of scroll, not one card total.
+        var region = RelicsMissionsGrid.RowDefinitions[0];
+        var overhead = Math.Max(0, region.ActualHeight - scroll.Bounds.Height);
+        region.MinHeight = maxCardHeight + 8 + overhead;
     }
 }

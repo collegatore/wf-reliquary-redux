@@ -77,7 +77,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 WindowY: file.WindowY,
                 Orientation: file.Orientation ?? RelicsMissionsOrientation.Stacked,
                 SideBySideRelicsWidth: file.SideBySideRelicsWidth > 0 ? file.SideBySideRelicsWidth : null,
-                RelicCardWidthPx: file.RelicCardWidthPx > 0 ? file.RelicCardWidthPx : UserSettings.Default.RelicCardWidthPx);
+                RelicCardWidthPx: file.RelicCardWidthPx > 0 ? file.RelicCardWidthPx : UserSettings.Default.RelicCardWidthPx,
+                ViewMode: file.ViewMode ?? RelicViewMode.Compact);
         }
         catch (JsonException)
         {
@@ -100,7 +101,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.WindowY,
             settings.Orientation,
             settings.SideBySideRelicsWidth,
-            settings.RelicCardWidthPx);
+            settings.RelicCardWidthPx,
+            settings.ViewMode);
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -163,7 +165,9 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         [property: JsonConverter(typeof(JsonStringEnumConverter))]
         RelicsMissionsOrientation? Orientation = null,
         double? SideBySideRelicsWidth = null,
-        double RelicCardWidthPx = 0);
+        double RelicCardWidthPx = 0,
+        [property: JsonConverter(typeof(JsonStringEnumConverter))]
+        RelicViewMode? ViewMode = null);
 
     private sealed record LfgTemplateFile(
         string? Pattern,

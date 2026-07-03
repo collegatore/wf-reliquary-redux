@@ -1,9 +1,96 @@
 <Application
     x:Class="WF.Reliquary.Presentation.App"
     xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       VERBATIM RELIC CARD TEMPLATE — application-scoped (not just the relics
+       panel's) so the rewards modal (Table mode's ⊞ pictogram) can host the
+       same card via a plain ContentControl with no duplicated markup.
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <Application.DataTemplates>
+    <DataTemplate DataType="{x:Type local:WishlistRelicCardViewModel}">
+      <Border
+          Margin="8"
+          Padding="12"
+          BorderBrush="Gray"
+          BorderThickness="1"
+          CornerRadius="4"
+          Width="{DynamicResource RelicCardWidth}"
+          Classes.vaulted="{Binding IsVaulted}">
+        <StackPanel>
+          <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+            <TextBlock
+                Grid.Column="0"
+                FontWeight="SemiBold"
+                Text="{Binding RelicName}"
+                TextWrapping="Wrap"
+                VerticalAlignment="Center" />
+            <Button
+                Grid.Column="1"
+                Margin="4,0,0,0"
+                Padding="6,2"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderThickness="0"
+                FontWeight="Bold"
+                Content="⋮">
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                  <MenuItem
+                      Header="Compose LFG message…"
+                      Command="{Binding ComposeCommand}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding TierGroups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type local:WishlistRelicTierGroupViewModel}">
+                <!-- Per-tier accent bar in the left gutter; color encodes the
+                     tier and the bar spans the whole group (label + wrapped
+                     reward lines), replacing per-group separators. -->
+                <Border
+                    Margin="0,0,0,8"
+                    Padding="6,0,0,0"
+                    BorderThickness="3,0,0,0"
+                    Classes.tier-common="{Binding IsCommon}"
+                    Classes.tier-uncommon="{Binding IsUncommon}"
+                    Classes.tier-rare="{Binding IsRare}">
+                  <StackPanel>
+                    <TextBlock
+                        Margin="0,0,0,2"
+                        Classes="tier-label"
+                        Text="{Binding TierName}" />
+                    <!-- Reward names indented beneath the tier label so the
+                         label stands out and the rewards read as its list. -->
+                    <ItemsControl ItemsSource="{Binding Rewards}" Margin="12,0,0,0">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:WishlistRelicRewardViewModel}">
+                          <TextBlock
+                              Text="{Binding RewardName}"
+                              TextWrapping="Wrap"
+                              Classes.dimmed="{Binding IsDimmed}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+  </Application.DataTemplates>
+
   <Application.Styles>
     <FluentTheme />
+    <!-- TreeDataGrid control theme (Table relic view mode). Must follow FluentTheme.
+         The community fork keeps the original assembly name, so the avares path is
+         unchanged from upstream. -->
+    <StyleInclude Source="avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml" />
     <Style Selector="TextBlock">
       <Setter Property="FontSize" Value="{DynamicResource ContentFontSize}" />
     </Style>
@@ -44,5 +131,10 @@
     <SolidColorBrush x:Key="OwnedAccentBrush" Color="#5E9E6E" />
     <!-- Subtle wash applied to a card selected for group operations. -->
     <SolidColorBrush x:Key="CardSelectedBrush" Color="#332D7DC4" />
+
+    <!-- Highlighter-style wash behind wishlisted reward text in the Table mode
+         rewards modal, so the wishlisted reward stands out against the rest of
+         the (otherwise dimmed) reward list. -->
+    <SolidColorBrush x:Key="WishlistHighlightBrush" Color="#40FFD54F" />
   </Application.Resources>
 </Application>

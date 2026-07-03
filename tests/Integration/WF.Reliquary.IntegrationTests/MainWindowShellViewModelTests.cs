@@ -126,6 +126,20 @@ public sealed class MainWindowShellViewModelTests
         Assert.That(shell.RelicCardWidth, Is.EqualTo(450.0));
     }
 
+    [Test]
+    public void AppearanceViewModeChange_PropagatesToWishlistRelics()
+    {
+        // The shell wires appearance.ApplyViewMode so the Appearance window's relic
+        // view mode selector takes effect immediately on the Relics/Missions tab.
+        var appearance = new AppearanceViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
+        var shell = CreateShell(appearance: appearance);
+
+        appearance.SelectedViewMode = RelicViewMode.Table;
+
+        Assert.That(shell.WishlistRelics.ViewMode, Is.EqualTo(RelicViewMode.Table));
+        Assert.That(shell.WishlistRelics.IsViewModeTable, Is.True);
+    }
+
     private static MainWindowShellViewModel CreateShell(
         string? importedVersion = null,
         SettingsViewModel? settings = null,

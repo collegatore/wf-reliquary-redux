@@ -78,6 +78,39 @@ public sealed class AppearanceViewModelTests
     }
 
     [Test]
+    public void SelectedViewMode_Change_InvokesApplyViewMode()
+    {
+        var vm = CreateViewModel();
+        RelicViewMode? applied = null;
+        vm.ApplyViewMode = m => applied = m;
+
+        vm.SelectedViewMode = RelicViewMode.Table;
+
+        Assert.That(applied, Is.EqualTo(RelicViewMode.Table));
+    }
+
+    [Test]
+    public async Task SelectedViewMode_Change_AutoSavesToStore()
+    {
+        var store = new Mock<IUserSettingsStore>();
+        UserSettings? saved = null;
+        store
+            .Setup(s => s.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultSettings);
+        store
+            .Setup(s => s.SaveAsync(It.IsAny<UserSettings>(), It.IsAny<CancellationToken>()))
+            .Callback<UserSettings, CancellationToken>((s, _) => saved = s)
+            .Returns(Task.CompletedTask);
+
+        var vm = CreateViewModel(store.Object);
+
+        vm.SelectedViewMode = RelicViewMode.Table;
+        await SettleAsync();
+
+        Assert.That(saved?.ViewMode, Is.EqualTo(RelicViewMode.Table));
+    }
+
+    [Test]
     public async Task RelicCardWidthPx_Change_AutoSavesToStore()
     {
         var store = new Mock<IUserSettingsStore>();

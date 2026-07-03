@@ -139,7 +139,7 @@ Each relic card on the Relics and Missions tab has a `⋮` overflow menu (same p
 
 ## UI Design
 
-- **Card display** — the rationale behind the relic and farming-mission cards (the ~5–10s reward-match use case, verbatim names, tier accent bars, the light-theme palette, and font-scaled card widths) is documented in [card-display-design.md](card-display-design.md).
+- **Card display** — the rationale behind the relic and farming-mission cards, the three relic view modes (Verbatim / Compact / Table), the Compact word-clipping rule, the Table mode TreeDataGrid decision, tier accent bars, the light-theme palette, and font-scaled card widths, is documented in [card-display-design.md](card-display-design.md).
 
 ## UI Concurrency
 

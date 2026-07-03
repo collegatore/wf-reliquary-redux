@@ -16,6 +16,7 @@ public sealed class AppearanceViewModel : ObservableObject
     private double fontSizePt;          // sole font-size state; SelectedFontSize is derived
     private double relicCardWidthPx;    // base width at Medium font size
     private RelicsMissionsOrientation orientation;
+    private RelicViewMode viewMode;
 
     public AppearanceViewModel(IUserSettingsStore settingsStore, UserSettings initialSettings)
     {
@@ -24,6 +25,7 @@ public sealed class AppearanceViewModel : ObservableObject
         fontSizePt = initialSettings.FontSizePt;
         relicCardWidthPx = initialSettings.RelicCardWidthPx;
         orientation = initialSettings.Orientation;
+        viewMode = initialSettings.ViewMode;
     }
 
     // ── Delegates wired by the shell ────────────────────────────────────────
@@ -39,6 +41,12 @@ public sealed class AppearanceViewModel : ObservableObject
     /// so the side-by-side splitter's minimum width stays correct. Wired by the shell.
     /// </summary>
     public Action<double>? ApplyRelicCardWidth { get; set; }
+
+    /// <summary>
+    /// Applies the chosen relic view mode to the live shell (main window) so the
+    /// switch takes effect immediately, like orientation. Wired by the shell.
+    /// </summary>
+    public Action<RelicViewMode>? ApplyViewMode { get; set; }
 
     // ── Properties ─────────────────────────────────────────────────────────
 
@@ -130,6 +138,25 @@ public sealed class AppearanceViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// The active relic view mode. Applies live to the shell and auto-saves on
+    /// selection, like font size, relic card width, and orientation.
+    /// </summary>
+    public RelicViewMode SelectedViewMode
+    {
+        get => viewMode;
+        set
+        {
+            if (viewMode == value) return;
+
+            viewMode = value;
+            OnPropertyChanged();
+
+            ApplyViewMode?.Invoke(value);
+            _ = SaveViewModeNow();
+        }
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     private async Task SaveFontSizeNow()
@@ -148,6 +175,12 @@ public sealed class AppearanceViewModel : ObservableObject
     {
         var current = await settingsStore.LoadAsync();
         await settingsStore.SaveAsync(current with { RelicCardWidthPx = relicCardWidthPx });
+    }
+
+    private async Task SaveViewModeNow()
+    {
+        var current = await settingsStore.LoadAsync();
+        await settingsStore.SaveAsync(current with { ViewMode = viewMode });
     }
 
     /// <summary>
