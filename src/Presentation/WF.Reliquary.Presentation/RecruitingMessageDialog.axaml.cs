@@ -1,18 +1,18 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using WF.Reliquary.Application.Lfg;
+using WF.Reliquary.Application.RecruitingMessage;
 
 namespace WF.Reliquary.Presentation;
 
-public sealed partial class LfgMessageDialog : Window
+public sealed partial class RecruitingMessageDialog : Window
 {
     // Required by Avalonia's XAML loader.
-    public LfgMessageDialog() : this(LfgMessageTemplate.Default, string.Empty) { }
+    public RecruitingMessageDialog() : this(RecruitingMessageTemplate.Default, string.Empty) { }
 
-    private LfgMessageDialog(LfgMessageTemplate template, string relicName)
+    private RecruitingMessageDialog(RecruitingMessageTemplate template, string relicName)
     {
         InitializeComponent();
-        var vm = new LfgMessageDialogViewModel(template, relicName);
+        var vm = new RecruitingMessageDialogViewModel(template, relicName);
         DataContext = vm;
         CloseButton.Click += (_, _) => Close();
     }
@@ -23,12 +23,12 @@ public sealed partial class LfgMessageDialog : Window
     /// </summary>
     public static Task ShowAsync(
         Window owner,
-        LfgMessageTemplate template,
+        RecruitingMessageTemplate template,
         string relicName,
         Func<string, Task> copyToClipboard)
     {
-        var dialog = new LfgMessageDialog(template, relicName);
-        if (dialog.DataContext is LfgMessageDialogViewModel vm)
+        var dialog = new RecruitingMessageDialog(template, relicName);
+        if (dialog.DataContext is RecruitingMessageDialogViewModel vm)
             vm.CopyToClipboard = copyToClipboard;
 
         return dialog.ShowDialog(owner);

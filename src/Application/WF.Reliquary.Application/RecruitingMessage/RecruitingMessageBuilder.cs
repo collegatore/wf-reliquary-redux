@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
 
-namespace WF.Reliquary.Application.Lfg;
+namespace WF.Reliquary.Application.RecruitingMessage;
 
-public static partial class LfgMessageBuilder
+public static partial class RecruitingMessageBuilder
 {
     [GeneratedRegex(@"\{(\w+)\}")]
     private static partial Regex PlaceholderRegex();

@@ -33,7 +33,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
         ProfileViewModel profiles,
         SettingsViewModel settings,
         AppearanceViewModel appearance,
-        LfgTemplateEditorViewModel lfgEditor)
+        RecruitingMessageTemplateEditorViewModel recruitingMessageEditor)
     {
         DropTables = dropTables;
         PrimeGear = primeGear;
@@ -43,7 +43,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
         Profiles = profiles;
         Settings = settings;
         Appearance = appearance;
-        LfgEditor = lfgEditor;
+        RecruitingMessageEditor = recruitingMessageEditor;
 
         NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
         NavigateToDropTablesCommand = new RelayCommand(NavigateToDropTables);
@@ -120,7 +120,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
     public ProfileViewModel Profiles { get; }
     public SettingsViewModel Settings { get; }
     public AppearanceViewModel Appearance { get; }
-    public LfgTemplateEditorViewModel LfgEditor { get; }
+    public RecruitingMessageTemplateEditorViewModel RecruitingMessageEditor { get; }
 
     public ICommand NavigateToSettingsCommand { get; }
     public ICommand NavigateToDropTablesCommand { get; }
@@ -252,9 +252,9 @@ public sealed class MainWindowShellViewModel : ObservableObject
         RelicsPanelHeight = saved.RelicsPanelHeight;
         SideBySideRelicsWidth = saved.SideBySideRelicsWidth;
 
-        // The LFG template is persisted through the main Settings Save (no separate
-        // LFG Save button), so update the editor's saved baseline and clear its
+        // The Recruiting Chat message template is persisted through the main Settings Save
+        // (no separate Save button), so update the editor's saved baseline and clear its
         // dirty state — otherwise the leave-guard would still flag unsaved changes.
-        LfgEditor.NotifySaved(saved.LfgTemplate);
+        RecruitingMessageEditor.NotifySaved(saved.RecruitingMessageTemplate);
     }
 }

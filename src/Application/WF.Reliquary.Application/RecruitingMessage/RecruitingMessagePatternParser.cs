@@ -1,9 +1,9 @@
-namespace WF.Reliquary.Application.Lfg;
+namespace WF.Reliquary.Application.RecruitingMessage;
 
 /// <summary>
-/// Validates and reconciles LFG message patterns.
+/// Validates and reconciles Recruiting Chat message patterns.
 /// </summary>
-public static class LfgPatternParser
+public static class RecruitingMessagePatternParser
 {
     private static readonly HashSet<string> SystemPlaceholders =
         new(StringComparer.Ordinal) { "relic_name", "relic_reward" };
@@ -63,10 +63,10 @@ public static class LfgPatternParser
     /// current draft group → saved group → empty group. Groups for vanished placeholders are dropped.
     /// Returns the error message on validation failure, leaving groups unchanged.
     /// </summary>
-    public static (bool Ok, string? Error, IReadOnlyList<LfgOptionGroup> Groups) Reconcile(
+    public static (bool Ok, string? Error, IReadOnlyList<RecruitingMessageOptionGroup> Groups) Reconcile(
         string newPattern,
-        IReadOnlyList<LfgOptionGroup> currentGroups,
-        IReadOnlyList<LfgOptionGroup> savedGroups)
+        IReadOnlyList<RecruitingMessageOptionGroup> currentGroups,
+        IReadOnlyList<RecruitingMessageOptionGroup> savedGroups)
     {
         var (ok, error, names) = Validate(newPattern);
         if (!ok)
@@ -75,7 +75,7 @@ public static class LfgPatternParser
         var currentByName = currentGroups.ToDictionary(g => g.Placeholder, StringComparer.Ordinal);
         var savedByName = savedGroups.ToDictionary(g => g.Placeholder, StringComparer.Ordinal);
 
-        var result = new List<LfgOptionGroup>();
+        var result = new List<RecruitingMessageOptionGroup>();
         foreach (var name in names)
         {
             if (SystemPlaceholders.Contains(name))
@@ -86,7 +86,7 @@ public static class LfgPatternParser
             else if (savedByName.TryGetValue(name, out var saved))
                 result.Add(saved);
             else
-                result.Add(new LfgOptionGroup(name, [], string.Empty));
+                result.Add(new RecruitingMessageOptionGroup(name, [], string.Empty));
         }
 
         return (true, null, result);

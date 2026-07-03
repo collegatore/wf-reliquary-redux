@@ -63,14 +63,14 @@ public sealed partial class RelicsPanelView : UserControl
                     new FuncDataTemplate<WishlistRelicTableRow>((row, _) => BuildPictogramCell(row, "⊞", static r => r.ShowRewardsCommand), supportsRecycling: false),
                     width: GridLength.Auto),
 
-                // LFG composer pictogram (relic rows only).
+                // Recruiting Chat message composer pictogram (relic rows only).
                 new TemplateColumn<WishlistRelicTableRow>(
                     null,
-                    new FuncDataTemplate<WishlistRelicTableRow>((row, _) => BuildPictogramCell(row, "💬", static r => r.ComposeLfgCommand), supportsRecycling: false),
+                    new FuncDataTemplate<WishlistRelicTableRow>((row, _) => BuildPictogramCell(row, "💬", static r => r.ComposeRecruitingMessageCommand), supportsRecycling: false),
                     width: GridLength.Auto),
 
                 // Scrollbar gutter — 18 px matches the Fluent theme scrollbar width so
-                // the vertical scrollbar never overlays the LFG pictogram column.
+                // the vertical scrollbar never overlays the composer pictogram column.
                 new TemplateColumn<WishlistRelicTableRow>(
                     null,
                     new FuncDataTemplate<WishlistRelicTableRow>((_, _) => new Panel(), supportsRecycling: false),

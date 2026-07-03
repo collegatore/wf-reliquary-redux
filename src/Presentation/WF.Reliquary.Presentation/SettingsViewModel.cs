@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Ports;
+using WF.Reliquary.Application.RecruitingMessage;
 using WF.Reliquary.Application.Settings;
 
 namespace WF.Reliquary.Presentation;
@@ -63,16 +64,16 @@ public sealed class SettingsViewModel : ObservableObject
     public Func<Task>? CopyLogPath { get; set; }
 
     /// <summary>
-    /// Returns the current LFG template so it is preserved when settings are saved here.
-    /// Injected from <c>MainWindow</c> because the LFG editor manages that template separately.
+    /// Returns the current Recruiting Chat message template so it is preserved when settings are saved here.
+    /// Injected from <c>MainWindow</c> because the editor manages that template separately.
     /// </summary>
-    public Func<Application.Lfg.LfgMessageTemplate>? GetCurrentLfgTemplate { get; set; }
+    public Func<RecruitingMessageTemplate>? GetCurrentRecruitingMessageTemplate { get; set; }
 
-    /// <summary>Returns true when the LFG draft has unsaved changes. Injected from MainWindow.</summary>
-    public Func<bool>? IsLfgTemplateDirty { get; set; }
+    /// <summary>Returns true when the Recruiting Chat message draft has unsaved changes. Injected from MainWindow.</summary>
+    public Func<bool>? IsRecruitingMessageTemplateDirty { get; set; }
 
-    /// <summary>Called by the LFG editor when its draft changes, so SaveCommand re-evaluates CanExecute.</summary>
-    public void NotifyLfgChanged() => NotifyHasUnsavedChanges();
+    /// <summary>Called by the Recruiting Chat message editor when its draft changes, so SaveCommand re-evaluates CanExecute.</summary>
+    public void NotifyRecruitingMessageChanged() => NotifyHasUnsavedChanges();
 
     // ── Properties ─────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ public sealed class SettingsViewModel : ObservableObject
     public bool HasUnsavedChanges =>
         !string.Equals(sourceUrlText, savedSourceUrl, StringComparison.Ordinal) ||
         relicsPanelHeight != savedRelicsPanelHeight ||
-        (IsLfgTemplateDirty?.Invoke() ?? false);
+        (IsRecruitingMessageTemplateDirty?.Invoke() ?? false);
 
     public string UrlValidationError
     {
@@ -140,7 +141,7 @@ public sealed class SettingsViewModel : ObservableObject
         {
             SourceUrl = sourceUrl,
             RelicsPanelHeight = RelicsPanelHeight,
-            LfgTemplate = GetCurrentLfgTemplate?.Invoke() ?? Application.Lfg.LfgMessageTemplate.Default,
+            RecruitingMessageTemplate = GetCurrentRecruitingMessageTemplate?.Invoke() ?? RecruitingMessageTemplate.Default,
         };
 
         await settingsStore.SaveAsync(newSettings);

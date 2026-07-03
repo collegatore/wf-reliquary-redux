@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using WF.Reliquary.Application.DropTables;
-using WF.Reliquary.Application.Lfg;
+using WF.Reliquary.Application.RecruitingMessage;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Infrastructure.Settings;
 using static WF.Reliquary.Application.Settings.RelicsMissionsOrientation;
@@ -57,7 +57,7 @@ public sealed class UserSettingsStoreTests
             WindowHeight: 800,
             FontSizePt: 18.0,
             RelicsPanelHeight: 320.5,
-            LfgTemplate: LfgMessageTemplate.Default);
+            RecruitingMessageTemplate: RecruitingMessageTemplate.Default);
 
         await store.SaveAsync(original);
         var loaded = await store.LoadAsync();
@@ -226,33 +226,33 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
-    public async Task LoadAsync_WhenFileAbsent_ReturnsDefaultLfgTemplate()
+    public async Task LoadAsync_WhenFileAbsent_ReturnsDefaultRecruitingMessageTemplate()
     {
         var store = new LocalUserSettingsStore(tempDir);
 
         var settings = await store.LoadAsync();
 
-        Assert.That(settings.LfgTemplate.Pattern, Is.EqualTo(LfgMessageTemplate.Default.Pattern));
-        Assert.That(settings.LfgTemplate.Groups, Has.Count.EqualTo(LfgMessageTemplate.Default.Groups.Count));
+        Assert.That(settings.RecruitingMessageTemplate.Pattern, Is.EqualTo(RecruitingMessageTemplate.Default.Pattern));
+        Assert.That(settings.RecruitingMessageTemplate.Groups, Has.Count.EqualTo(RecruitingMessageTemplate.Default.Groups.Count));
     }
 
     [Test]
-    public async Task SaveAsync_ThenLoadAsync_RoundTripsLfgTemplate()
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsRecruitingMessageTemplate()
     {
         var store = new LocalUserSettingsStore(tempDir);
 
-        var customTemplate = new LfgMessageTemplate(
+        var customTemplate = new RecruitingMessageTemplate(
             "{participation} [{relic_name}]",
-            [new LfgOptionGroup("participation", [new LfgOption("Host", "H")], "H")]);
+            [new RecruitingMessageOptionGroup("participation", [new RecruitingMessageOption("Host", "H")], "H")]);
 
-        await store.SaveAsync(UserSettings.Default with { LfgTemplate = customTemplate });
+        await store.SaveAsync(UserSettings.Default with { RecruitingMessageTemplate = customTemplate });
         var loaded = await store.LoadAsync();
 
-        Assert.That(loaded.LfgTemplate.Pattern, Is.EqualTo("{participation} [{relic_name}]"));
-        Assert.That(loaded.LfgTemplate.Groups, Has.Count.EqualTo(1));
-        Assert.That(loaded.LfgTemplate.Groups[0].Placeholder, Is.EqualTo("participation"));
-        Assert.That(loaded.LfgTemplate.Groups[0].DefaultValue, Is.EqualTo("H"));
-        Assert.That(loaded.LfgTemplate.Groups[0].Options[0].Descriptor, Is.EqualTo("Host"));
-        Assert.That(loaded.LfgTemplate.Groups[0].Options[0].Value, Is.EqualTo("H"));
+        Assert.That(loaded.RecruitingMessageTemplate.Pattern, Is.EqualTo("{participation} [{relic_name}]"));
+        Assert.That(loaded.RecruitingMessageTemplate.Groups, Has.Count.EqualTo(1));
+        Assert.That(loaded.RecruitingMessageTemplate.Groups[0].Placeholder, Is.EqualTo("participation"));
+        Assert.That(loaded.RecruitingMessageTemplate.Groups[0].DefaultValue, Is.EqualTo("H"));
+        Assert.That(loaded.RecruitingMessageTemplate.Groups[0].Options[0].Descriptor, Is.EqualTo("Host"));
+        Assert.That(loaded.RecruitingMessageTemplate.Groups[0].Options[0].Value, Is.EqualTo("H"));
     }
 }

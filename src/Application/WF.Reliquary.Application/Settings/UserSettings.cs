@@ -1,5 +1,5 @@
 using WF.Reliquary.Application.DropTables;
-using WF.Reliquary.Application.Lfg;
+using WF.Reliquary.Application.RecruitingMessage;
 
 namespace WF.Reliquary.Application.Settings;
 
@@ -9,7 +9,7 @@ public sealed record UserSettings(
     double WindowHeight,
     double FontSizePt,
     double? RelicsPanelHeight,
-    LfgMessageTemplate LfgTemplate,
+    RecruitingMessageTemplate RecruitingMessageTemplate,
     int? WindowX = null,
     int? WindowY = null,
     RelicsMissionsOrientation Orientation = RelicsMissionsOrientation.Stacked,
@@ -23,5 +23,5 @@ public sealed record UserSettings(
         WindowHeight: 600,
         FontSizePt: 14.0,
         RelicsPanelHeight: null,
-        LfgTemplate: LfgMessageTemplate.Default);
+        RecruitingMessageTemplate: RecruitingMessageTemplate.Default);
 }

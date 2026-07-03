@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WF.Reliquary.Application.DropTables;
-using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
+using WF.Reliquary.Application.RecruitingMessage;
 using WF.Reliquary.Application.Settings;
 
 namespace WF.Reliquary.Infrastructure.Settings;
@@ -72,7 +72,7 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 WindowHeight: file.WindowHeight > 0 ? file.WindowHeight : UserSettings.Default.WindowHeight,
                 FontSizePt: fontSizePt,
                 RelicsPanelHeight: file.RelicsPanelHeight > 0 ? file.RelicsPanelHeight : null,
-                LfgTemplate: ToTemplate(file.LfgTemplate),
+                RecruitingMessageTemplate: ToTemplate(file.RecruitingMessageTemplate),
                 WindowX: file.WindowX,
                 WindowY: file.WindowY,
                 Orientation: file.Orientation ?? RelicsMissionsOrientation.Stacked,
@@ -96,7 +96,7 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.WindowHeight,
             settings.FontSizePt,
             settings.RelicsPanelHeight,
-            FromTemplate(settings.LfgTemplate),
+            FromTemplate(settings.RecruitingMessageTemplate),
             settings.WindowX,
             settings.WindowY,
             settings.Orientation,
@@ -126,28 +126,28 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
 
     private string SettingsPath() => Path.Combine(rootPath, "user-settings.json");
 
-    private static LfgMessageTemplate ToTemplate(LfgTemplateFile? file)
+    private static RecruitingMessageTemplate ToTemplate(RecruitingMessageTemplateFile? file)
     {
         if (file is null || string.IsNullOrWhiteSpace(file.Pattern))
-            return LfgMessageTemplate.Default;
+            return RecruitingMessageTemplate.Default;
 
         var groups = (file.Groups ?? [])
-            .Select(g => new LfgOptionGroup(
+            .Select(g => new RecruitingMessageOptionGroup(
                 g.Placeholder ?? string.Empty,
-                (g.Options ?? []).Select(o => new LfgOption(o.Descriptor ?? string.Empty, o.Value ?? string.Empty)).ToList(),
+                (g.Options ?? []).Select(o => new RecruitingMessageOption(o.Descriptor ?? string.Empty, o.Value ?? string.Empty)).ToList(),
                 g.DefaultValue ?? string.Empty))
             .ToList();
 
-        return new LfgMessageTemplate(file.Pattern, groups);
+        return new RecruitingMessageTemplate(file.Pattern, groups);
     }
 
-    private static LfgTemplateFile FromTemplate(LfgMessageTemplate template) =>
+    private static RecruitingMessageTemplateFile FromTemplate(RecruitingMessageTemplate template) =>
         new(
             template.Pattern,
             template.Groups
-                .Select(g => new LfgGroupFile(
+                .Select(g => new RecruitingMessageGroupFile(
                     g.Placeholder,
-                    g.Options.Select(o => new LfgOptionFile(o.Descriptor, o.Value)).ToList(),
+                    g.Options.Select(o => new RecruitingMessageOptionFile(o.Descriptor, o.Value)).ToList(),
                     g.DefaultValue))
                 .ToList());
 
@@ -159,7 +159,7 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         double WindowHeight,
         double FontSizePt,
         double? RelicsPanelHeight,
-        LfgTemplateFile? LfgTemplate = null,
+        RecruitingMessageTemplateFile? RecruitingMessageTemplate = null,
         int? WindowX = null,
         int? WindowY = null,
         [property: JsonConverter(typeof(JsonStringEnumConverter))]
@@ -169,16 +169,16 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         [property: JsonConverter(typeof(JsonStringEnumConverter))]
         RelicViewMode? ViewMode = null);
 
-    private sealed record LfgTemplateFile(
+    private sealed record RecruitingMessageTemplateFile(
         string? Pattern,
-        List<LfgGroupFile>? Groups);
+        List<RecruitingMessageGroupFile>? Groups);
 
-    private sealed record LfgGroupFile(
+    private sealed record RecruitingMessageGroupFile(
         string? Placeholder,
-        List<LfgOptionFile>? Options,
+        List<RecruitingMessageOptionFile>? Options,
         string? DefaultValue);
 
-    private sealed record LfgOptionFile(
+    private sealed record RecruitingMessageOptionFile(
         string? Descriptor,
         string? Value);
 }

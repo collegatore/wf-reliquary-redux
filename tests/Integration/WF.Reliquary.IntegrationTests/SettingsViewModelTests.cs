@@ -1,6 +1,6 @@
 using Moq;
 using NUnit.Framework;
-using WF.Reliquary.Application.Lfg;
+using WF.Reliquary.Application.RecruitingMessage;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Presentation;
@@ -16,7 +16,7 @@ public sealed class SettingsViewModelTests
         WindowHeight: 600,
         FontSizePt: 14.0,
         RelicsPanelHeight: null,
-        LfgTemplate: LfgMessageTemplate.Default);
+        RecruitingMessageTemplate: RecruitingMessageTemplate.Default);
 
     [Test]
     public void HasUnsavedChanges_IsFalse_OnConstruction()

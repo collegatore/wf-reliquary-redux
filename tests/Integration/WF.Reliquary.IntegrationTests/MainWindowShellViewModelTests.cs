@@ -1,10 +1,10 @@
 using Moq;
 using NUnit.Framework;
 using WF.Reliquary.Application.DropTables;
-using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.PrimeGear;
 using WF.Reliquary.Application.Profiles;
+using WF.Reliquary.Application.RecruitingMessage;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Application.Wishlist;
 using WF.Reliquary.Presentation;
@@ -69,12 +69,12 @@ public sealed class MainWindowShellViewModelTests
     }
 
     [Test]
-    public async Task SettingsSave_ClearsLfgEditorDirtyState()
+    public async Task SettingsSave_ClearsRecruitingMessageEditorDirtyState()
     {
         // Regression: the shell wires settings.OnSaved = OnSettingsSaved, which
-        // overwrites any OnSaved set elsewhere. That handler must clear the LFG
-        // editor's dirty state, otherwise the leave-guard keeps flagging unsaved
-        // changes after a successful save.
+        // overwrites any OnSaved set elsewhere. That handler must clear the
+        // Recruiting Chat message editor's dirty state, otherwise the leave-guard
+        // keeps flagging unsaved changes after a successful save.
         var store = new Mock<IUserSettingsStore>();
         store.Setup(s => s.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(DefaultSettings);
@@ -82,26 +82,26 @@ public sealed class MainWindowShellViewModelTests
             .Returns(Task.CompletedTask);
 
         var settings = new SettingsViewModel(store.Object, DefaultSettings);
-        var lfgEditor = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var recruitingMessageEditor = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
 
-        // Replicate MainWindow's LFG↔Settings wiring (the dirty-state bridge).
-        settings.GetCurrentLfgTemplate = () => lfgEditor.CurrentDraftTemplate();
-        settings.IsLfgTemplateDirty = () => lfgEditor.HasUnsavedChanges;
-        lfgEditor.OnDirtyChanged = settings.NotifyLfgChanged;
+        // Replicate MainWindow's RecruitingMessage↔Settings wiring (the dirty-state bridge).
+        settings.GetCurrentRecruitingMessageTemplate = () => recruitingMessageEditor.CurrentDraftTemplate();
+        settings.IsRecruitingMessageTemplateDirty = () => recruitingMessageEditor.HasUnsavedChanges;
+        recruitingMessageEditor.OnDirtyChanged = settings.NotifyRecruitingMessageChanged;
 
         // The shell wires settings.OnSaved (the path under test).
-        _ = CreateShell(settings: settings, lfgEditor: lfgEditor);
+        _ = CreateShell(settings: settings, recruitingMessageEditor: recruitingMessageEditor);
 
-        // Dirty the LFG editor.
-        lfgEditor.PatternText = "{participation} [{relic_name}]";
-        lfgEditor.ParseCommand.Execute(null);
-        Assert.That(lfgEditor.HasUnsavedChanges, Is.True);
+        // Dirty the editor.
+        recruitingMessageEditor.PatternText = "{participation} [{relic_name}]";
+        recruitingMessageEditor.ParseCommand.Execute(null);
+        Assert.That(recruitingMessageEditor.HasUnsavedChanges, Is.True);
         Assert.That(settings.HasUnsavedChanges, Is.True);
 
         // Save through the main Settings Save button.
         await settings.SaveAsync();
 
-        Assert.That(lfgEditor.HasUnsavedChanges, Is.False, "LFG dirty state should clear after save");
+        Assert.That(recruitingMessageEditor.HasUnsavedChanges, Is.False, "Recruiting Chat message editor dirty state should clear after save");
         Assert.That(settings.HasUnsavedChanges, Is.False, "Settings should report no unsaved changes after save");
     }
 
@@ -144,7 +144,7 @@ public sealed class MainWindowShellViewModelTests
         string? importedVersion = null,
         SettingsViewModel? settings = null,
         AppearanceViewModel? appearance = null,
-        LfgTemplateEditorViewModel? lfgEditor = null)
+        RecruitingMessageTemplateEditorViewModel? recruitingMessageEditor = null)
     {
         var importMetadataReader = new Mock<IImportMetadataReader>();
         importMetadataReader
@@ -187,10 +187,10 @@ public sealed class MainWindowShellViewModelTests
 
         appearance ??= new AppearanceViewModel(Mock.Of<IUserSettingsStore>(), DefaultSettings);
 
-        lfgEditor ??= new LfgTemplateEditorViewModel(Mock.Of<IUserSettingsStore>(), LfgMessageTemplate.Default);
+        recruitingMessageEditor ??= new RecruitingMessageTemplateEditorViewModel(Mock.Of<IUserSettingsStore>(), RecruitingMessageTemplate.Default);
 
         return new MainWindowShellViewModel(
-            dropTables, primeGear, wishlist, relics, farming, profiles, settings, appearance, lfgEditor);
+            dropTables, primeGear, wishlist, relics, farming, profiles, settings, appearance, recruitingMessageEditor);
     }
 
     private static UserSettings DefaultSettings { get; } = new(
@@ -199,7 +199,7 @@ public sealed class MainWindowShellViewModelTests
         WindowHeight: 600,
         FontSizePt: 14.0,
         RelicsPanelHeight: null,
-        LfgTemplate: LfgMessageTemplate.Default);
+        RecruitingMessageTemplate: RecruitingMessageTemplate.Default);
 
     private static Mock<IWishlistStore> WishlistStore()
     {

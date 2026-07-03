@@ -114,7 +114,7 @@ public sealed class WishlistRelicCardViewModel
     /// <summary>Flat, tier-ordered reward list (no per-tier grouping), for Compact mode cards.</summary>
     public ObservableCollection<WishlistRelicRewardViewModel> Rewards { get; }
 
-    /// <summary>Opens the LFG message dialog for this relic.</summary>
+    /// <summary>Opens the Recruiting Chat message dialog for this relic.</summary>
     public AsyncRelayCommand ComposeCommand { get; }
 }
 
@@ -131,9 +131,9 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     private RelicViewMode viewMode = RelicViewMode.Compact;
 
     /// <summary>
-    /// Set by MainWindow to open the LFG dialog for a given relic name.
+    /// Set by MainWindow to open the Recruiting Chat message dialog for a given relic name.
     /// </summary>
-    public Func<string, Task>? OpenLfgCompose { get; set; }
+    public Func<string, Task>? OpenRecruitingMessageCompose { get; set; }
 
     /// <summary>
     /// Set by MainWindow to open the rewards modal (Verbatim card, all rewards) for a
@@ -283,7 +283,7 @@ public sealed class WishlistRelicsViewModel : ObservableObject
                 e.IsVaulted,
                 e.Rewards.Select(r => new WishlistRelicRewardViewModel(r.RewardName, r.RewardTier, r.IsWishlisted, showAllRewards)),
                 showAllRewards,
-                openCompose: OpenLfgCompose is { } fn ? () => fn(e.DisplayName) : null));
+                openCompose: OpenRecruitingMessageCompose is { } fn ? () => fn(e.DisplayName) : null));
         }
     }
 
@@ -317,10 +317,10 @@ public sealed class WishlistRelicsViewModel : ObservableObject
             e.IsVaulted,
             e.Rewards.Select(r => new WishlistRelicRewardViewModel(r.RewardName, r.RewardTier, r.IsWishlisted, showAllRewards: true)),
             showAllRewards: true,
-            openCompose: OpenLfgCompose is { } lfg ? () => lfg(e.DisplayName) : null);
+            openCompose: OpenRecruitingMessageCompose is { } compose ? () => compose(e.DisplayName) : null);
 
         var showRewards = new AsyncRelayCommand(() => OpenRewardsModal?.Invoke(allRewardsCard) ?? Task.CompletedTask);
-        var composeLfg = new AsyncRelayCommand(() => OpenLfgCompose is { } fn ? fn(e.DisplayName) : Task.CompletedTask);
+        var composeRecruitingMessage = new AsyncRelayCommand(() => OpenRecruitingMessageCompose is { } fn ? fn(e.DisplayName) : Task.CompletedTask);
 
         return new RelicTableRowViewModel(
             CompactWording.ClipRelicName(e.DisplayName),
@@ -328,7 +328,7 @@ public sealed class WishlistRelicsViewModel : ObservableObject
             e.IsVaulted,
             children,
             showRewards,
-            composeLfg);
+            composeRecruitingMessage);
     }
 
     private static int TierRank(string tier) =>

@@ -43,8 +43,8 @@ public abstract class WishlistRelicTableRow
     /// <summary>Opens the rewards modal for this relic (relic rows only).</summary>
     public virtual ICommand? ShowRewardsCommand => null;
 
-    /// <summary>Opens the LFG composer for this relic (relic rows only).</summary>
-    public virtual ICommand? ComposeLfgCommand => null;
+    /// <summary>Opens the Recruiting Chat message composer for this relic (relic rows only).</summary>
+    public virtual ICommand? ComposeRecruitingMessageCommand => null;
 
     /// <summary>
     /// Effective row opacity: vaulted relic rows and non-wishlisted reward rows are
@@ -62,14 +62,14 @@ public sealed class RelicTableRowViewModel : WishlistRelicTableRow
         bool isVaulted,
         IReadOnlyList<WishlistRelicTableRow> children,
         ICommand? showRewardsCommand = null,
-        ICommand? composeLfgCommand = null)
+        ICommand? composeRecruitingMessageCommand = null)
     {
         DisplayName = clippedName;
         TierMarkers = tierMarkers;
         IsVaulted = isVaulted;
         Children = children;
         ShowRewardsCommand = showRewardsCommand;
-        ComposeLfgCommand = composeLfgCommand;
+        ComposeRecruitingMessageCommand = composeRecruitingMessageCommand;
     }
 
     public override string DisplayName { get; }
@@ -78,7 +78,7 @@ public sealed class RelicTableRowViewModel : WishlistRelicTableRow
     public override bool ShowsActions => true;
     public override IReadOnlyList<WishlistRelicTableRow>? Children { get; }
     public override ICommand? ShowRewardsCommand { get; }
-    public override ICommand? ComposeLfgCommand { get; }
+    public override ICommand? ComposeRecruitingMessageCommand { get; }
 }
 
 /// <summary>

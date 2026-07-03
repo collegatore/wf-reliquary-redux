@@ -101,9 +101,9 @@
 
     <Separator />
 
-    <!-- LFG message constructor -->
+    <!-- Recruiting Chat message constructor -->
     <StackPanel Spacing="8">
-      <TextBlock FontWeight="SemiBold" Text="LFG message constructor" />
+      <TextBlock FontWeight="SemiBold" Text="Recruiting Chat message constructor" />
       <TextBlock
           Foreground="Gray"
           TextWrapping="Wrap"
@@ -113,29 +113,29 @@
       <StackPanel Orientation="Horizontal" Spacing="8">
         <TextBox
             MinWidth="300"
-            Text="{Binding LfgEditor.PatternText, Mode=TwoWay}" />
+            Text="{Binding RecruitingMessageEditor.PatternText, Mode=TwoWay}" />
         <Button
             Padding="14,6"
-            Command="{Binding LfgEditor.ParseCommand}"
+            Command="{Binding RecruitingMessageEditor.ParseCommand}"
             Content="Parse" />
       </StackPanel>
 
       <!-- Validation / warning -->
       <TextBlock
           Foreground="OrangeRed"
-          IsVisible="{Binding LfgEditor.ParseError, Converter={x:Static local:NonEmptyStringToBoolConverter.Instance}}"
-          Text="{Binding LfgEditor.ParseError}"
+          IsVisible="{Binding RecruitingMessageEditor.ParseError, Converter={x:Static local:NonEmptyStringToBoolConverter.Instance}}"
+          Text="{Binding RecruitingMessageEditor.ParseError}"
           TextWrapping="Wrap" />
       <TextBlock
           Foreground="#87C232"
-          IsVisible="{Binding LfgEditor.ParseWarning, Converter={x:Static local:NonEmptyStringToBoolConverter.Instance}}"
-          Text="{Binding LfgEditor.ParseWarning}"
+          IsVisible="{Binding RecruitingMessageEditor.ParseWarning, Converter={x:Static local:NonEmptyStringToBoolConverter.Instance}}"
+          Text="{Binding RecruitingMessageEditor.ParseWarning}"
           TextWrapping="Wrap" />
 
       <!-- Per-group editors -->
-      <ItemsControl ItemsSource="{Binding LfgEditor.Groups}">
+      <ItemsControl ItemsSource="{Binding RecruitingMessageEditor.Groups}">
         <ItemsControl.ItemTemplate>
-          <DataTemplate DataType="{x:Type local:LfgGroupEditorViewModel}">
+          <DataTemplate DataType="{x:Type local:RecruitingMessageGroupEditorViewModel}">
             <Border
                 Margin="0,8,0,0"
                 Padding="10"
@@ -148,7 +148,7 @@
                 <!-- Option rows -->
                 <ItemsControl ItemsSource="{Binding Options}">
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type local:LfgOptionEditorViewModel}">
+                    <DataTemplate DataType="{x:Type local:RecruitingMessageOptionEditorViewModel}">
                       <Grid ColumnDefinitions="*,Auto,*,8,Auto" Margin="0,2">
                         <TextBox
                             Grid.Column="0"
@@ -162,7 +162,7 @@
                         <Button
                             Grid.Column="4"
                             Padding="8,4"
-                            Command="{Binding $parent[ItemsControl].((local:LfgGroupEditorViewModel)DataContext).RemoveOptionCommand}"
+                            Command="{Binding $parent[ItemsControl].((local:RecruitingMessageGroupEditorViewModel)DataContext).RemoveOptionCommand}"
                             CommandParameter="{Binding}"
                             Content="✕" />
                       </Grid>
@@ -182,7 +182,7 @@
                         ItemsSource="{Binding Options}"
                         SelectedItem="{Binding SelectedDefaultOption, Mode=TwoWay}">
                       <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="{x:Type local:LfgOptionEditorViewModel}">
+                        <DataTemplate DataType="{x:Type local:RecruitingMessageOptionEditorViewModel}">
                           <TextBlock Text="{Binding Descriptor}" />
                         </DataTemplate>
                       </ComboBox.ItemTemplate>
@@ -200,11 +200,11 @@
       <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
         <Button
             Padding="14,6"
-            Command="{Binding LfgEditor.RestoreDefaultsCommand}"
+            Command="{Binding RecruitingMessageEditor.RestoreDefaultsCommand}"
             Content="Restore defaults" />
         <Button
             Padding="14,6"
-            Command="{Binding LfgEditor.ReloadFromSavedCommand}"
+            Command="{Binding RecruitingMessageEditor.ReloadFromSavedCommand}"
             Content="Reload from saved" />
       </StackPanel>
     </StackPanel>

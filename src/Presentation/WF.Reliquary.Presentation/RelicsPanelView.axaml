@@ -43,7 +43,7 @@
               <Button.Flyout>
                 <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
                   <MenuItem
-                      Header="Compose LFG message…"
+                      Header="Compose Recruiting Chat message…"
                       Command="{Binding ComposeCommand}" />
                 </MenuFlyout>
               </Button.Flyout>

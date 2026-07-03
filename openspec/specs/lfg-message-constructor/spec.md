@@ -1,4 +1,4 @@
-# Spec: LFG Message Constructor
+# Spec: Recruiting Chat Message Constructor
 
 ## Purpose
 
@@ -8,7 +8,7 @@ Enables users to compose Looking-for-Group (LFG) chat messages for specific reli
 
 ### Requirement: Relic card compose action
 
-Each relic card on the Relics and Missions tab SHALL present an overflow menu in its top-right corner, shown the same way as the prime gear cards' menu (a `⋮` button opening a menu flyout). The menu SHALL contain a compose item that opens the LFG message popup pre-filled for that relic. The relic identity passed to the popup SHALL be the relic's full display name (including the `Relic` suffix, e.g. `Axi A1 Relic`).
+Each relic card on the Relics and Missions tab SHALL present an overflow menu in its top-right corner, shown the same way as the prime gear cards' menu (a `⋮` button opening a menu flyout). The menu SHALL contain a compose item that opens the Recruiting Chat message popup pre-filled for that relic. The relic identity passed to the popup SHALL be the relic's full display name (including the `Relic` suffix, e.g. `Axi A1 Relic`).
 
 #### Scenario: Overflow menu visible on each card
 
@@ -18,10 +18,10 @@ Each relic card on the Relics and Missions tab SHALL present an overflow menu in
 #### Scenario: Opening the popup for a relic
 
 - **WHEN** the user opens a relic card's overflow menu and selects the compose item
-- **THEN** the LFG message popup opens as a modal child of the main window
+- **THEN** the Recruiting Chat message popup opens as a modal child of the main window
 - **AND** the popup is initialized with that relic's full display name as the `{relic_name}` value
 
-### Requirement: LFG message popup
+### Requirement: Recruiting Chat message popup
 
 The popup SHALL display the active template pattern before the selectors, so the user can see the structure they are filling in. The popup SHALL render one selector per custom option group that has more than one option, each pre-selecting that group's default option. Groups that have exactly one option SHALL be omitted from the selector list (the single value is substituted silently). The popup SHALL show a live preview of the constructed message that updates whenever a selection changes. The popup SHALL provide a copy-to-clipboard action that places the previewed message on the system clipboard.
 
@@ -152,9 +152,9 @@ When the user requests a parse of an edited pattern, the engine SHALL reconcile 
 
 ### Requirement: Template editor draft, save, and restore
 
-The Settings template editor SHALL maintain edits as a draft that is not propagated to the persisted configuration until the user saves. There is no separate Save button for the LFG editor; the LFG template is persisted together with all other settings when the user presses the main Settings Save button. The default field for each option group SHALL be selected via a dropdown (not a free-text field) whose items are the group's current options. Restoring defaults SHALL reset the draft to the in-code default template without persisting until saved. The LFG editor's save action SHALL be blocked while any custom option group has no options (empty group), whereas a parse SHALL surface an empty group as a non-blocking warning in Settings; the Settings Save button reflects the combined dirty state of all settings including the LFG editor.
+The Settings template editor SHALL maintain edits as a draft that is not propagated to the persisted configuration until the user saves. There is no separate Save button for the Recruiting Chat message editor; the Recruiting Chat message template is persisted together with all other settings when the user presses the main Settings Save button. The default field for each option group SHALL be selected via a dropdown (not a free-text field) whose items are the group's current options. Restoring defaults SHALL reset the draft to the in-code default template without persisting until saved. The Recruiting Chat message editor's save action SHALL be blocked while any custom option group has no options (empty group), whereas a parse SHALL surface an empty group as a non-blocking warning in Settings; the Settings Save button reflects the combined dirty state of all settings including the Recruiting Chat message editor.
 
-A **Reload from saved** action SHALL be available in the LFG message section. Activating it SHALL reset the draft pattern and option groups to the last-persisted template (the template on disk at the time the Settings tab was opened, or at the time of the last Save). This action SHALL NOT persist anything; it only reverts the in-memory draft.
+A **Reload from saved** action SHALL be available in the Recruiting Chat message section. Activating it SHALL reset the draft pattern and option groups to the last-persisted template (the template on disk at the time the Settings tab was opened, or at the time of the last Save). This action SHALL NOT persist anything; it only reverts the in-memory draft.
 
 #### Scenario: Edits are not persisted before save
 
@@ -184,7 +184,7 @@ A **Reload from saved** action SHALL be available in the LFG message section. Ac
 
 - **WHEN** the user activates Reload from saved
 - **THEN** the draft pattern and option groups become the last-persisted template
-- **AND** the LFG editor no longer has unsaved changes (the draft matches the saved state)
+- **AND** the Recruiting Chat message editor no longer has unsaved changes (the draft matches the saved state)
 - **AND** the change is not persisted (nothing is written to storage)
 
 #### Scenario: Reload from saved clears parse errors
@@ -204,7 +204,7 @@ The active template (pattern and option groups) SHALL be persisted in the user s
 
 #### Scenario: Default template when none stored
 
-- **WHEN** the settings file contains no LFG template
+- **WHEN** the settings file contains no Recruiting Chat message template
 - **THEN** loading yields the in-code default: pattern `{participation} [{relic_name}] {refinement}`, a `participation` group (`Hosting`→`H`, `Looking for group`→`LF`, default `LF`), and a `refinement` group (`Intact`→`inta`, `Exceptional`→`exceptional`, `Flawless`→`flawless`, `Radiant`→`rad`, default `rad`)
 
 #### Scenario: Stored template round-trips

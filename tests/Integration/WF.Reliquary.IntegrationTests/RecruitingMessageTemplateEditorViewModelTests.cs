@@ -1,24 +1,24 @@
 using Moq;
 using NUnit.Framework;
-using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
+using WF.Reliquary.Application.RecruitingMessage;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Presentation;
 
 namespace WF.Reliquary.IntegrationTests;
 
 [TestFixture]
-public sealed class LfgTemplateEditorViewModelTests
+public sealed class RecruitingMessageTemplateEditorViewModelTests
 {
-    private static LfgMessageTemplate CustomTemplate { get; } = new(
+    private static RecruitingMessageTemplate CustomTemplate { get; } = new(
         "{participation} [{relic_name}]",
-        [new LfgOptionGroup("participation", [new LfgOption("Hosting", "H"), new LfgOption("LFG", "LF")], "LF")]);
+        [new RecruitingMessageOptionGroup("participation", [new RecruitingMessageOption("Hosting", "H"), new RecruitingMessageOption("LFG", "LF")], "LF")]);
 
     [Test]
     public void Parse_ReconcilesDraftGroupsWithNewPattern()
     {
         var store = NoOpStore();
-        var vm = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
 
         // Remove {refinement} from the pattern then parse
         vm.PatternText = "{participation} [{relic_name}]";
@@ -32,7 +32,7 @@ public sealed class LfgTemplateEditorViewModelTests
     public void Parse_InvalidPattern_ShowsErrorAndLeavesDraftUnchanged()
     {
         var store = NoOpStore();
-        var vm = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
         var originalGroupCount = vm.Groups.Count;
 
         vm.PatternText = "{unclosed";
@@ -46,7 +46,7 @@ public sealed class LfgTemplateEditorViewModelTests
     public void Save_IsBlocked_WhenAGroupHasNoOptions()
     {
         var store = NoOpStore();
-        var vm = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
 
         // Add a new placeholder that has no options
         vm.PatternText = "{newgroup} [{relic_name}]";
@@ -67,23 +67,23 @@ public sealed class LfgTemplateEditorViewModelTests
             .Callback<UserSettings, CancellationToken>((s, _) => saved = s)
             .Returns(Task.CompletedTask);
 
-        var vm = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
         await vm.SaveCommand.ExecuteAsync(null);
 
         Assert.That(saved, Is.Not.Null);
-        Assert.That(saved!.LfgTemplate.Pattern, Is.EqualTo(LfgMessageTemplate.Default.Pattern));
+        Assert.That(saved!.RecruitingMessageTemplate.Pattern, Is.EqualTo(RecruitingMessageTemplate.Default.Pattern));
     }
 
     [Test]
     public void RestoreDefaults_ResetsDraftToCodeDefaults()
     {
         var store = NoOpStore();
-        var vm = new LfgTemplateEditorViewModel(store.Object, CustomTemplate);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, CustomTemplate);
 
         vm.RestoreDefaultsCommand.Execute(null);
 
-        Assert.That(vm.PatternText, Is.EqualTo(LfgMessageTemplate.Default.Pattern));
-        Assert.That(vm.Groups, Has.Count.EqualTo(LfgMessageTemplate.Default.Groups.Count));
+        Assert.That(vm.PatternText, Is.EqualTo(RecruitingMessageTemplate.Default.Pattern));
+        Assert.That(vm.Groups, Has.Count.EqualTo(RecruitingMessageTemplate.Default.Groups.Count));
     }
 
     [Test]
@@ -95,7 +95,7 @@ public sealed class LfgTemplateEditorViewModelTests
         store.Setup(s => s.SaveAsync(It.IsAny<UserSettings>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var vm = new LfgTemplateEditorViewModel(store.Object, CustomTemplate);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, CustomTemplate);
         vm.RestoreDefaultsCommand.Execute(null);
 
         // Restore alone should not call SaveAsync
@@ -110,7 +110,7 @@ public sealed class LfgTemplateEditorViewModelTests
     public void NotifySaved_ClearsDirtyState()
     {
         var store = NoOpStore();
-        var vm = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
 
         // Dirty the editor
         vm.PatternText = "{participation} [{relic_name}]";
@@ -127,7 +127,7 @@ public sealed class LfgTemplateEditorViewModelTests
     public void NotifySaved_AllowsSubsequentDirtyDetection()
     {
         var store = NoOpStore();
-        var vm = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
 
         vm.PatternText = "{participation} [{relic_name}]";
         vm.ParseCommand.Execute(null);
@@ -142,7 +142,7 @@ public sealed class LfgTemplateEditorViewModelTests
     public void Parse_EmptyGroup_ShowsWarning()
     {
         var store = NoOpStore();
-        var vm = new LfgTemplateEditorViewModel(store.Object, LfgMessageTemplate.Default);
+        var vm = new RecruitingMessageTemplateEditorViewModel(store.Object, RecruitingMessageTemplate.Default);
 
         vm.PatternText = "{newgroup} [{relic_name}]";
         vm.ParseCommand.Execute(null);

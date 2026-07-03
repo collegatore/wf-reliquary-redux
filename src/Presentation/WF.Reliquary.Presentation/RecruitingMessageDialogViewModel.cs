@@ -1,14 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using WF.Reliquary.Application.Lfg;
+using WF.Reliquary.Application.RecruitingMessage;
 
 namespace WF.Reliquary.Presentation;
 
-public sealed class LfgSelectorViewModel : ObservableObject
+public sealed class RecruitingMessageSelectorViewModel : ObservableObject
 {
-    private LfgOption? selectedOption;
+    private RecruitingMessageOption? selectedOption;
 
-    public LfgSelectorViewModel(LfgOptionGroup group, Action onSelectionChanged)
+    public RecruitingMessageSelectorViewModel(RecruitingMessageOptionGroup group, Action onSelectionChanged)
     {
         Label = group.Placeholder;
         Options = group.Options.ToList();
@@ -18,10 +18,10 @@ public sealed class LfgSelectorViewModel : ObservableObject
     }
 
     public string Label { get; }
-    public IReadOnlyList<LfgOption> Options { get; }
+    public IReadOnlyList<RecruitingMessageOption> Options { get; }
     private Action OnSelectionChanged { get; }
 
-    public LfgOption? SelectedOption
+    public RecruitingMessageOption? SelectedOption
     {
         get => selectedOption;
         set
@@ -34,20 +34,20 @@ public sealed class LfgSelectorViewModel : ObservableObject
     public string SelectedValue => selectedOption?.Value ?? string.Empty;
 }
 
-public sealed class LfgMessageDialogViewModel : ObservableObject
+public sealed class RecruitingMessageDialogViewModel : ObservableObject
 {
-    private readonly LfgMessageTemplate template;
+    private readonly RecruitingMessageTemplate template;
     private readonly string relicName;
-    private IReadOnlyList<LfgSelectorViewModel> allSelectors = [];
+    private IReadOnlyList<RecruitingMessageSelectorViewModel> allSelectors = [];
     private string preview = string.Empty;
     private Func<string, Task>? copyToClipboard;
 
-    public LfgMessageDialogViewModel(LfgMessageTemplate template, string relicName)
+    public RecruitingMessageDialogViewModel(RecruitingMessageTemplate template, string relicName)
     {
         this.template = template;
         this.relicName = relicName;
 
-        var all = template.Groups.Select(g => new LfgSelectorViewModel(g, UpdatePreview)).ToList();
+        var all = template.Groups.Select(g => new RecruitingMessageSelectorViewModel(g, UpdatePreview)).ToList();
         allSelectors = all;
         Selectors = all.Where(s => s.Options.Count > 1).ToList();
 
@@ -58,7 +58,7 @@ public sealed class LfgMessageDialogViewModel : ObservableObject
 
     public string Pattern => template.Pattern;
 
-    public IReadOnlyList<LfgSelectorViewModel> Selectors { get; }
+    public IReadOnlyList<RecruitingMessageSelectorViewModel> Selectors { get; }
 
     public string Preview
     {
@@ -81,7 +81,7 @@ public sealed class LfgMessageDialogViewModel : ObservableObject
     private void UpdatePreview()
     {
         var selectedValues = allSelectors.ToDictionary(s => s.Label, s => s.SelectedValue);
-        Preview = LfgMessageBuilder.Build(template.Pattern, relicName, selectedValues);
+        Preview = RecruitingMessageBuilder.Build(template.Pattern, relicName, selectedValues);
     }
 
     private async Task CopyAsync()

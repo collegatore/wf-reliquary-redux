@@ -62,18 +62,18 @@ public sealed class WishlistRelicsTableRowActionsTests
     }
 
     [Test]
-    public async Task ComposeLfgCommand_OpensLfgComposer_ForThatRelic()
+    public async Task ComposeRecruitingMessageCommand_OpensRecruitingMessageComposer_ForThatRelic()
     {
         var vm = await LoadedViewModelAsync(LithA1, MesoB2);
         string? composedFor = null;
-        vm.OpenLfgCompose = relicName =>
+        vm.OpenRecruitingMessageCompose = relicName =>
         {
             composedFor = relicName;
             return Task.CompletedTask;
         };
 
         var mesoRow = vm.TableRows.Single(r => r.DisplayName == "Meso B2");
-        mesoRow.ComposeLfgCommand!.Execute(null);
+        mesoRow.ComposeRecruitingMessageCommand!.Execute(null);
 
         Assert.That(composedFor, Is.EqualTo("Meso B2 Relic"));
     }
@@ -83,12 +83,12 @@ public sealed class WishlistRelicsTableRowActionsTests
     {
         var vm = await LoadedViewModelAsync(LithA1, MesoB2);
         vm.OpenRewardsModal = _ => Task.CompletedTask;
-        vm.OpenLfgCompose = _ => Task.CompletedTask;
+        vm.OpenRecruitingMessageCompose = _ => Task.CompletedTask;
 
         var rowsBefore = vm.TableRows.ToList();
 
         vm.TableRows[0].ShowRewardsCommand!.Execute(null);
-        vm.TableRows[0].ComposeLfgCommand!.Execute(null);
+        vm.TableRows[0].ComposeRecruitingMessageCommand!.Execute(null);
 
         Assert.That(vm.TableRows, Is.EqualTo(rowsBefore), "opening/closing a modal must not rebuild or reorder table rows");
     }

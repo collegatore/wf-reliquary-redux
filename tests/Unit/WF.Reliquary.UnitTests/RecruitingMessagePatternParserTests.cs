@@ -1,17 +1,17 @@
 using NUnit.Framework;
-using WF.Reliquary.Application.Lfg;
+using WF.Reliquary.Application.RecruitingMessage;
 
 namespace WF.Reliquary.UnitTests;
 
 [TestFixture]
-public sealed class LfgPatternParserTests
+public sealed class RecruitingMessagePatternParserTests
 {
     // ── Validate: structural rules ─────────────────────────────────────────
 
     [Test]
     public void Validate_ValidPattern_ReturnsPlaceholdersInOrder()
     {
-        var (ok, error, names) = LfgPatternParser.Validate("{participation} [{relic_name}] {refinement}");
+        var (ok, error, names) = RecruitingMessagePatternParser.Validate("{participation} [{relic_name}] {refinement}");
 
         Assert.That(ok, Is.True);
         Assert.That(error, Is.Null);
@@ -21,7 +21,7 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_UnclosedPlaceholder_ReturnsError()
     {
-        var (ok, error, _) = LfgPatternParser.Validate("{participation} [{relic_name");
+        var (ok, error, _) = RecruitingMessagePatternParser.Validate("{participation} [{relic_name");
 
         Assert.That(ok, Is.False);
         Assert.That(error, Does.Contain("Unclosed").IgnoreCase);
@@ -30,7 +30,7 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_NestedPlaceholder_ReturnsError()
     {
-        var (ok, error, _) = LfgPatternParser.Validate("{{nested} text}");
+        var (ok, error, _) = RecruitingMessagePatternParser.Validate("{{nested} text}");
 
         Assert.That(ok, Is.False);
         Assert.That(error, Does.Contain("Nested").IgnoreCase);
@@ -39,7 +39,7 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_EmptyPlaceholder_ReturnsError()
     {
-        var (ok, error, _) = LfgPatternParser.Validate("{} [{relic_name}]");
+        var (ok, error, _) = RecruitingMessagePatternParser.Validate("{} [{relic_name}]");
 
         Assert.That(ok, Is.False);
         Assert.That(error, Does.Contain("Empty").IgnoreCase);
@@ -48,7 +48,7 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_StrayClosingBrace_ReturnsError()
     {
-        var (ok, error, _) = LfgPatternParser.Validate("text} [{relic_name}]");
+        var (ok, error, _) = RecruitingMessagePatternParser.Validate("text} [{relic_name}]");
 
         Assert.That(ok, Is.False);
         Assert.That(error, Does.Contain("}").Or.Contain("Unexpected").IgnoreCase);
@@ -57,7 +57,7 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_InvalidNameChar_ReturnsError()
     {
-        var (ok, error, _) = LfgPatternParser.Validate("{bad-name} [{relic_name}]");
+        var (ok, error, _) = RecruitingMessagePatternParser.Validate("{bad-name} [{relic_name}]");
 
         Assert.That(ok, Is.False);
         Assert.That(error, Does.Contain("Invalid").IgnoreCase);
@@ -68,7 +68,7 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_MissingRelicName_ReturnsError()
     {
-        var (ok, error, _) = LfgPatternParser.Validate("{participation} {refinement}");
+        var (ok, error, _) = RecruitingMessagePatternParser.Validate("{participation} {refinement}");
 
         Assert.That(ok, Is.False);
         Assert.That(error, Does.Contain("relic_name").IgnoreCase);
@@ -77,7 +77,7 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_PatternWithOnlyRelicName_IsValid()
     {
-        var (ok, _, names) = LfgPatternParser.Validate("[{relic_name}]");
+        var (ok, _, names) = RecruitingMessagePatternParser.Validate("[{relic_name}]");
 
         Assert.That(ok, Is.True);
         Assert.That(names, Is.EqualTo(new[] { "relic_name" }));
@@ -86,18 +86,18 @@ public sealed class LfgPatternParserTests
     [Test]
     public void Validate_ErrorMessageIncludesPosition()
     {
-        var (_, error, _) = LfgPatternParser.Validate("{unclosed");
+        var (_, error, _) = RecruitingMessagePatternParser.Validate("{unclosed");
 
         Assert.That(error, Does.Contain("position").Or.Contain("0").IgnoreCase);
     }
 }
 
 [TestFixture]
-public sealed class LfgPatternParserReconcileTests
+public sealed class RecruitingMessagePatternParserReconcileTests
 {
-    private static LfgOptionGroup MakeGroup(string placeholder, params string[] optionValues) =>
+    private static RecruitingMessageOptionGroup MakeGroup(string placeholder, params string[] optionValues) =>
         new(placeholder,
-            optionValues.Select(v => new LfgOption($"Label {v}", v)).ToList(),
+            optionValues.Select(v => new RecruitingMessageOption($"Label {v}", v)).ToList(),
             optionValues.FirstOrDefault() ?? string.Empty);
 
     [Test]
@@ -106,7 +106,7 @@ public sealed class LfgPatternParserReconcileTests
         var draft = new[] { MakeGroup("participation", "H", "LF") };
         var saved = new[] { MakeGroup("participation", "H", "LF") };
 
-        var (ok, _, groups) = LfgPatternParser.Reconcile(
+        var (ok, _, groups) = RecruitingMessagePatternParser.Reconcile(
             "{participation} [{relic_name}]", draft, saved);
 
         Assert.That(ok, Is.True);
@@ -118,10 +118,10 @@ public sealed class LfgPatternParserReconcileTests
     public void Reconcile_RestoresGroupFromSavedWhenDroppedFromDraft()
     {
         // Draft has no participation group; saved does
-        var draft = Array.Empty<LfgOptionGroup>();
+        var draft = Array.Empty<RecruitingMessageOptionGroup>();
         var saved = new[] { MakeGroup("participation", "H", "LF") };
 
-        var (ok, _, groups) = LfgPatternParser.Reconcile(
+        var (ok, _, groups) = RecruitingMessagePatternParser.Reconcile(
             "{participation} [{relic_name}]", draft, saved);
 
         Assert.That(ok, Is.True);
@@ -132,10 +132,10 @@ public sealed class LfgPatternParserReconcileTests
     [Test]
     public void Reconcile_CreatesEmptyGroupWhenAbsentFromBoth()
     {
-        var draft = Array.Empty<LfgOptionGroup>();
-        var saved = Array.Empty<LfgOptionGroup>();
+        var draft = Array.Empty<RecruitingMessageOptionGroup>();
+        var saved = Array.Empty<RecruitingMessageOptionGroup>();
 
-        var (ok, _, groups) = LfgPatternParser.Reconcile(
+        var (ok, _, groups) = RecruitingMessagePatternParser.Reconcile(
             "{newgroup} [{relic_name}]", draft, saved);
 
         Assert.That(ok, Is.True);
@@ -149,7 +149,7 @@ public sealed class LfgPatternParserReconcileTests
         var draft = new[] { MakeGroup("participation", "H", "LF"), MakeGroup("refinement", "rad") };
         var saved = draft;
 
-        var (ok, _, groups) = LfgPatternParser.Reconcile(
+        var (ok, _, groups) = RecruitingMessagePatternParser.Reconcile(
             "[{relic_name}] {refinement}", draft, saved);
 
         Assert.That(ok, Is.True);
@@ -163,7 +163,7 @@ public sealed class LfgPatternParserReconcileTests
         var draft = new[] { MakeGroup("refinement", "rad"), MakeGroup("participation", "H") };
         var saved = draft;
 
-        var (ok, _, groups) = LfgPatternParser.Reconcile(
+        var (ok, _, groups) = RecruitingMessagePatternParser.Reconcile(
             "{participation} [{relic_name}] {refinement}", draft, saved);
 
         Assert.That(ok, Is.True);
@@ -175,9 +175,9 @@ public sealed class LfgPatternParserReconcileTests
     public void Reconcile_FailedParse_ReturnsDraftUnchangedAndError()
     {
         var draft = new[] { MakeGroup("participation", "H", "LF") };
-        var saved = Array.Empty<LfgOptionGroup>();
+        var saved = Array.Empty<RecruitingMessageOptionGroup>();
 
-        var (ok, error, groups) = LfgPatternParser.Reconcile(
+        var (ok, error, groups) = RecruitingMessagePatternParser.Reconcile(
             "{unclosed", draft, saved);
 
         Assert.That(ok, Is.False);
@@ -188,10 +188,10 @@ public sealed class LfgPatternParserReconcileTests
     [Test]
     public void Reconcile_SystemPlaceholderNotAddedAsCustomGroup()
     {
-        var draft = Array.Empty<LfgOptionGroup>();
-        var saved = Array.Empty<LfgOptionGroup>();
+        var draft = Array.Empty<RecruitingMessageOptionGroup>();
+        var saved = Array.Empty<RecruitingMessageOptionGroup>();
 
-        var (ok, _, groups) = LfgPatternParser.Reconcile(
+        var (ok, _, groups) = RecruitingMessagePatternParser.Reconcile(
             "{participation} [{relic_name}] {relic_reward}", draft, saved);
 
         Assert.That(ok, Is.True);

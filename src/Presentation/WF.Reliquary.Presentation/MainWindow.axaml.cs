@@ -105,16 +105,16 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreateWishlistRelicsReader(),
             wishlistStore);
 
-        var currentLfgTemplate = initialSettings.LfgTemplate;
-        var lfgEditorVm = new LfgTemplateEditorViewModel(userSettingsStore, initialSettings.LfgTemplate);
-        lfgEditorVm.OnSaved = t => currentLfgTemplate = t; // SaveCommand path (used by tests)
+        var currentRecruitingMessageTemplate = initialSettings.RecruitingMessageTemplate;
+        var recruitingMessageEditorVm = new RecruitingMessageTemplateEditorViewModel(userSettingsStore, initialSettings.RecruitingMessageTemplate);
+        recruitingMessageEditorVm.OnSaved = t => currentRecruitingMessageTemplate = t; // SaveCommand path (used by tests)
 
-        wishlistRelicsVm.OpenLfgCompose = async relicName =>
+        wishlistRelicsVm.OpenRecruitingMessageCompose = async relicName =>
         {
             var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-            await LfgMessageDialog.ShowAsync(
+            await RecruitingMessageDialog.ShowAsync(
                 this,
-                currentLfgTemplate,
+                currentRecruitingMessageTemplate,
                 relicName,
                 async text =>
                 {
@@ -155,12 +155,12 @@ public sealed partial class MainWindow : Window
             catch { }
         };
 
-        settingsVm.GetCurrentLfgTemplate = () => lfgEditorVm.CurrentDraftTemplate();
-        settingsVm.IsLfgTemplateDirty = () => lfgEditorVm.HasUnsavedChanges;
-        lfgEditorVm.OnDirtyChanged = settingsVm.NotifyLfgChanged;
+        settingsVm.GetCurrentRecruitingMessageTemplate = () => recruitingMessageEditorVm.CurrentDraftTemplate();
+        settingsVm.IsRecruitingMessageTemplateDirty = () => recruitingMessageEditorVm.HasUnsavedChanges;
+        recruitingMessageEditorVm.OnDirtyChanged = settingsVm.NotifyRecruitingMessageChanged;
         // NOTE: settingsVm.OnSaved is wired by the shell (MainWindowShellViewModel),
-        // which clears the LFG editor's dirty state via LfgEditor.NotifySaved. The
-        // editor's own OnSaved callback (line above) keeps currentLfgTemplate in sync.
+        // which clears the editor's dirty state via RecruitingMessageEditor.NotifySaved. The
+        // editor's own OnSaved callback (line above) keeps currentRecruitingMessageTemplate in sync.
 
         settingsVm.OpenLogFile = () =>
         {
@@ -197,7 +197,7 @@ public sealed partial class MainWindow : Window
             profileVm,
             settingsVm,
             appearanceVm,
-            lfgEditorVm);
+            recruitingMessageEditorVm);
 
         // Sync saved relics panel height and orientation into the shell so the
         // grid initializer can read them when the Relics/Missions tab is first shown.
@@ -389,5 +389,4 @@ public sealed partial class MainWindow : Window
         suppressTabGuard = false;
         guardedTabIndex = destination;
     }
-
 }

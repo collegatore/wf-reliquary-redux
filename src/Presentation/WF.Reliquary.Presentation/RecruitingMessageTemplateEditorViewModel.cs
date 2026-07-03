@@ -1,8 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using WF.Reliquary.Application.Lfg;
 using WF.Reliquary.Application.Ports;
+using WF.Reliquary.Application.RecruitingMessage;
 using WF.Reliquary.Application.Settings;
 
 namespace WF.Reliquary.Presentation;
@@ -10,12 +10,12 @@ namespace WF.Reliquary.Presentation;
 /// <summary>
 /// Editable option within a group in the template editor.
 /// </summary>
-public sealed class LfgOptionEditorViewModel : ObservableObject
+public sealed class RecruitingMessageOptionEditorViewModel : ObservableObject
 {
     private string descriptor;
     private string value;
 
-    public LfgOptionEditorViewModel(string descriptor, string value, Action onChange)
+    public RecruitingMessageOptionEditorViewModel(string descriptor, string value, Action onChange)
     {
         this.descriptor = descriptor;
         this.value = value;
@@ -36,17 +36,17 @@ public sealed class LfgOptionEditorViewModel : ObservableObject
         set { if (SetProperty(ref this.value, value)) OnChange(); }
     }
 
-    public LfgOption ToModel() => new(Descriptor, Value);
+    public RecruitingMessageOption ToModel() => new(Descriptor, Value);
 }
 
 /// <summary>
 /// Editable option group in the template editor.
 /// </summary>
-public sealed class LfgGroupEditorViewModel : ObservableObject
+public sealed class RecruitingMessageGroupEditorViewModel : ObservableObject
 {
     private string defaultValue;
 
-    public LfgGroupEditorViewModel(LfgOptionGroup group, Action onChange)
+    public RecruitingMessageGroupEditorViewModel(RecruitingMessageOptionGroup group, Action onChange)
     {
         Placeholder = group.Placeholder;
         defaultValue = group.DefaultValue;
@@ -58,16 +58,16 @@ public sealed class LfgGroupEditorViewModel : ObservableObject
             onChange();
         }
 
-        Options = new ObservableCollection<LfgOptionEditorViewModel>(
-            group.Options.Select(o => new LfgOptionEditorViewModel(o.Descriptor, o.Value, NotifyAndChange)));
+        Options = new ObservableCollection<RecruitingMessageOptionEditorViewModel>(
+            group.Options.Select(o => new RecruitingMessageOptionEditorViewModel(o.Descriptor, o.Value, NotifyAndChange)));
 
         AddOptionCommand = new RelayCommand(() =>
         {
-            Options.Add(new LfgOptionEditorViewModel(string.Empty, string.Empty, NotifyAndChange));
+            Options.Add(new RecruitingMessageOptionEditorViewModel(string.Empty, string.Empty, NotifyAndChange));
             NotifyAndChange();
         });
 
-        RemoveOptionCommand = new RelayCommand<LfgOptionEditorViewModel>(opt =>
+        RemoveOptionCommand = new RelayCommand<RecruitingMessageOptionEditorViewModel>(opt =>
         {
             if (opt is not null) Options.Remove(opt);
             NotifyAndChange();
@@ -77,9 +77,9 @@ public sealed class LfgGroupEditorViewModel : ObservableObject
     private Action OnChange { get; }
 
     public string Placeholder { get; }
-    public ObservableCollection<LfgOptionEditorViewModel> Options { get; }
+    public ObservableCollection<RecruitingMessageOptionEditorViewModel> Options { get; }
     public RelayCommand AddOptionCommand { get; }
-    public RelayCommand<LfgOptionEditorViewModel> RemoveOptionCommand { get; }
+    public RelayCommand<RecruitingMessageOptionEditorViewModel> RemoveOptionCommand { get; }
 
     public string DefaultValue
     {
@@ -87,7 +87,7 @@ public sealed class LfgGroupEditorViewModel : ObservableObject
         set { if (SetProperty(ref defaultValue, value)) OnChange(); }
     }
 
-    public LfgOptionEditorViewModel? SelectedDefaultOption
+    public RecruitingMessageOptionEditorViewModel? SelectedDefaultOption
     {
         get => Options.FirstOrDefault(o => o.Value == defaultValue);
         set
@@ -108,34 +108,34 @@ public sealed class LfgGroupEditorViewModel : ObservableObject
 
     public bool IsEmpty => Options.Count == 0;
 
-    public LfgOptionGroup ToModel() => new(
+    public RecruitingMessageOptionGroup ToModel() => new(
         Placeholder,
         Options.Select(o => o.ToModel()).ToList(),
         DefaultValue);
 }
 
 /// <summary>
-/// Settings section editor for the LFG message template.
+/// Settings section editor for the Recruiting Chat message template.
 /// Draft is persisted when the main Settings Save button is pressed.
 /// Parse reconciles placeholder groups; Restore defaults resets the draft.
 /// </summary>
-public sealed class LfgTemplateEditorViewModel : ObservableObject
+public sealed class RecruitingMessageTemplateEditorViewModel : ObservableObject
 {
     private readonly IUserSettingsStore settingsStore;
-    private LfgMessageTemplate savedTemplate;
+    private RecruitingMessageTemplate savedTemplate;
 
     private string patternText;
     private string parseError = string.Empty;
     private string parseWarning = string.Empty;
     private bool isDirty;
 
-    public LfgTemplateEditorViewModel(IUserSettingsStore settingsStore, LfgMessageTemplate initialTemplate)
+    public RecruitingMessageTemplateEditorViewModel(IUserSettingsStore settingsStore, RecruitingMessageTemplate initialTemplate)
     {
         this.settingsStore = settingsStore;
         savedTemplate = initialTemplate;
         patternText = initialTemplate.Pattern;
-        Groups = new ObservableCollection<LfgGroupEditorViewModel>(
-            initialTemplate.Groups.Select(g => new LfgGroupEditorViewModel(g, NotifyDirty)));
+        Groups = new ObservableCollection<RecruitingMessageGroupEditorViewModel>(
+            initialTemplate.Groups.Select(g => new RecruitingMessageGroupEditorViewModel(g, NotifyDirty)));
 
         ParseCommand = new RelayCommand(DoParse);
         SaveCommand = new AsyncRelayCommand(SaveAsync, CanSave);
@@ -165,7 +165,7 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
         private set => SetProperty(ref parseWarning, value);
     }
 
-    public ObservableCollection<LfgGroupEditorViewModel> Groups { get; }
+    public ObservableCollection<RecruitingMessageGroupEditorViewModel> Groups { get; }
 
     public RelayCommand ParseCommand { get; }
     public AsyncRelayCommand SaveCommand { get; }
@@ -175,14 +175,14 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
     public bool HasUnsavedChanges => isDirty;
 
     /// <summary>Returns the current draft as a template model.</summary>
-    public LfgMessageTemplate CurrentDraftTemplate() =>
+    public RecruitingMessageTemplate CurrentDraftTemplate() =>
         new(patternText, Groups.Select(g => g.ToModel()).ToList());
 
     /// <summary>
     /// Called by the owner after the template has been persisted externally
     /// (e.g. via the main Settings Save). Updates the saved baseline.
     /// </summary>
-    public void NotifySaved(LfgMessageTemplate template)
+    public void NotifySaved(RecruitingMessageTemplate template)
     {
         savedTemplate = template;
         isDirty = false;
@@ -192,15 +192,15 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
     }
 
     /// <summary>Invoked after a successful save with the persisted template.</summary>
-    public Action<LfgMessageTemplate>? OnSaved { get; set; }
+    public Action<RecruitingMessageTemplate>? OnSaved { get; set; }
 
-    /// <summary>Invoked whenever the dirty state changes. Wire to SettingsViewModel.NotifyLfgChanged.</summary>
+    /// <summary>Invoked whenever the dirty state changes. Wire to SettingsViewModel.NotifyRecruitingMessageChanged.</summary>
     public Action? OnDirtyChanged { get; set; }
 
     private void DoParse()
     {
         var currentGroups = Groups.Select(g => g.ToModel()).ToList();
-        var (ok, error, newGroups) = LfgPatternParser.Reconcile(patternText, currentGroups, savedTemplate.Groups);
+        var (ok, error, newGroups) = RecruitingMessagePatternParser.Reconcile(patternText, currentGroups, savedTemplate.Groups);
 
         if (!ok)
         {
@@ -213,7 +213,7 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
 
         Groups.Clear();
         foreach (var g in newGroups)
-            Groups.Add(new LfgGroupEditorViewModel(g, NotifyDirty));
+            Groups.Add(new RecruitingMessageGroupEditorViewModel(g, NotifyDirty));
 
         var currentPlaceholders = currentGroups.Select(g => g.Placeholder).ToHashSet(StringComparer.Ordinal);
         var newEmpty = Groups.Where(g => g.IsEmpty && !currentPlaceholders.Contains(g.Placeholder))
@@ -234,17 +234,17 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
     {
         var template = CurrentDraftTemplate();
         var current = await settingsStore.LoadAsync();
-        await settingsStore.SaveAsync(current with { LfgTemplate = template });
+        await settingsStore.SaveAsync(current with { RecruitingMessageTemplate = template });
         NotifySaved(template);
     }
 
     private void RestoreDefaults()
     {
-        patternText = LfgMessageTemplate.Default.Pattern;
+        patternText = RecruitingMessageTemplate.Default.Pattern;
         OnPropertyChanged(nameof(PatternText));
         Groups.Clear();
-        foreach (var g in LfgMessageTemplate.Default.Groups)
-            Groups.Add(new LfgGroupEditorViewModel(g, NotifyDirty));
+        foreach (var g in RecruitingMessageTemplate.Default.Groups)
+            Groups.Add(new RecruitingMessageGroupEditorViewModel(g, NotifyDirty));
         ParseError = string.Empty;
         ParseWarning = string.Empty;
         NotifyDirty();
@@ -256,7 +256,7 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(PatternText));
         Groups.Clear();
         foreach (var g in savedTemplate.Groups)
-            Groups.Add(new LfgGroupEditorViewModel(g, NotifyDirty));
+            Groups.Add(new RecruitingMessageGroupEditorViewModel(g, NotifyDirty));
         ParseError = string.Empty;
         ParseWarning = string.Empty;
         NotifySaved(savedTemplate);
@@ -269,5 +269,4 @@ public sealed class LfgTemplateEditorViewModel : ObservableObject
         SaveCommand.NotifyCanExecuteChanged();
         OnDirtyChanged?.Invoke();
     }
-
 }

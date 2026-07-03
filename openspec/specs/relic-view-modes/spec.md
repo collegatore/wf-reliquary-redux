@@ -78,11 +78,11 @@ Compact mode (cards and Table rows) SHALL clip display names as a presentation-l
 ---
 
 ### Requirement: Table mode renders one row per relic
-In **Table** mode, the relics panel SHALL render a table with one top-level row per relic showing: the clipped relic name, a wishlisted-tier marker listing the tiers that contain at least one wishlisted reward in Common → Uncommon → Rare order without parentheses (e.g. "C, R"), and two pictogram actions (rewards modal and LFG composer). When a tier contains more than one wishlisted reward, its marker SHALL be prefixed with the count (e.g. "C, 2 R" for one wishlisted Common and two wishlisted Rares). Rows SHALL be ordered by era (Lith → Meso → Neo → Axi) then alphabetically by relic name, matching the card modes. The **Show vaulted** filter SHALL apply, and vaulted rows SHALL use the same reduced-opacity treatment as vaulted cards.
+In **Table** mode, the relics panel SHALL render a table with one top-level row per relic showing: the clipped relic name, a wishlisted-tier marker listing the tiers that contain at least one wishlisted reward in Common → Uncommon → Rare order without parentheses (e.g. "C, R"), and two pictogram actions (rewards modal and Recruiting Chat message composer). When a tier contains more than one wishlisted reward, its marker SHALL be prefixed with the count (e.g. "C, 2 R" for one wishlisted Common and two wishlisted Rares). Rows SHALL be ordered by era (Lith → Meso → Neo → Axi) then alphabetically by relic name, matching the card modes. The **Show vaulted** filter SHALL apply, and vaulted rows SHALL use the same reduced-opacity treatment as vaulted cards.
 
 #### Scenario: Row shows name, markers, and pictograms
 - **WHEN** a relic with wishlisted Common and Rare rewards is displayed in Table mode
-- **THEN** its row shows the clipped relic name, the marker "C, R", and the rewards-modal and LFG pictograms
+- **THEN** its row shows the clipped relic name, the marker "C, R", and the rewards-modal and Recruiting Chat message pictograms
 
 #### Scenario: Marker counts multiple wishlisted rewards in a tier
 - **WHEN** a relic with one wishlisted Common and two wishlisted Rare rewards is displayed in Table mode
@@ -124,9 +124,9 @@ Each top-level relic row in Table mode SHALL provide a pictogram action that ope
 
 ---
 
-### Requirement: LFG pictogram
-Each top-level relic row in Table mode SHALL provide a pictogram action that opens the existing LFG message composer for that relic, equivalent to the "Compose LFG message…" action on relic cards.
+### Requirement: Recruiting Chat message pictogram
+Each top-level relic row in Table mode SHALL provide a pictogram action that opens the existing Recruiting Chat message composer for that relic, equivalent to the "Compose Recruiting Chat message…" action on relic cards.
 
-#### Scenario: Pictogram opens the LFG composer
-- **WHEN** the user activates the LFG pictogram on a relic row
-- **THEN** the LFG message composer dialog opens for that relic
+#### Scenario: Pictogram opens the Recruiting Chat message composer
+- **WHEN** the user activates the Recruiting Chat message pictogram on a relic row
+- **THEN** the Recruiting Chat message composer dialog opens for that relic
