@@ -216,23 +216,49 @@
               </Button.Flyout>
             </Button>
             <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <CheckBox IsChecked="{Binding PrimeGear.ShowVaulted}" VerticalAlignment="Center" />
-              <TextBlock Text="Show vaulted gear" VerticalAlignment="Center" />
-            </StackPanel>
+            <Button
+                Padding="10,6"
+                Background="Transparent"
+                BorderThickness="0"
+                Command="{Binding PrimeGear.ToggleFilterPanelCommand}"
+                Content="Filters"
+                ToolTip.Tip="Show or hide filter options" />
             <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <CheckBox IsChecked="{Binding PrimeGear.ShowOwned}" VerticalAlignment="Center" />
-              <TextBlock Text="Show owned gear" VerticalAlignment="Center" />
-            </StackPanel>
-            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <CheckBox IsChecked="{Binding PrimeGear.IsGroupMode}" VerticalAlignment="Center" />
-              <TextBlock Text="Enable group operations" VerticalAlignment="Center" />
-            </StackPanel>
+            <Button
+                Padding="10,6"
+                Background="Transparent"
+                BorderThickness="0"
+                Command="{Binding PrimeGear.ToggleGroupModeCommand}"
+                Content="Group operations"
+                ToolTip.Tip="Enable or disable group selection and bulk actions" />
           </StackPanel>
 
         </DockPanel>
+      </Border>
+
+      <!-- Filter panel: shown when the Filters button is toggled on. -->
+      <Border
+          Margin="8,0,8,8"
+          Padding="12,8"
+          Background="#1A808080"
+          CornerRadius="4"
+          IsVisible="{Binding PrimeGear.IsFilterPanelOpen}">
+        <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <CheckBox IsChecked="{Binding PrimeGear.ShowVaulted}" VerticalAlignment="Center" />
+            <TextBlock Text="Show vaulted gear" VerticalAlignment="Center" />
+          </StackPanel>
+          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <CheckBox IsChecked="{Binding PrimeGear.ShowOwned}" VerticalAlignment="Center" />
+            <TextBlock Text="Show owned gear" VerticalAlignment="Center" />
+          </StackPanel>
+          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <CheckBox IsChecked="{Binding PrimeGear.ShowWishlistedOnly}" VerticalAlignment="Center" />
+            <TextBlock Text="Wishlisted only" VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
       </Border>
 
       <!-- Group-operations control row: only shown while group operations is enabled. -->
@@ -248,11 +274,11 @@
               VerticalAlignment="Center"
               MinWidth="80" />
           <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" />
-          <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" />
+          <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" Background="Transparent" BorderThickness="0" />
+          <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" Background="Transparent" BorderThickness="0" />
           <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" />
-          <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" />
+          <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" Background="Transparent" BorderThickness="0" />
+          <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" Background="Transparent" BorderThickness="0" />
         </StackPanel>
       </Border>
 

@@ -684,6 +684,104 @@ public sealed class PrimeGearViewModelTests
         Assert.That(vm.SelectedCount, Is.EqualTo(0));
     }
 
+    // ── Wishlisted-only filter ────────────────────────────────────────────────
+
+    [Test]
+    public async Task ShowWishlistedOnly_False_AllCardsVisible()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false),
+            new PrimeGearEntry("Mag Prime", ["Systems"], IsVaulted: false)
+        ]);
+        var store = StoreWithItems([]); // no parts checked
+
+        var vm = new PrimeGearViewModel(reader.Object, store.Object, OwnedStore().Object);
+        await SettleAsync();
+
+        Assert.That(vm.ActiveCards.All(c => c.IsShown), Is.True,
+            "with ShowWishlistedOnly off, cards with no checked parts remain visible");
+    }
+
+    [Test]
+    public async Task ShowWishlistedOnly_True_HidesCardWithNoCheckedParts()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+        var store = StoreWithItems([]); // no parts checked
+
+        var vm = new PrimeGearViewModel(reader.Object, store.Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.ShowWishlistedOnly = true;
+
+        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsShown, Is.False);
+    }
+
+    [Test]
+    public async Task ShowWishlistedOnly_True_ShowsCardWithCheckedPart()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics", "Systems"], IsVaulted: false),
+            new PrimeGearEntry("Mag Prime", ["Systems"], IsVaulted: false)
+        ]);
+        var store = StoreWithItems([
+            new WishlistItem(ActiveWishlistId, "ASH PRIME NEUROPTICS", "Ash Prime", "Neuroptics", IsGhost: false)
+        ]);
+
+        var vm = new PrimeGearViewModel(reader.Object, store.Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.ShowWishlistedOnly = true;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsShown, Is.True,
+                "card with at least one checked part is shown");
+            Assert.That(vm.ActiveCards.Single(c => c.GearName == "Mag Prime").IsShown, Is.False,
+                "card with no checked parts is hidden");
+        });
+    }
+
+    [Test]
+    public async Task ShowWishlistedOnly_Unchecking_RestoresHiddenCards()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+        var store = StoreWithItems([]);
+
+        var vm = new PrimeGearViewModel(reader.Object, store.Object, OwnedStore().Object);
+        await SettleAsync();
+
+        vm.ShowWishlistedOnly = true;
+        Assert.That(vm.ActiveCards.Single().IsShown, Is.False);
+
+        vm.ShowWishlistedOnly = false;
+        Assert.That(vm.ActiveCards.Single().IsShown, Is.True);
+    }
+
+    [Test]
+    public async Task ShowWishlistedOnly_OwnedFilterTakesPrecedence_OwnedCardWithCheckedPartsIsHidden()
+    {
+        var reader = ReaderWith([
+            new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
+        ]);
+        var store = StoreWithItems([
+            new WishlistItem(ActiveWishlistId, "ASH PRIME NEUROPTICS", "Ash Prime", "Neuroptics", IsGhost: false)
+        ]);
+        var owned = OwnedStore("Ash Prime");
+
+        var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object);
+        await SettleAsync();
+
+        // Both ShowOwned=false (default) and ShowWishlistedOnly=true
+        vm.ShowWishlistedOnly = true;
+
+        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsShown, Is.False,
+            "owned card is hidden regardless of wishlist state when ShowOwned is false");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>

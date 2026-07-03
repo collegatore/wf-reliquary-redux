@@ -264,6 +264,8 @@ public sealed class PrimeGearViewModel : ObservableObject
     private bool showVaulted;
     private bool showOwned;
     private bool isGroupMode;
+    private bool isFilterPanelOpen;
+    private bool showWishlistedOnly;
     private int selectedCount;
     private bool isBusy;
     private string searchText = string.Empty;
@@ -285,6 +287,8 @@ public sealed class PrimeGearViewModel : ObservableObject
         SelectNoneCommand = new RelayCommand(ClearSelection);
         MarkSelectedOwnedCommand = new RelayCommand(() => MarkSelectedOwnedAsync().SafeFireAndForget());
         UnmarkSelectedCommand = new RelayCommand(UnmarkSelected);
+        ToggleFilterPanelCommand = new RelayCommand(() => IsFilterPanelOpen = !IsFilterPanelOpen);
+        ToggleGroupModeCommand = new RelayCommand(() => IsGroupMode = !IsGroupMode);
         // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
         ReloadAsync().SafeFireAndForget();
     }
@@ -311,6 +315,41 @@ public sealed class PrimeGearViewModel : ObservableObject
 
     /// <summary>Clears the owned mark on every selected card.</summary>
     public ICommand UnmarkSelectedCommand { get; }
+
+    /// <summary>Toggles the filter panel open or closed.</summary>
+    public ICommand ToggleFilterPanelCommand { get; }
+
+    /// <summary>Toggles group-operations mode on or off.</summary>
+    public ICommand ToggleGroupModeCommand { get; }
+
+    /// <summary>Whether the collapsible filter panel is currently visible. Ephemeral — not persisted.</summary>
+    public bool IsFilterPanelOpen
+    {
+        get => isFilterPanelOpen;
+        set
+        {
+            if (isFilterPanelOpen == value) return;
+            isFilterPanelOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// When true, only cards that have at least one part checked in the active wishlist are shown.
+    /// Ephemeral — not persisted.
+    /// </summary>
+    public bool ShowWishlistedOnly
+    {
+        get => showWishlistedOnly;
+        set
+        {
+            if (showWishlistedOnly == value) return;
+            showWishlistedOnly = value;
+            OnPropertyChanged();
+            ClearSelection();
+            ApplyFilters();
+        }
+    }
 
     /// <summary>
     /// How long a card fades before it collapses after being marked owned while owned
@@ -740,22 +779,25 @@ public sealed class PrimeGearViewModel : ObservableObject
         foreach (var card in allCards)
         {
             bool ownedHidden = card.IsOwned && !showOwned;
+            bool wishlistedHidden = showWishlistedOnly && !card.Parts.Any(p => p.IsChecked);
             bool searchMatch = !searchActive || card.GearName.Contains(query, StringComparison.OrdinalIgnoreCase);
 
-            card.IsShown = !ownedHidden && (!searchActive || searchMatch);
+            card.IsShown = !ownedHidden && !wishlistedHidden && (!searchActive || searchMatch);
 
             if (searchActive && searchMatch)
             {
                 if (ownedHidden)
                     hiddenOwned++;
+                else if (wishlistedHidden)
+                { /* not broken out in the hint */ }
                 else if (card.IsVaulted && !showVaulted)
                     hiddenVaulted++;
                 else
                     visible++;
             }
-            else if (!searchActive && !ownedHidden)
+            else if (!searchActive && !ownedHidden && !wishlistedHidden)
             {
-                // When no search, every non-owned-hidden card counts as visible
+                // When no search, every non-hidden card counts as visible
                 // (vaulted cards are visible within their section even when the section is collapsed).
                 visible++;
             }
