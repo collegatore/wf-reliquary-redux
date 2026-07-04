@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application;
@@ -14,6 +15,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IDropTableSourceExporter sourceExporter;
     private readonly IImportMetadataReader importMetadataReader;
     private readonly IDropTableImportStore importStore;
+    private readonly IDropTableSourceStore sourceStore;
     private readonly IErrorReporter errorReporter;
     private readonly BusyScope busy;
 
@@ -35,6 +37,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool hasImportedData;
 
+    [ObservableProperty]
+    private DropTableSourceSummary? selectedSource;
+
     public MainWindowViewModel(
         IDropTableSourceRefreshWorkflow refreshWorkflow,
         IDropTableImportWorkflow importWorkflow,
@@ -42,6 +47,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         IDropTableLocalFileSourceWorkflow localFileWorkflow,
         IDropTableSourceExporter sourceExporter,
         IDropTableImportStore importStore,
+        IDropTableSourceStore sourceStore,
         IErrorReporter? errorReporter = null)
     {
         this.refreshWorkflow = refreshWorkflow;
@@ -50,13 +56,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
         this.sourceExporter = sourceExporter;
         this.importMetadataReader = importMetadataReader;
         this.importStore = importStore;
+        this.sourceStore = sourceStore;
         this.errorReporter = errorReporter ?? NoOpErrorReporter.Instance;
 
         DownloadCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
-        ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy && HasStoredSources);
+        ImportCommand = new AsyncRelayCommand(ImportAsync, () => !IsBusy && SelectedSource != null);
         ReadFromFileCommand = new AsyncRelayCommand(ReadFromFileAsync, () => !IsBusy);
         ExportSourcesCommand = new AsyncRelayCommand(ExportSourcesAsync, () => !IsBusy && HasStoredSources);
         ClearImportCommand = new AsyncRelayCommand(ClearImportAsync, () => HasImportedData && !IsBusy);
+        OpenSourceBrowserCommand = new AsyncRelayCommand(OpenSourceBrowserInternalAsync, () => !IsBusy && AvailableSources.Count > 0);
 
         busy = new BusyScope(_ =>
         {
@@ -66,6 +74,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             ReadFromFileCommand.NotifyCanExecuteChanged();
             ExportSourcesCommand.NotifyCanExecuteChanged();
             ClearImportCommand.NotifyCanExecuteChanged();
+            OpenSourceBrowserCommand.NotifyCanExecuteChanged();
         });
     }
 
@@ -78,6 +87,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public Func<Task<string?>>? PickExportFolderAsync { get; set; }
 
     public Func<Task<bool>>? ConfirmClear { get; set; }
+
+    public Func<DropTableSourceSummary, Task<bool>>? ConfirmOverwrite { get; set; }
+
+    public Func<IReadOnlyList<DropTableSourceSummary>, Task>? OpenSourceBrowserAsync { get; set; }
 
     public string Title => ApplicationInfo.GetStartupSummary();
 
@@ -94,11 +107,16 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public IAsyncRelayCommand ClearImportCommand { get; }
 
+    public IAsyncRelayCommand OpenSourceBrowserCommand { get; }
+
+    public ObservableCollection<DropTableSourceSummary> AvailableSources { get; } = [];
+
     public async Task LoadStatusAsync(CancellationToken cancellationToken = default)
     {
         ApplyStatus(await refreshWorkflow.GetStatusAsync(cancellationToken));
         await RefreshImportStatusAsync(cancellationToken);
         HasStoredSources = await refreshWorkflow.HasStoredSourcesAsync(cancellationToken);
+        await RefreshSourceListAsync(cancellationToken);
     }
 
     public async Task RefreshAsync()
@@ -111,12 +129,40 @@ public sealed partial class MainWindowViewModel : ObservableObject
         try
         {
             var result = await refreshWorkflow.RefreshAsync();
+
+            if (result.IsDuplicateVersion)
+            {
+                var existingSummary = AvailableSources.FirstOrDefault(s => s.Id == result.ExistingId!.Value);
+                if (ConfirmOverwrite != null && existingSummary != null && await ConfirmOverwrite(existingSummary))
+                {
+                    var confirmResult = await refreshWorkflow.ConfirmSaveAsync(result.Pending!, result.ExistingId!.Value);
+                    ApplyStatus(confirmResult.Status);
+                    if (confirmResult.Succeeded)
+                    {
+                        OperationStatusText = $"Source downloaded. {LastUpdateText(confirmResult.Status.LastUpdate)}.";
+                        HasStoredSources = true;
+                        await RefreshSourceListAsync();
+                    }
+                    else
+                    {
+                        OperationStatusText = string.Empty;
+                        errorReporter.Report($"Download failed: {confirmResult.ErrorMessage}");
+                    }
+                }
+                else
+                {
+                    OperationStatusText = string.Empty;
+                }
+                return;
+            }
+
             ApplyStatus(result.Status);
 
             if (result.Succeeded)
             {
                 OperationStatusText = $"Source downloaded. {LastUpdateText(result.Status.LastUpdate)}.";
                 HasStoredSources = true;
+                await RefreshSourceListAsync();
             }
             else
             {
@@ -140,7 +186,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         try
         {
-            var result = await importWorkflow.ImportAsync();
+            var result = await importWorkflow.ImportAsync(SelectedSource!.Id);
             if (result.Succeeded)
             {
                 OperationStatusText = ImportCompletedText(result);
@@ -214,11 +260,39 @@ public sealed partial class MainWindowViewModel : ObservableObject
         try
         {
             var result = await localFileWorkflow.RegisterFromFileAsync(path);
+
+            if (result.IsDuplicateVersion)
+            {
+                var existingSummary = AvailableSources.FirstOrDefault(s => s.Id == result.ExistingId!.Value);
+                if (ConfirmOverwrite != null && existingSummary != null && await ConfirmOverwrite(existingSummary))
+                {
+                    var confirmResult = await localFileWorkflow.ConfirmSaveAsync(result.Pending!, result.ExistingId!.Value);
+                    if (confirmResult.Succeeded)
+                    {
+                        ApplyStatus(await refreshWorkflow.GetStatusAsync());
+                        HasStoredSources = true;
+                        OperationStatusText = $"Source read from file. {LastUpdateText(confirmResult.LastUpdate)}.";
+                        await RefreshSourceListAsync();
+                    }
+                    else
+                    {
+                        OperationStatusText = string.Empty;
+                        errorReporter.Report($"Reading file failed: {confirmResult.ErrorMessage}");
+                    }
+                }
+                else
+                {
+                    OperationStatusText = string.Empty;
+                }
+                return;
+            }
+
             if (result.Succeeded)
             {
                 ApplyStatus(await refreshWorkflow.GetStatusAsync());
                 HasStoredSources = true;
                 OperationStatusText = $"Source read from file. {LastUpdateText(result.LastUpdate)}.";
+                await RefreshSourceListAsync();
             }
             else
             {
@@ -268,15 +342,40 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    partial void OnHasStoredSourcesChanged(bool value)
+    partial void OnSelectedSourceChanged(DropTableSourceSummary? value)
     {
         ImportCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnHasStoredSourcesChanged(bool value)
+    {
         ExportSourcesCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnHasImportedDataChanged(bool value)
     {
         ClearImportCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task RefreshSourceListAsync(CancellationToken cancellationToken = default)
+    {
+        var summaries = await sourceStore.ListSummariesAsync(cancellationToken);
+        AvailableSources.Clear();
+        foreach (var summary in summaries)
+        {
+            AvailableSources.Add(summary);
+        }
+        SelectedSource = AvailableSources.Count > 0 ? AvailableSources[0] : null;
+        HasStoredSources = AvailableSources.Count > 0;
+        OpenSourceBrowserCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task OpenSourceBrowserInternalAsync()
+    {
+        if (OpenSourceBrowserAsync != null)
+        {
+            await OpenSourceBrowserAsync(AvailableSources.ToList().AsReadOnly());
+        }
     }
 
     private async Task RefreshImportStatusAsync(CancellationToken cancellationToken = default)

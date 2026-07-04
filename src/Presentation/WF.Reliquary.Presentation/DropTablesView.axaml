@@ -33,6 +33,23 @@
           Text="{Binding DropTables.ImportStatusText}"
           TextWrapping="Wrap" />
       <StackPanel Orientation="Horizontal" Spacing="8">
+        <ComboBox
+            MinWidth="200"
+            ItemsSource="{Binding DropTables.AvailableSources}"
+            SelectedItem="{Binding DropTables.SelectedSource}"
+            IsEnabled="{Binding DropTables.HasStoredSources}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding LastUpdate, TargetNullValue='(version unknown)', FallbackValue='(version unknown)'}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button
+            Padding="8"
+            Command="{Binding DropTables.OpenSourceBrowserCommand}"
+            Content="Details" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
         <Button
             Padding="14,8"
             Command="{Binding DropTables.ImportCommand}"

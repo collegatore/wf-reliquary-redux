@@ -41,8 +41,31 @@ public sealed class DropTableLocalFileSourceWorkflow : IDropTableLocalFileSource
         }
 
         var content = new DropTableSourceContent(new Uri(filePath), html, now(), lastUpdate);
+
+        var existing = await sourceStore.FindSummaryByLastUpdateAsync(lastUpdate, cancellationToken);
+        if (existing is not null)
+        {
+            return DropTableFileRegistrationResult.DuplicateVersion(content, existing.Id);
+        }
+
         await sourceStore.SaveAsync(content, cancellationToken);
 
         return new DropTableFileRegistrationResult(true, null, lastUpdate);
+    }
+
+    public async Task<DropTableFileRegistrationResult> ConfirmSaveAsync(
+        DropTableSourceContent pending,
+        long existingId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await sourceStore.ReplaceAsync(existingId, pending, cancellationToken);
+            return new DropTableFileRegistrationResult(true, null, pending.LastUpdate);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return new DropTableFileRegistrationResult(false, ex.Message);
+        }
     }
 }

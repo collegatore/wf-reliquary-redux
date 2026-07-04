@@ -369,6 +369,9 @@ namespace WF.Reliquary.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SourceLastUpdate")
+                        .IsUnique();
+
                     b.ToTable("source_files", (string)null);
                 });
 
