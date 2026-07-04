@@ -2,6 +2,10 @@
 
 A quick tour of the behaviors that aren't self-evident from the UI. For setup basics (getting drop tables into the app), see the [README](../README.md#initial-setup).
 
+## First launch (SmartScreen)
+
+The app is unsigned, so the first time you run the downloaded executable Windows SmartScreen will probably show **"Windows protected your PC"**. Click **More info → Run anyway** to start it. This is expected for an unsigned pre-release build; see [Download and Install](../README.md#download-and-install) for the full walkthrough and which artifact to pick.
+
 ## Download and import are separate steps
 
 `File → Drop Tables` has two distinct actions:

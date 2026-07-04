@@ -3,7 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:WF.Reliquary.Presentation"
-    Icon="avares://WF.Reliquary.Presentation/Assets/icon.ico"
+    Icon="avares://WF.Reliquary.Redux/Assets/icon.ico"
     Title="{Binding DropTables.Title}"
     Width="900"
     Height="600">

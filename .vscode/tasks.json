@@ -91,10 +91,21 @@
       "args": [
         "publish",
         "src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj",
-        "-c", "Release",
-        "-r", "win-x64",
-        "--self-contained",
-        "-p:PublishSingleFile=true"
+        "-p:PublishProfile=win-x64-self-contained"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "dotnet: publish (framework-dependent)",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj",
+        "-p:PublishProfile=win-x64-framework-dependent"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -106,7 +117,7 @@
       "type": "process",
       "command": "dotnet",
       "args": [
-        "WF.Reliquary.Presentation.dll"
+        "WF.Reliquary.Redux.dll"
       ],
       "options": {
         "cwd": "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation/bin/Debug/net10.0"

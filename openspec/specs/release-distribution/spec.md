@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Capability: Release Distribution
+
+## Purpose
+
+The repository SHALL provide reproducible publish profiles, continuous integration, a tag-triggered release pipeline, and end-user download documentation so that Windows x64 builds of the application can be produced, validated, and distributed to end users.
+
+## Requirements
 
 ### Requirement: Repository-Defined Publish Profiles
 
@@ -25,12 +31,17 @@ The repository SHALL contain a GitHub Actions workflow that builds the solution 
 
 ### Requirement: Tag-Triggered Release Pipeline
 
-The repository SHALL contain a GitHub Actions release workflow triggered by pushing a tag matching `v*`. The workflow SHALL: verify that the tag version equals the `<Version>` in `Directory.Build.props` and fail otherwise; build and run the full test suite; publish both publish profiles; package each output as a zip whose name contains the version and flavor; and create a GitHub Release for the tag with both zips attached and the matching `CHANGELOG.md` version section as the release body. The workflow SHALL fail if the changelog section for the version cannot be found. The workflow SHALL run with the built-in `GITHUB_TOKEN` (`permissions: contents: write`) and SHALL require no repository configuration beyond the committed workflow files.
+The repository SHALL contain a GitHub Actions release workflow triggered by pushing a tag matching `v*`. The workflow SHALL: verify that the tag version equals the `<Version>` in `Directory.Build.props` and fail otherwise; build and run the full test suite; publish both publish profiles; package each executable as an exe-only zip whose name contains the version and flavor; package the debug symbols (`.pdb`) as a separate `-symbols` zip; and create a GitHub Release for the tag with all three zips attached and the matching `CHANGELOG.md` version section as the release body. Because the symbols are identical across both builds, a single symbols package SHALL cover both; the workflow SHALL fail if the two builds' symbols are not identical. The workflow SHALL fail if the changelog section for the version cannot be found. The workflow SHALL run with the built-in `GITHUB_TOKEN` (`permissions: contents: write`) and SHALL require no repository configuration beyond the committed workflow files.
 
 #### Scenario: Matching tag produces a release
 
 - **WHEN** a tag `v<X>` is pushed and `<X>` equals the version in `Directory.Build.props`
-- **THEN** a GitHub Release for the tag is created with the self-contained and framework-dependent zips attached and the `CHANGELOG.md` section for `<X>` as its body
+- **THEN** a GitHub Release for the tag is created with the self-contained exe zip, the framework-dependent exe zip, and the `-symbols` zip attached, and the `CHANGELOG.md` section for `<X>` as its body
+
+#### Scenario: End-user zips carry the exe without debug symbols
+
+- **WHEN** either end-user zip (self-contained or framework-dependent) is opened
+- **THEN** it contains the application executable and no `.pdb` files, and the `.pdb` symbols are instead found in the separate `-symbols` zip
 
 #### Scenario: Mismatched tag fails fast
 

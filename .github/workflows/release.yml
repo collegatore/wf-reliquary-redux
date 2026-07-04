@@ -1,0 +1,135 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # The tag (without the leading 'v') must equal <Version> in
+      # Directory.Build.props. Directory.Build.props is authoritative — a
+      # mismatched tag would ship a build whose internal version disagrees
+      # with the release name, so fail loudly before building anything.
+      - name: Verify tag matches Directory.Build.props version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $tagVersion = $tag -replace '^v', ''
+          [xml]$props = Get-Content 'Directory.Build.props'
+          $propsVersion = ($props.Project.PropertyGroup.Version | Select-Object -First 1).Trim()
+          Write-Host "Tag version:   $tagVersion"
+          Write-Host "Props version: $propsVersion"
+          if ($tagVersion -ne $propsVersion) {
+            Write-Error "Tag version '$tagVersion' does not match Directory.Build.props <Version> '$propsVersion'."
+            exit 1
+          }
+          "VERSION=$propsVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      - name: Publish self-contained
+        run: dotnet publish src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj -p:PublishProfile=win-x64-self-contained
+
+      - name: Publish framework-dependent
+        run: dotnet publish src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj -p:PublishProfile=win-x64-framework-dependent
+
+      - name: Package artifacts
+        shell: pwsh
+        run: |
+          $version = $env:VERSION
+          $base = 'src/Presentation/WF.Reliquary.Presentation/bin/publish'
+          $scDir = "$base/win-x64-self-contained"
+          $fdDir = "$base/win-x64-framework-dependent"
+          New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
+
+          $selfContainedZip = "artifacts/WF.Reliquary.Redux-$version-win-x64-self-contained.zip"
+          $frameworkZip     = "artifacts/WF.Reliquary.Redux-$version-win-x64.zip"
+          $symbolsZip       = "artifacts/WF.Reliquary.Redux-$version-symbols.zip"
+
+          # End-user artifacts: the single exe only. Debug symbols ship separately.
+          Compress-Archive -Path "$scDir/*.exe" -DestinationPath $selfContainedZip -Force
+          Compress-Archive -Path "$fdDir/*.exe" -DestinationPath $frameworkZip     -Force
+
+          # Debug symbols (.pdb) are byte-identical between the two builds — one
+          # package covers both. Sanity-check that before trusting it.
+          $scHashes = Get-ChildItem "$scDir/*.pdb" | Sort-Object Name | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash }
+          $fdHashes = Get-ChildItem "$fdDir/*.pdb" | Sort-Object Name | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash }
+          if (($scHashes -join ',') -ne ($fdHashes -join ',')) {
+            Write-Error "Self-contained and framework-dependent .pdb symbols differ; cannot ship a single symbols package."
+            exit 1
+          }
+          Compress-Archive -Path "$scDir/*.pdb" -DestinationPath $symbolsZip -Force
+
+          "SELF_CONTAINED_ZIP=$selfContainedZip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "FRAMEWORK_ZIP=$frameworkZip"          | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SYMBOLS_ZIP=$symbolsZip"              | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      # Extract the CHANGELOG section for this version as the release body.
+      # A release without notes is a process error (the alpha notes carry the
+      # mandatory data-wipe warning), so fail if the section is missing/empty.
+      - name: Extract changelog section
+        shell: pwsh
+        run: |
+          $version = $env:VERSION
+          $lines = Get-Content 'CHANGELOG.md'
+          $body = New-Object System.Collections.Generic.List[string]
+          $inSection = $false
+          foreach ($line in $lines) {
+            if ($line -match '^##\s+\[') {
+              if ($inSection) { break }
+              if ($line -match "^##\s+\[$([regex]::Escape($version))\]") {
+                $inSection = $true
+                continue
+              }
+            }
+            if ($inSection) { $body.Add($line) }
+          }
+          $text = ($body -join "`n").Trim()
+          if (-not $inSection) {
+            Write-Error "No CHANGELOG.md section found for version '$version'."
+            exit 1
+          }
+          if ([string]::IsNullOrWhiteSpace($text)) {
+            Write-Error "CHANGELOG.md section for version '$version' is empty."
+            exit 1
+          }
+          Set-Content -Path 'release-notes.md' -Value $text -Encoding utf8
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:VERSION
+          $prerelease = if ($version -match '-') { '--prerelease' } else { '' }
+          $args = @(
+            'release', 'create', "${{ github.ref_name }}",
+            $env:SELF_CONTAINED_ZIP,
+            $env:FRAMEWORK_ZIP,
+            $env:SYMBOLS_ZIP,
+            '--title', "v$version",
+            '--notes-file', 'release-notes.md'
+          )
+          if ($prerelease) { $args += $prerelease }
+          gh @args
