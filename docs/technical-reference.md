@@ -27,6 +27,41 @@ dotnet run --project src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Pre
 
 VS Code workspace tasks (`Ctrl+Shift+B`): `dotnet: restore`, `dotnet: build`, `dotnet: test`, `dotnet: run presentation`. Launch configurations: `.NET: Debug Presentation` (with debugger), `.NET: Launch Presentation` (without).
 
+## Publishing and Releases
+
+### Local publish
+
+Two Windows x64 publish profiles live under `src/Presentation/WF.Reliquary.Presentation/Properties/PublishProfiles/`:
+
+```bash
+# Self-contained single-file exe — runs without any .NET install (~110 MB).
+dotnet publish src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj -p:PublishProfile=win-x64-self-contained
+
+# Framework-dependent single exe — small (~40 MB), needs the .NET 10 Desktop Runtime (x64).
+dotnet publish src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj -p:PublishProfile=win-x64-framework-dependent
+```
+
+Output goes to `bin/publish/win-x64-self-contained/` and `bin/publish/win-x64-framework-dependent/`. Both profiles are single-file (`PublishSingleFile` + `IncludeNativeLibrariesForSelfExtract`) so each ships as one `WF.Reliquary.Redux.exe` (the output is renamed from the internal `.Presentation` project name via `AssemblyName`) rather than a folder of ~60 DLLs — the framework-dependent build just leaves the .NET runtime out. Neither profile trims assemblies (Avalonia + EF Core rely on reflection); both strip the large NuGet-provided native `lib*.pdb` symbols to keep artifacts lean. The same profiles are available as VS Code tasks: `dotnet: publish (self-contained)` and `dotnet: publish (framework-dependent)`.
+
+### CI and release automation
+
+- `.github/workflows/ci.yml` — builds and runs the full test suite on a Windows runner for every push and pull request to `develop` or `main`.
+- `.github/workflows/release.yml` — triggered by pushing a `v*` tag. It verifies the tag matches `Directory.Build.props` `<Version>` (fails on mismatch), builds and tests, publishes both profiles, packages them, extracts the matching `CHANGELOG.md` section as the release body (fails if absent), and creates a GitHub Release. It uses the built-in `GITHUB_TOKEN`; no repository configuration beyond the committed workflow files is required. Three zips are attached: two exe-only end-user builds and a shared `-symbols.zip`. The end-user zips carry only the exe; the four managed `.pdb`s (byte-identical across both builds — the workflow verifies this) go in the symbols zip so line numbers are still recoverable for crash reports without cluttering the download.
+
+### Cutting a release
+
+`Directory.Build.props` is the authoritative version. To publish a release:
+
+1. Bump `<Version>` in `Directory.Build.props`.
+2. Add a matching section to `CHANGELOG.md` (Keep a Changelog format: `## [<version>] — <date>`).
+3. Merge to `main`, then tag that commit and push:
+   ```bash
+   git tag v<version>      # e.g. git tag v1.0.0-alpha
+   git push origin v<version>
+   ```
+
+The tag must exactly equal the props version (with a leading `v`). The release workflow does the rest. Zips are named `WF.Reliquary.Redux-<version>-win-x64-self-contained.zip`, `WF.Reliquary.Redux-<version>-win-x64.zip`, and `WF.Reliquary.Redux-<version>-symbols.zip`. Releases whose version contains a pre-release suffix (e.g. `-alpha`) are marked as GitHub pre-releases.
+
 ## Project Layout
 
 ```

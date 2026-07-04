@@ -7,7 +7,7 @@ namespace WF.Reliquary.IntegrationTests;
 public sealed class VsCodeWorkflowTests
 {
     private const string PresentationProject = "src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj";
-    private const string PresentationOutput = "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation/bin/Debug/net10.0/WF.Reliquary.Presentation.dll";
+    private const string PresentationOutput = "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation/bin/Debug/net10.0/WF.Reliquary.Redux.dll";
     private const string PresentationWorkingDirectory = "${workspaceFolder}/src/Presentation/WF.Reliquary.Presentation";
 
     [Test]

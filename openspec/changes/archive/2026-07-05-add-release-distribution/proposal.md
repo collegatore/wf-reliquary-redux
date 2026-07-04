@@ -21,7 +21,9 @@ The repo currently has no way to ship the app: no publish configuration, no CI, 
 
 ### Modified Capabilities
 
-*(None. `release-documentation` — introduced by the in-flight `prepare-alpha-release` change — gets its Windows-only release-notes wording amended directly in that change's delta spec rather than via a second delta here, since it has not been synced to main specs yet.)*
+- `app-icon`: the published/debug executable is renamed to `WF.Reliquary.Redux.exe` via `<AssemblyName>` (the internal `.Presentation` layer name shouldn't reach end users). Because Avalonia resource URIs embed the assembly name, the main-window icon URI changes from `avares://WF.Reliquary.Presentation/...` to `avares://WF.Reliquary.Redux/...`; the app-icon spec scenarios are updated to match.
+
+*(`release-documentation` — introduced by the in-flight `prepare-alpha-release` change — gets its Windows-only release-notes wording amended directly in that change's delta spec rather than via a second delta here, since it has not been synced to main specs yet.)*
 
 ## Impact
 

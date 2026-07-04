@@ -16,7 +16,7 @@ The Presentation project SHALL include `Assets/icon.ico` (multi-resolution: 32, 
 
 #### Scenario: ICO is embedded as AvaloniaResource
 - **WHEN** the Presentation `.csproj` is built
-- **THEN** `icon.ico` is embedded via `<AvaloniaResource>` and accessible at `avares://WF.Reliquary.Presentation/Assets/icon.ico`
+- **THEN** `icon.ico` is embedded via `<AvaloniaResource>` and accessible at `avares://WF.Reliquary.Redux/Assets/icon.ico` (the assembly component follows `<AssemblyName>`, which is `WF.Reliquary.Redux`)
 
 ### Requirement: Windows executable carries the branded icon
 
@@ -40,4 +40,4 @@ The Presentation `.csproj` SHALL set `<ApplicationIcon>` to the `.ico` file so t
 
 #### Scenario: Icon property wired in MainWindow
 - **WHEN** `MainWindow.axaml` is inspected
-- **THEN** the `Window` element has `Icon="avares://WF.Reliquary.Presentation/Assets/icon.ico"`
+- **THEN** the `Window` element has `Icon="avares://WF.Reliquary.Redux/Assets/icon.ico"`
