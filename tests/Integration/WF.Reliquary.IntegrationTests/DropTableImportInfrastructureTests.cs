@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using NUnit.Framework;
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Infrastructure.DropTables;
+using WF.Reliquary.Infrastructure.Storage;
 
 namespace WF.Reliquary.IntegrationTests;
 
@@ -400,7 +401,9 @@ public sealed class DropTableImportInfrastructureTests
     {
         var directory = Path.Combine(Path.GetTempPath(), "wf-reliquary-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
-        return Path.Combine(directory, "import.sqlite");
+        var dbPath = Path.Combine(directory, "import.sqlite");
+        new SqliteDatabaseInitializer(dbPath).InitializeAsync().GetAwaiter().GetResult();
+        return dbPath;
     }
 
     private static long ScalarLong(string databasePath, string sql)

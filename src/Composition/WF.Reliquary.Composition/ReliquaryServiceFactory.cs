@@ -4,6 +4,7 @@ using WF.Reliquary.Infrastructure.DropTables;
 using WF.Reliquary.Infrastructure.Logging;
 using WF.Reliquary.Infrastructure.Settings;
 using WF.Reliquary.Infrastructure.Shell;
+using WF.Reliquary.Infrastructure.Storage;
 
 namespace WF.Reliquary.Composition;
 
@@ -83,6 +84,11 @@ public static class ReliquaryServiceFactory
     public static IWishlistFarmingMissionsReader CreateWishlistFarmingMissionsReader()
     {
         return new SqliteWishlistFarmingMissionsReader();
+    }
+
+    public static IDatabaseInitializer CreateDatabaseInitializer()
+    {
+        return new SqliteDatabaseInitializer();
     }
 
     public static IErrorLog CreateErrorLog()

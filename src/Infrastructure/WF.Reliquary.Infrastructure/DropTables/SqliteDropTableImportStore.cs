@@ -26,13 +26,6 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
     public Task ClearAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync(async (context, ct) =>
         {
-            var directory = Path.GetDirectoryName(DatabasePath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
             await using var transaction = await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
 
             await context.MissionRewards.ExecuteDeleteAsync(ct).ConfigureAwait(false);
@@ -53,13 +46,6 @@ public sealed class SqliteDropTableImportStore : IDropTableImportStore
 
         return executor.RunAsync(async (context, ct) =>
         {
-            var directory = Path.GetDirectoryName(DatabasePath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
             await using var transaction = await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
 
             // Clear snapshot tables in FK-dependency order.

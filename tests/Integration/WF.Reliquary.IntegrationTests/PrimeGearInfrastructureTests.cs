@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Infrastructure.DropTables;
+using WF.Reliquary.Infrastructure.Storage;
 
 namespace WF.Reliquary.IntegrationTests;
 
@@ -72,9 +73,9 @@ public sealed class PrimeGearInfrastructureTests
     }
 
     [Test]
-    public async Task GetAllAsync_ReturnsEmptyList_WhenDatabaseDoesNotExist()
+    public async Task GetAllAsync_ReturnsEmptyList_WhenDatabaseIsEmpty()
     {
-        var databasePath = Path.Combine(Path.GetTempPath(), "wf-reliquary-tests", Guid.NewGuid().ToString("N"), "nonexistent.sqlite");
+        var databasePath = TempDatabasePath();
 
         var reader = new SqlitePrimeGearReader(databasePath);
         var entries = await reader.GetAllAsync();
@@ -102,6 +103,8 @@ public sealed class PrimeGearInfrastructureTests
     {
         var directory = Path.Combine(Path.GetTempPath(), "wf-reliquary-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
-        return Path.Combine(directory, "import.sqlite");
+        var dbPath = Path.Combine(directory, "import.sqlite");
+        new SqliteDatabaseInitializer(dbPath).InitializeAsync().GetAwaiter().GetResult();
+        return dbPath;
     }
 }

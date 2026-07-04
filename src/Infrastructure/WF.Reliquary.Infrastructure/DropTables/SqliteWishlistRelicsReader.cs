@@ -23,11 +23,6 @@ public sealed class SqliteWishlistRelicsReader : IWishlistRelicsReader
         long wishlistId, CancellationToken cancellationToken = default)
         => executor.RunAsync<IReadOnlyList<WishlistRelicEntry>>(async (context, ct) =>
         {
-            if (!File.Exists(databasePath))
-            {
-                return [];
-            }
-
             try
             {
                 var rows = await context.Database

@@ -18,11 +18,6 @@ public sealed class SqliteImportMetadataReader : IImportMetadataReader
     public Task<string?> GetImportedVersionAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync<string?>(async (context, ct) =>
         {
-            if (!File.Exists(databasePath))
-            {
-                return null;
-            }
-
             var metadata = await context.ImportMetadata
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == 1, ct)

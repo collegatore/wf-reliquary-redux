@@ -77,6 +77,9 @@ public sealed partial class MainWindow : Window
         // Apply font size (and relic card width base) to Application resources.
         var initialRelicCardWidth = AppearanceViewModel.ApplyFontSize(initialSettings.FontSizePt, initialSettings.RelicCardWidthPx);
 
+        var databaseInitializer = ReliquaryServiceFactory.CreateDatabaseInitializer();
+        databaseInitializer.InitializeAsync().GetAwaiter().GetResult();
+
         // Seed the default profile before the default wishlist, so the wishlist
         // seeding has an active profile to attach to.
         var profileStore = ReliquaryServiceFactory.CreateProfileStore();
@@ -194,6 +197,7 @@ public sealed partial class MainWindow : Window
             AppErrors.Reporter);
 
         shell = new MainWindowShellViewModel(
+            databaseInitializer,
             dropTablesVm,
             primeGearVm,
             wishlistVm,

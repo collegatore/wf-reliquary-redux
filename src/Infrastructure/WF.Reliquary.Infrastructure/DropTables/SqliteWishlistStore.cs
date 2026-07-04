@@ -22,14 +22,7 @@ public sealed class SqliteWishlistStore : IWishlistStore
     public Task SeedDefaultAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync(async (context, ct) =>
         {
-            var directory = Path.GetDirectoryName(DatabasePath);
-            if (!string.IsNullOrWhiteSpace(directory))
-                Directory.CreateDirectory(directory);
-
-            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
-
-            // Ensure a profile exists so seeding is not order-dependent on the profile store,
-            // then seed the default wishlist into the *active* profile specifically.
+            await DefaultProfileSeeder.EnsureAsync(context, ct).ConfigureAwait(false);
             await DefaultProfileSeeder.EnsureAsync(context, ct).ConfigureAwait(false);
             var profileId = await ResolveActiveProfileIdAsync(context, ct).ConfigureAwait(false);
             if (profileId is null) return;

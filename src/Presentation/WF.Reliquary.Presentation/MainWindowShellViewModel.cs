@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Settings;
 using static WF.Reliquary.Application.Settings.RelicsMissionsOrientation;
 
@@ -16,6 +17,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
     private const int DropTablesTabIndex = 2;
     private const int SettingsTabIndex = 3;
 
+    private readonly IDatabaseInitializer databaseInitializer;
     private int selectedTabIndex;
     private int previousTabIndex;
     private double? relicsPanelHeight;
@@ -25,6 +27,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
     private string footerErrorText = string.Empty;
 
     public MainWindowShellViewModel(
+        IDatabaseInitializer databaseInitializer,
         MainWindowViewModel dropTables,
         PrimeGearViewModel primeGear,
         WishlistViewModel wishlist,
@@ -35,6 +38,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
         AppearanceViewModel appearance,
         RecruitingMessageTemplateEditorViewModel recruitingMessageEditor)
     {
+        this.databaseInitializer = databaseInitializer;
         DropTables = dropTables;
         PrimeGear = primeGear;
         Wishlist = wishlist;
@@ -218,6 +222,15 @@ public sealed class MainWindowShellViewModel : ObservableObject
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
+        try
+        {
+            await databaseInitializer.InitializeAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            AppErrors.Reporter.Report("Database initialization failed", ex);
+        }
+
         await DropTables.LoadStatusAsync(cancellationToken);
         if (!DropTables.HasImportedData)
         {
