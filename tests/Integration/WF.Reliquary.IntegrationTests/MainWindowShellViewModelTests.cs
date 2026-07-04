@@ -244,7 +244,8 @@ public sealed class MainWindowShellViewModelTests
             importMetadataReader.Object,
             Mock.Of<IDropTableLocalFileSourceWorkflow>(),
             Mock.Of<IDropTableSourceExporter>(),
-            Mock.Of<IDropTableImportStore>());
+            Mock.Of<IDropTableImportStore>(),
+            CreateEmptySourceStore());
 
         var primeGearReader = new Mock<IPrimeGearReader>();
         primeGearReader.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
@@ -302,5 +303,13 @@ public sealed class MainWindowShellViewModelTests
         mock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([new ProfileEntry(1, "Default", DateTimeOffset.UnixEpoch)]);
         return mock;
+    }
+
+    private static IDropTableSourceStore CreateEmptySourceStore()
+    {
+        var mock = new Mock<IDropTableSourceStore>();
+        mock.Setup(s => s.ListSummariesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DropTableSourceSummary>());
+        return mock.Object;
     }
 }

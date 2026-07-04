@@ -16,7 +16,7 @@ public sealed class DropTableImportServiceTests
         var importStore = new Mock<IDropTableImportStore>();
         var service = CreateService(sourceStore: sourceStore.Object, parser: parser.Object, importStore: importStore.Object);
 
-        var result = await service.ImportAsync();
+        var result = await service.ImportAsync(1);
 
         Assert.Multiple(() =>
         {
@@ -35,14 +35,14 @@ public sealed class DropTableImportServiceTests
         var parser = new Mock<IDropTableParser>();
         var importStore = new Mock<IDropTableImportStore>();
         sourceStore
-            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadByIdAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
             .Setup(parser => parser.ParseAsync(stored, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Relics section missing"));
         var service = CreateService(sourceStore: sourceStore.Object, parser: parser.Object, importStore: importStore.Object);
 
-        var result = await service.ImportAsync();
+        var result = await service.ImportAsync(1);
 
         Assert.Multiple(() =>
         {
@@ -62,7 +62,7 @@ public sealed class DropTableImportServiceTests
         var parser = new Mock<IDropTableParser>();
         var importStore = new Mock<IDropTableImportStore>();
         sourceStore
-            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadByIdAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
             .Setup(parser => parser.ParseAsync(stored, parsed.ImportedAt, It.IsAny<CancellationToken>()))
@@ -73,7 +73,7 @@ public sealed class DropTableImportServiceTests
             importStore: importStore.Object,
             now: () => parsed.ImportedAt);
 
-        var result = await service.ImportAsync();
+        var result = await service.ImportAsync(1);
 
         Assert.Multiple(() =>
         {
@@ -94,7 +94,7 @@ public sealed class DropTableImportServiceTests
         var parser = new Mock<IDropTableParser>();
         var importStore = new Mock<IDropTableImportStore>();
         sourceStore
-            .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
+            .Setup(store => store.LoadByIdAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
         parser
             .Setup(parser => parser.ParseAsync(stored, parsed.ImportedAt, It.IsAny<CancellationToken>()))
@@ -108,7 +108,7 @@ public sealed class DropTableImportServiceTests
             importStore: importStore.Object,
             now: () => parsed.ImportedAt);
 
-        var result = await service.ImportAsync();
+        var result = await service.ImportAsync(1);
 
         Assert.Multiple(() =>
         {

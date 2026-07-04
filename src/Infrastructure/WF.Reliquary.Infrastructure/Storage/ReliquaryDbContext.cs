@@ -234,6 +234,7 @@ internal sealed class ReliquaryDbContext : DbContext
             entity.Property(e => e.SourceUrl).HasColumnName("source_url").IsRequired();
             entity.Property(e => e.DownloadedAt).HasColumnName("downloaded_at").IsRequired();
             entity.Property(e => e.SourceLastUpdate).HasColumnName("source_last_update").IsRequired();
+            entity.HasIndex(e => e.SourceLastUpdate).IsUnique();
         });
 
         // ── user_preferences ──────────────────────────────────────────────────────

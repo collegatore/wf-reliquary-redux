@@ -49,9 +49,15 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
                 throw new InvalidOperationException("Downloaded drop-table file does not contain a Drop Tables version value.");
             }
 
-            await sourceStore.SaveAsync(
-                new DropTableSourceContent(download.SourceUrl, download.Html, download.DownloadedAt, lastUpdate),
-                cancellationToken);
+            var pending = new DropTableSourceContent(download.SourceUrl, download.Html, download.DownloadedAt, lastUpdate);
+
+            var existing = await sourceStore.FindSummaryByLastUpdateAsync(lastUpdate, cancellationToken);
+            if (existing is not null)
+            {
+                return DropTableRefreshResult.DuplicateVersion(pending, existing.Id);
+            }
+
+            await sourceStore.SaveAsync(pending, cancellationToken);
 
             var status = await GetStatusAsync(cancellationToken);
             return DropTableRefreshResult.Success(status);
@@ -68,4 +74,21 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
         return sourceStore.HasAnyAsync(cancellationToken);
     }
 
+    public async Task<DropTableRefreshResult> ConfirmSaveAsync(
+        DropTableSourceContent pending,
+        long existingId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await sourceStore.ReplaceAsync(existingId, pending, cancellationToken);
+            var status = await GetStatusAsync(cancellationToken);
+            return DropTableRefreshResult.Success(status);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            var status = await GetStatusAsync(CancellationToken.None);
+            return DropTableRefreshResult.Failure(status, ex.Message);
+        }
+    }
 }

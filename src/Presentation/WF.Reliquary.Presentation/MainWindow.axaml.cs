@@ -194,6 +194,7 @@ public sealed partial class MainWindow : Window
             ReliquaryServiceFactory.CreateDropTableLocalFileSourceWorkflow(),
             ReliquaryServiceFactory.CreateDropTableSourceExporter(),
             ReliquaryServiceFactory.CreateDropTableImportStore(),
+            ReliquaryServiceFactory.CreateDropTableSourceStore(),
             AppErrors.Reporter);
 
         shell = new MainWindowShellViewModel(
@@ -250,6 +251,8 @@ public sealed partial class MainWindow : Window
         };
 
         dropTablesVm.ConfirmClear = () => ConfirmClearImportDialog.ShowAsync(this);
+        dropTablesVm.ConfirmOverwrite = existing => ConfirmSourceOverwriteDialog.ShowAsync(this, existing);
+        dropTablesVm.OpenSourceBrowserAsync = sources => SourceBrowserWindow.ShowAsync(this, sources);
 
         Wire();
         InitSpinner();

@@ -21,13 +21,13 @@ public sealed class DropTableImportService : IDropTableImportWorkflow
         this.now = now ?? (() => DateTimeOffset.UtcNow);
     }
 
-    public async Task<DropTableImportResult> ImportAsync(CancellationToken cancellationToken = default)
+    public async Task<DropTableImportResult> ImportAsync(long sourceId, CancellationToken cancellationToken = default)
     {
         DropTableSourceContent? stored;
 
         try
         {
-            stored = await sourceStore.LoadAsync(cancellationToken);
+            stored = await sourceStore.LoadByIdAsync(sourceId, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

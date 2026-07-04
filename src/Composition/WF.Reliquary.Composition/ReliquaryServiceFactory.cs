@@ -46,6 +46,11 @@ public static class ReliquaryServiceFactory
             new HtmlDropTableMetadataReader());
     }
 
+    public static IDropTableSourceStore CreateDropTableSourceStore()
+    {
+        return new LocalDropTableSourceStore();
+    }
+
     public static IDropTableSourceExporter CreateDropTableSourceExporter()
     {
         return new LocalDropTableSourceExporter();

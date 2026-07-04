@@ -131,6 +131,80 @@ public sealed class DropTableSourceRefreshServiceTests
             Times.Never);
     }
 
+    [Test]
+    public async Task RefreshAsync_WhenDuplicateVersionExists_ReturnsDuplicateVersionWithoutSaving()
+    {
+        var defaultUrl = new Uri(DropTableSourceDefaults.SourceUrl);
+        var download = new DropTableDownload(defaultUrl, "<b>Last Update:</b> 08 April, 2026", DateTimeOffset.UnixEpoch);
+        var client = new Mock<IDropTableSourceClient>();
+        var store = new Mock<IDropTableSourceStore>();
+        var metadataReader = new Mock<IDropTableMetadataReader>();
+
+        client
+            .Setup(c => c.DownloadAsync(defaultUrl, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(download);
+        metadataReader
+            .Setup(r => r.ReadLastUpdate(download.Html))
+            .Returns("08 April, 2026");
+        store
+            .Setup(s => s.FindSummaryByLastUpdateAsync("08 April, 2026", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DropTableSourceSummary(42, defaultUrl.ToString(), DateTimeOffset.UnixEpoch, "08 April, 2026"));
+
+        var service = CreateService(client.Object, store.Object, metadataReader.Object);
+        var result = await service.RefreshAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.IsDuplicateVersion, Is.True);
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.ErrorMessage, Is.Null);
+            Assert.That(result.Pending, Is.Not.Null);
+            Assert.That(result.ExistingId, Is.EqualTo(42));
+        });
+        store.Verify(s => s.SaveAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ConfirmSaveAsync_ReplacesAndReturnsSuccess()
+    {
+        var defaultUrl = new Uri(DropTableSourceDefaults.SourceUrl);
+        var pending = new DropTableSourceContent(defaultUrl, "<html></html>", DateTimeOffset.UtcNow, "08 April, 2026");
+        var store = new Mock<IDropTableSourceStore>();
+        store
+            .Setup(s => s.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pending);
+        var service = CreateService(sourceStore: store.Object);
+
+        var result = await service.ConfirmSaveAsync(pending, 42);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.ErrorMessage, Is.Null);
+        });
+        store.Verify(s => s.ReplaceAsync(42, pending, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task ConfirmSaveAsync_WhenStoreThrows_ReturnsFailure()
+    {
+        var defaultUrl = new Uri(DropTableSourceDefaults.SourceUrl);
+        var pending = new DropTableSourceContent(defaultUrl, "<html></html>", DateTimeOffset.UtcNow, "08 April, 2026");
+        var store = new Mock<IDropTableSourceStore>();
+        store
+            .Setup(s => s.ReplaceAsync(999, pending, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("not found"));
+        var service = CreateService(sourceStore: store.Object);
+
+        var result = await service.ConfirmSaveAsync(pending, 999);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("not found"));
+        });
+    }
+
     private static DropTableSourceRefreshService CreateService(
         IDropTableSourceClient? sourceClient = null,
         IDropTableSourceStore? sourceStore = null,

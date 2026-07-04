@@ -57,7 +57,7 @@ public sealed class MainWindowViewModelTests
     {
         var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"), hasStoredSources: true);
         var importWorkflow = CreateImportWorkflow(DropTableImportResult.Success(SampleParsedImport()));
-        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object);
+        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object, sourceStore: CreateSourceStoreWithSummary().Object);
         await viewModel.LoadStatusAsync();
 
         await viewModel.ImportAsync();
@@ -70,7 +70,7 @@ public sealed class MainWindowViewModelTests
             Assert.That(viewModel.IsBusy, Is.False);
             Assert.That(viewModel.ImportCommand.CanExecute(null), Is.True);
         });
-        importWorkflow.Verify(workflow => workflow.ImportAsync(It.IsAny<CancellationToken>()), Times.Once);
+        importWorkflow.Verify(workflow => workflow.ImportAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Once);
         refreshWorkflow.Verify(workflow => workflow.RefreshAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -80,7 +80,7 @@ public sealed class MainWindowViewModelTests
         var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"), hasStoredSources: true);
         var importWorkflow = CreateImportWorkflow(DropTableImportResult.Failure("source file missing"));
         var reporter = new FakeErrorReporter();
-        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object, errorReporter: reporter);
+        var viewModel = CreateViewModel(refreshWorkflow.Object, importWorkflow.Object, sourceStore: CreateSourceStoreWithSummary().Object, errorReporter: reporter);
         await viewModel.LoadStatusAsync();
 
         await viewModel.ImportAsync();
@@ -138,6 +138,7 @@ public sealed class MainWindowViewModelTests
         IDropTableImportWorkflow? importWorkflow = null,
         IImportMetadataReader? importMetadataReader = null,
         IDropTableImportStore? importStore = null,
+        IDropTableSourceStore? sourceStore = null,
         IErrorReporter? errorReporter = null)
     {
         return new MainWindowViewModel(
@@ -147,6 +148,7 @@ public sealed class MainWindowViewModelTests
             Mock.Of<IDropTableLocalFileSourceWorkflow>(),
             Mock.Of<IDropTableSourceExporter>(),
             importStore ?? Mock.Of<IDropTableImportStore>(),
+            sourceStore ?? CreateEmptySourceStore().Object,
             errorReporter);
     }
 
@@ -183,7 +185,7 @@ public sealed class MainWindowViewModelTests
     {
         var workflow = new Mock<IDropTableImportWorkflow>();
         workflow
-            .Setup(workflow => workflow.ImportAsync(It.IsAny<CancellationToken>()))
+            .Setup(workflow => workflow.ImportAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(result ?? DropTableImportResult.Failure("not configured"));
 
         return workflow;
@@ -280,6 +282,121 @@ public sealed class MainWindowViewModelTests
             .ReturnsAsync("08 April, 2026");
         await viewModel.LoadStatusAsync();
         Assert.That(viewModel.ClearImportCommand.CanExecute(null), Is.True, "enabled when import data present");
+    }
+
+    [Test]
+    public async Task ImportCommand_CanExecute_IsFalseWhenSelectedSourceIsNull()
+    {
+        var refreshWorkflow = CreateWorkflow(DropTableSourceStatus.Missing());
+        var viewModel = CreateViewModel(refreshWorkflow.Object);
+        await viewModel.LoadStatusAsync();
+
+        Assert.That(viewModel.SelectedSource, Is.Null);
+        Assert.That(viewModel.ImportCommand.CanExecute(null), Is.False);
+    }
+
+    [Test]
+    public async Task ImportCommand_CanExecute_IsTrueWhenSourceSelected()
+    {
+        var refreshWorkflow = CreateWorkflow(StatusWithLastUpdate("08 April, 2026"), hasStoredSources: true);
+        var viewModel = CreateViewModel(refreshWorkflow.Object, sourceStore: CreateSourceStoreWithSummary().Object);
+        await viewModel.LoadStatusAsync();
+
+        Assert.That(viewModel.SelectedSource, Is.Not.Null);
+        Assert.That(viewModel.ImportCommand.CanExecute(null), Is.True);
+    }
+
+    [Test]
+    public async Task RefreshAsync_RefreshesSourceListAfterSuccessfulDownload()
+    {
+        var status = StatusWithLastUpdate("08 April, 2026");
+        var refreshWorkflow = CreateWorkflow(status);
+        var sourceStore = CreateSourceStoreWithSummary();
+        var viewModel = CreateViewModel(refreshWorkflow.Object, sourceStore: sourceStore.Object);
+
+        await viewModel.RefreshAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(viewModel.AvailableSources, Has.Count.EqualTo(1));
+            Assert.That(viewModel.SelectedSource, Is.Not.Null);
+            Assert.That(viewModel.SelectedSource!.LastUpdate, Is.EqualTo("08 April, 2026"));
+        });
+    }
+
+    [Test]
+    public async Task RefreshAsync_DuplicateVersion_CallsConfirmOverwrite()
+    {
+        var status = StatusWithLastUpdate("08 April, 2026");
+        var pending = new DropTableSourceContent(new Uri(DropTableSourceDefaults.SourceUrl), "<html></html>", DateTimeOffset.UtcNow, "08 April, 2026");
+        var refreshWorkflow = new Mock<IDropTableSourceRefreshWorkflow>();
+        refreshWorkflow.Setup(w => w.GetStatusAsync(It.IsAny<CancellationToken>())).ReturnsAsync(status);
+        refreshWorkflow.Setup(w => w.HasStoredSourcesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        refreshWorkflow.Setup(w => w.RefreshAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DropTableRefreshResult.DuplicateVersion(pending, 1));
+        refreshWorkflow.Setup(w => w.ConfirmSaveAsync(pending, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DropTableRefreshResult.Success(status));
+
+        var sourceStore = CreateSourceStoreWithSummary();
+        var reporter = new FakeErrorReporter();
+        var viewModel = CreateViewModel(refreshWorkflow.Object, sourceStore: sourceStore.Object, errorReporter: reporter);
+        await viewModel.LoadStatusAsync();
+
+        var confirmCalled = false;
+        viewModel.ConfirmOverwrite = _ => { confirmCalled = true; return Task.FromResult(true); };
+
+        await viewModel.RefreshAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(confirmCalled, Is.True);
+            Assert.That(reporter.LastMessage, Is.Null, "duplicate detection must not be reported as error");
+        });
+    }
+
+    [Test]
+    public async Task RefreshAsync_DuplicateVersion_CancelDoesNotRefreshList()
+    {
+        var status = StatusWithLastUpdate("08 April, 2026");
+        var pending = new DropTableSourceContent(new Uri(DropTableSourceDefaults.SourceUrl), "<html></html>", DateTimeOffset.UtcNow, "08 April, 2026");
+        var refreshWorkflow = new Mock<IDropTableSourceRefreshWorkflow>();
+        refreshWorkflow.Setup(w => w.GetStatusAsync(It.IsAny<CancellationToken>())).ReturnsAsync(status);
+        refreshWorkflow.Setup(w => w.HasStoredSourcesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        refreshWorkflow.Setup(w => w.RefreshAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DropTableRefreshResult.DuplicateVersion(pending, 1));
+
+        var sourceStore = CreateSourceStoreWithSummary();
+        var viewModel = CreateViewModel(refreshWorkflow.Object, sourceStore: sourceStore.Object);
+        await viewModel.LoadStatusAsync();
+        var initialCount = sourceStore.Invocations.Count(i => i.Method.Name == "ListSummariesAsync");
+
+        viewModel.ConfirmOverwrite = _ => Task.FromResult(false);
+
+        await viewModel.RefreshAsync();
+
+        var finalCount = sourceStore.Invocations.Count(i => i.Method.Name == "ListSummariesAsync");
+        Assert.That(finalCount, Is.EqualTo(initialCount), "source list should not be refreshed when user cancels overwrite");
+    }
+
+    private static Mock<IDropTableSourceStore> CreateEmptySourceStore()
+    {
+        var store = new Mock<IDropTableSourceStore>();
+        store
+            .Setup(s => s.ListSummariesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DropTableSourceSummary>());
+        return store;
+    }
+
+    private static Mock<IDropTableSourceStore> CreateSourceStoreWithSummary()
+    {
+        var store = new Mock<IDropTableSourceStore>();
+        store
+            .Setup(s => s.ListSummariesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DropTableSourceSummary>
+            {
+                new(1, DropTableSourceDefaults.SourceUrl, DateTimeOffset.UnixEpoch, "08 April, 2026")
+            });
+        return store;
     }
 
     private static DropTableSourceStatus StatusWithLastUpdate(string lastUpdate)
