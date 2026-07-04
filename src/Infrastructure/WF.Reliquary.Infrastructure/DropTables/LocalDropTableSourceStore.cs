@@ -35,11 +35,6 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
     public Task<DropTableSourceContent?> LoadAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync<DropTableSourceContent?>(async (context, ct) =>
         {
-            if (!File.Exists(databasePath))
-            {
-                return null;
-            }
-
             var entity = await context.SourceFiles
                 .AsNoTracking()
                 .OrderByDescending(e => e.Id)
@@ -61,14 +56,6 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
     public Task SaveAsync(DropTableSourceContent content, CancellationToken cancellationToken = default)
         => executor.RunAsync(async (context, ct) =>
         {
-            var directory = Path.GetDirectoryName(databasePath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
-
             context.SourceFiles.Add(new SourceFileEntity
             {
                 Content = content.Html,
@@ -83,11 +70,6 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
     public Task<bool> HasAnyAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync(async (context, ct) =>
         {
-            if (!File.Exists(databasePath))
-            {
-                return false;
-            }
-
             return await context.SourceFiles.AnyAsync(ct).ConfigureAwait(false);
         }, cancellationToken);
 }

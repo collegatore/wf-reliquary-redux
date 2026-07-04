@@ -23,11 +23,6 @@ public sealed class SqliteWishlistFarmingMissionsReader : IWishlistFarmingMissio
         long wishlistId, CancellationToken cancellationToken = default)
         => executor.RunAsync<IReadOnlyList<WishlistFarmingMissionGroupEntry>>(async (context, ct) =>
         {
-            if (!File.Exists(databasePath))
-            {
-                return [];
-            }
-
             try
             {
                 var rows = await context.Database

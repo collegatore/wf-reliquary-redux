@@ -1,6 +1,7 @@
 using System.Net;
 using WF.Reliquary.Application.DropTables;
 using WF.Reliquary.Infrastructure.DropTables;
+using WF.Reliquary.Infrastructure.Storage;
 using NUnit.Framework;
 
 namespace WF.Reliquary.IntegrationTests;
@@ -133,7 +134,9 @@ public sealed class DropTableInfrastructureTests
     private static string TempDatabasePath()
     {
         var dir = CreateTempDirectory();
-        return Path.Combine(dir, "test.sqlite");
+        var dbPath = Path.Combine(dir, "test.sqlite");
+        new SqliteDatabaseInitializer(dbPath).InitializeAsync().GetAwaiter().GetResult();
+        return dbPath;
     }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler

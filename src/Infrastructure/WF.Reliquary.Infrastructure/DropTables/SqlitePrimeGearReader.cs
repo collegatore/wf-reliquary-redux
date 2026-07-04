@@ -21,11 +21,6 @@ public sealed class SqlitePrimeGearReader : IPrimeGearReader
     public Task<IReadOnlyList<PrimeGearEntry>> GetAllAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync<IReadOnlyList<PrimeGearEntry>>(async (context, ct) =>
         {
-            if (!File.Exists(databasePath))
-            {
-                return [];
-            }
-
             try
             {
                 var rows = await context.Database

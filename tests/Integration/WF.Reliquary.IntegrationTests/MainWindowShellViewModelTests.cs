@@ -140,8 +140,87 @@ public sealed class MainWindowShellViewModelTests
         Assert.That(shell.WishlistRelics.IsViewModeTable, Is.True);
     }
 
+    [Test]
+    public async Task InitializeAsync_RunsInitializerBeforeDataLoads()
+    {
+        var callOrder = new List<string>();
+        var initializer = new Mock<IDatabaseInitializer>();
+        initializer
+            .Setup(i => i.InitializeAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => callOrder.Add("initializer"))
+            .Returns(Task.CompletedTask);
+
+        var importMetadataReader = new Mock<IImportMetadataReader>();
+        importMetadataReader
+            .Setup(r => r.GetImportedVersionAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => callOrder.Add("loadStatus"))
+            .ReturnsAsync("08 April, 2026");
+
+        var shell = CreateShell(
+            importedVersion: "08 April, 2026",
+            databaseInitializer: initializer.Object);
+
+        await shell.InitializeAsync();
+
+        Assert.That(callOrder, Has.Count.GreaterThanOrEqualTo(1));
+        Assert.That(callOrder[0], Is.EqualTo("initializer"));
+        initializer.Verify(i => i.InitializeAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task InitializeAsync_ReportsFailure_WhenInitializerThrows()
+    {
+        var initializer = new Mock<IDatabaseInitializer>();
+        initializer
+            .Setup(i => i.InitializeAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Migration failed"));
+
+        var reporter = new Mock<IErrorReporter>();
+        var previousReporter = AppErrors.Reporter;
+        AppErrors.Reporter = reporter.Object;
+
+        try
+        {
+            var shell = CreateShell(databaseInitializer: initializer.Object);
+            await shell.InitializeAsync();
+
+            reporter.Verify(
+                r => r.Report(It.Is<string>(s => s.Contains("Database initialization failed")), It.IsAny<Exception>()),
+                Times.Once);
+        }
+        finally
+        {
+            AppErrors.Reporter = previousReporter;
+        }
+    }
+
+    [Test]
+    public async Task InitializeAsync_ContinuesStartup_WhenInitializerThrows()
+    {
+        var initializer = new Mock<IDatabaseInitializer>();
+        initializer
+            .Setup(i => i.InitializeAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Migration failed"));
+
+        var previousReporter = AppErrors.Reporter;
+        AppErrors.Reporter = NoOpErrorReporter.Instance;
+
+        try
+        {
+            var shell = CreateShell(importedVersion: null, databaseInitializer: initializer.Object);
+            await shell.InitializeAsync();
+
+            Assert.That(shell.SelectedTabIndex, Is.EqualTo(DropTablesTabIndex));
+        }
+        finally
+        {
+            AppErrors.Reporter = previousReporter;
+        }
+    }
+
     private static MainWindowShellViewModel CreateShell(
         string? importedVersion = null,
+        IDatabaseInitializer? databaseInitializer = null,
         SettingsViewModel? settings = null,
         AppearanceViewModel? appearance = null,
         RecruitingMessageTemplateEditorViewModel? recruitingMessageEditor = null)
@@ -189,8 +268,10 @@ public sealed class MainWindowShellViewModelTests
 
         recruitingMessageEditor ??= new RecruitingMessageTemplateEditorViewModel(Mock.Of<IUserSettingsStore>(), RecruitingMessageTemplate.Default);
 
+        databaseInitializer ??= Mock.Of<IDatabaseInitializer>();
+
         return new MainWindowShellViewModel(
-            dropTables, primeGear, wishlist, relics, farming, profiles, settings, appearance, recruitingMessageEditor);
+            databaseInitializer, dropTables, primeGear, wishlist, relics, farming, profiles, settings, appearance, recruitingMessageEditor);
     }
 
     private static UserSettings DefaultSettings { get; } = new(

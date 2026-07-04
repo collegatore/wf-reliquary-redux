@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using WF.Reliquary.Infrastructure.DropTables;
+using WF.Reliquary.Infrastructure.Storage;
 
 namespace WF.Reliquary.IntegrationTests;
 
@@ -184,6 +185,8 @@ public sealed class ProfileInfrastructureTests
     {
         var dir = Path.Combine(Path.GetTempPath(), "wf-reliquary-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
-        return Path.Combine(dir, "import.sqlite");
+        var dbPath = Path.Combine(dir, "import.sqlite");
+        new SqliteDatabaseInitializer(dbPath).InitializeAsync().GetAwaiter().GetResult();
+        return dbPath;
     }
 }

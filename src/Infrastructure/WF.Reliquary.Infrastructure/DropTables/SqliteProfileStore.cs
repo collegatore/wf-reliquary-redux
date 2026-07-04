@@ -21,11 +21,6 @@ public sealed class SqliteProfileStore : IProfileStore
     public Task SeedDefaultAsync(CancellationToken cancellationToken = default)
         => executor.RunAsync(async (context, ct) =>
         {
-            var directory = Path.GetDirectoryName(DatabasePath);
-            if (!string.IsNullOrWhiteSpace(directory))
-                Directory.CreateDirectory(directory);
-
-            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
             await DefaultProfileSeeder.EnsureAsync(context, ct).ConfigureAwait(false);
         }, cancellationToken);
 
