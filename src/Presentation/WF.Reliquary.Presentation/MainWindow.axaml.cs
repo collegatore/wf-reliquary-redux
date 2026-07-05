@@ -312,7 +312,10 @@ public sealed partial class MainWindow : Window
     private void Wire()
     {
         if (shell is not null)
+        {
             shell.OpenAppearance = OpenOrActivateAppearanceWindow;
+            shell.OpenAbout = () => AboutDialog.ShowAsync(this);
+        }
 
         // Guard: treat clicking any tab as equivalent to the Back button when
         // on the Settings tab (prompt if unsaved changes, revert font preview).
