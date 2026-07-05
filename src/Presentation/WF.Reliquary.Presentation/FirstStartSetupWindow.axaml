@@ -1,0 +1,80 @@
+<Window
+    x:Class="WF.Reliquary.Presentation.FirstStartSetupWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:WF.Reliquary.Presentation"
+    Title="Set up drop-table data"
+    Width="460"
+    Height="260"
+    CanResize="False"
+    ShowInTaskbar="False"
+    WindowStartupLocation="CenterOwner">
+  <Grid Margin="20">
+
+    <!-- Consent panel -->
+    <Grid
+        RowDefinitions="*,Auto"
+        IsVisible="{Binding Stage, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Consent}">
+      <StackPanel VerticalAlignment="Center" Spacing="10">
+        <TextBlock
+            TextWrapping="Wrap"
+            Text="No drop-table data has been aquired yet. The app will now attempt to download data file from the web and import it automatically." />
+        <TextBlock TextWrapping="Wrap" FontWeight="SemiBold" Text="Download URL:" />
+        <SelectableTextBlock
+            TextWrapping="Wrap"
+            Text="{Binding SourceUrlText}" />
+        <TextBlock
+            TextWrapping="Wrap"
+            Text="The URL can be changed in &quot;File&quot;->&quot;Settings&quot; menu after you close this window. You can also download this file yourself in a browser and use &quot;Read from file&quot; on the Drop Tables tab." />
+      </StackPanel>
+      <StackPanel
+          Grid.Row="1"
+          Margin="0,12,0,0"
+          HorizontalAlignment="Right"
+          Orientation="Horizontal"
+          Spacing="8">
+        <Button
+            Padding="14,6"
+            Content="Approve"
+            Command="{Binding ApproveCommand}" />
+        <Button
+            Padding="14,6"
+            Content="Deny"
+            Command="{Binding DenyCommand}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Running panel -->
+    <StackPanel
+        VerticalAlignment="Center"
+        Spacing="10"
+        IsVisible="{Binding Stage, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Running}">
+      <TextBlock TextWrapping="Wrap" FontWeight="SemiBold" Text="{Binding ExecutionPhaseHeader}" />
+      <TextBlock TextWrapping="Wrap" Text="{Binding DownloadStatusText}" />
+      <TextBlock TextWrapping="Wrap" Text="{Binding ImportStatusText}" />
+    </StackPanel>
+
+    <!-- Done panel -->
+    <Grid
+        RowDefinitions="*,Auto"
+        IsVisible="{Binding Stage, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Done}">
+      <StackPanel VerticalAlignment="Center" Spacing="10">
+        <TextBlock TextWrapping="Wrap" FontWeight="SemiBold" Text="{Binding ExecutionPhaseHeader}" />
+        <TextBlock TextWrapping="Wrap" Text="{Binding DownloadStatusText}" />
+        <TextBlock TextWrapping="Wrap" Text="{Binding ImportStatusText}" />
+      </StackPanel>
+      <StackPanel
+          Grid.Row="1"
+          Margin="0,12,0,0"
+          HorizontalAlignment="Right"
+          Orientation="Horizontal"
+          Spacing="8">
+        <Button
+            Padding="14,6"
+            Content="Close"
+            Command="{Binding CloseCommand}" />
+      </StackPanel>
+    </Grid>
+
+  </Grid>
+</Window>

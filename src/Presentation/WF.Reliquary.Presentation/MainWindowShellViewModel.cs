@@ -136,6 +136,13 @@ public sealed class MainWindowShellViewModel : ObservableObject
     /// </summary>
     public Action? OpenAppearance { get; set; }
 
+    /// <summary>
+    /// Opens the first-start automated setup consent modal. Wired by <c>MainWindow</c>,
+    /// which owns the workflow instances the modal needs. Invoked from
+    /// <see cref="InitializeAsync"/> only when no drop-table source has ever been saved.
+    /// </summary>
+    public Func<Task>? OfferAutomatedSetup { get; set; }
+
     public int SelectedTabIndex
     {
         get => selectedTabIndex;
@@ -235,6 +242,13 @@ public sealed class MainWindowShellViewModel : ObservableObject
         if (!DropTables.HasImportedData)
         {
             SelectedTabIndex = DropTablesTabIndex;
+        }
+
+        // Stricter gate than the tab redirect above: only offer automated setup when
+        // no drop-table source has ever been saved (not merely "not yet imported").
+        if (!DropTables.HasStoredSources && OfferAutomatedSetup is not null)
+        {
+            await OfferAutomatedSetup();
         }
     }
 

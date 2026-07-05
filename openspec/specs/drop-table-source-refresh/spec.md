@@ -34,12 +34,12 @@ for the drop-table HTML.
 
 ### Requirement: On-Demand Drop Table Download
 
-The system SHALL provide an application-layer operation that downloads the raw drop-table HTML from the configured source URL when requested by the user. Before saving, the operation SHALL check whether a source with the same Last Update version already exists in `source_files`. If a duplicate version is found, the operation SHALL return a `DuplicateVersion` result carrying the pending `DropTableSourceContent` and the existing row's `Id` without saving. A `DuplicateVersion` result is distinguishable from both success and failure: it SHALL carry no error message, and consumers SHALL treat it as a pending confirmation rather than reporting it as an error. If no duplicate is found, the operation SHALL save the downloaded content as before.
+The system SHALL provide an application-layer operation that downloads the raw drop-table HTML from the configured source URL when requested. Before saving, the operation SHALL check whether a source with the same Last Update version already exists in `source_files`. If a duplicate version is found, the operation SHALL return a `DuplicateVersion` result carrying the pending `DropTableSourceContent` and the existing row's `Id` without saving. A `DuplicateVersion` result is distinguishable from both success and failure: it SHALL carry no error message, and consumers SHALL treat it as a pending confirmation rather than reporting it as an error. If no duplicate is found, the operation SHALL save the downloaded content as before and its success result SHALL carry the id of the newly saved `source_files` row, so callers can act on that source (for example, importing it) without a separate lookup.
 
 #### Scenario: Download succeeds with new version
 
 - **WHEN** the user requests a drop-table download, the configured URL returns successful HTML content with a parseable Last Update value, and no existing `source_files` row has the same Last Update value
-- **THEN** the system stores the downloaded HTML content and provenance in the `source_files` DB table and returns a success result
+- **THEN** the system stores the downloaded HTML content and provenance in the `source_files` DB table and returns a success result carrying the id of the newly inserted row
 
 #### Scenario: Download produces a duplicate version
 
