@@ -52,6 +52,7 @@ public sealed class MainWindowShellViewModel : ObservableObject
         NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
         NavigateToDropTablesCommand = new RelayCommand(NavigateToDropTables);
         OpenAppearanceCommand = new RelayCommand(() => OpenAppearance?.Invoke());
+        OpenAboutCommand = new RelayCommand(() => OpenAbout?.Invoke());
 
         dropTables.PropertyChanged += (_, e) =>
         {
@@ -129,12 +130,19 @@ public sealed class MainWindowShellViewModel : ObservableObject
     public ICommand NavigateToSettingsCommand { get; }
     public ICommand NavigateToDropTablesCommand { get; }
     public ICommand OpenAppearanceCommand { get; }
+    public ICommand OpenAboutCommand { get; }
 
     /// <summary>
     /// Opens (or activates, if already open) the modeless Appearance window.
     /// Wired by <c>MainWindow</c>, which owns the window instance.
     /// </summary>
     public Action? OpenAppearance { get; set; }
+
+    /// <summary>
+    /// Opens the modal About dialog. Wired by <c>MainWindow</c>, which owns the
+    /// window instance.
+    /// </summary>
+    public Action? OpenAbout { get; set; }
 
     /// <summary>
     /// Opens the first-start automated setup consent modal. Wired by <c>MainWindow</c>,

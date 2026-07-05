@@ -92,7 +92,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public Func<IReadOnlyList<DropTableSourceSummary>, Task>? OpenSourceBrowserAsync { get; set; }
 
-    public string Title => ApplicationInfo.GetStartupSummary();
+    public string Title => ApplicationInfo.Name;
 
     /// <summary>True while a source operation runs; gates commands and the footer spinner.</summary>
     public bool IsBusy => busy.IsBusy;

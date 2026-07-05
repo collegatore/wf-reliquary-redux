@@ -20,14 +20,14 @@ The solution SHALL define the application version, product name, authors, copyri
 - **WHEN** the assembly informational version contains a `+<metadata>` suffix (e.g. a commit hash)
 - **THEN** `ApplicationInfo.Version` reports the version without the suffix
 
-### Requirement: Version Visible in the Window Title
+### Requirement: Application Name Visible in the Window Title
 
-The main window title SHALL display the application name followed by the version (e.g. `WF Reliquary Redux 1.0.0-alpha`).
+The main window title SHALL display the application name only (e.g. `WF Reliquary Redux`), without the version.
 
-#### Scenario: Title shows name and version
+#### Scenario: Title shows only the application name
 
 - **WHEN** the main window is shown
-- **THEN** its title is the application name followed by the current application version
+- **THEN** its title is exactly the application name, with no version suffix
 
 ### Requirement: Version Logged at Startup
 

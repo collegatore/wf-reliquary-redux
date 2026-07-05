@@ -1,0 +1,31 @@
+<Window
+    x:Class="WF.Reliquary.Presentation.AboutDialog"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="About"
+    Width="360"
+    Height="180"
+    CanResize="False"
+    ShowInTaskbar="False"
+    WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="*,Auto" Margin="20">
+    <StackPanel VerticalAlignment="Center" Spacing="8">
+      <TextBlock x:Name="NameText" FontWeight="Bold" />
+      <TextBlock x:Name="VersionText" Foreground="Gray" />
+      <HyperlinkButton
+          x:Name="ReadmeLink"
+          Padding="0"
+          Content="View README on GitHub"
+          NavigateUri="https://github.com/collegatore/wf-reliquary-redux/blob/main/README.md" />
+    </StackPanel>
+    <StackPanel
+        Grid.Row="1"
+        Margin="0,12,0,0"
+        HorizontalAlignment="Right">
+      <Button
+          x:Name="CloseButton"
+          Padding="14,6"
+          Content="Close" />
+    </StackPanel>
+  </Grid>
+</Window>
