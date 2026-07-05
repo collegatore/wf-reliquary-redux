@@ -69,6 +69,57 @@ public sealed class MainWindowShellViewModelTests
     }
 
     [Test]
+    public async Task InitializeAsync_OffersAutomatedSetup_WhenNoSourceExists()
+    {
+        var shell = CreateShell(importedVersion: null, hasStoredSources: false);
+        var offered = false;
+        shell.OfferAutomatedSetup = () =>
+        {
+            offered = true;
+            return Task.CompletedTask;
+        };
+
+        await shell.InitializeAsync();
+
+        Assert.That(offered, Is.True);
+    }
+
+    [Test]
+    public async Task InitializeAsync_DoesNotOfferAutomatedSetup_WhenASourceAlreadyExists()
+    {
+        // A source can exist even when nothing has been imported yet (e.g. a prior
+        // manual download or read-from-file without ever importing) — the gate is
+        // stricter than the "no imported data" tab-redirect and must not re-offer.
+        var shell = CreateShell(importedVersion: null, hasStoredSources: true);
+        var offered = false;
+        shell.OfferAutomatedSetup = () =>
+        {
+            offered = true;
+            return Task.CompletedTask;
+        };
+
+        await shell.InitializeAsync();
+
+        Assert.That(offered, Is.False);
+    }
+
+    [Test]
+    public async Task InitializeAsync_DoesNotOfferAutomatedSetup_WhenImportedDataExists()
+    {
+        var shell = CreateShell(importedVersion: "08 April, 2026", hasStoredSources: true);
+        var offered = false;
+        shell.OfferAutomatedSetup = () =>
+        {
+            offered = true;
+            return Task.CompletedTask;
+        };
+
+        await shell.InitializeAsync();
+
+        Assert.That(offered, Is.False);
+    }
+
+    [Test]
     public async Task SettingsSave_ClearsRecruitingMessageEditorDirtyState()
     {
         // Regression: the shell wires settings.OnSaved = OnSettingsSaved, which
@@ -220,6 +271,7 @@ public sealed class MainWindowShellViewModelTests
 
     private static MainWindowShellViewModel CreateShell(
         string? importedVersion = null,
+        bool hasStoredSources = false,
         IDatabaseInitializer? databaseInitializer = null,
         SettingsViewModel? settings = null,
         AppearanceViewModel? appearance = null,
@@ -236,7 +288,7 @@ public sealed class MainWindowShellViewModelTests
             .ReturnsAsync(DropTableSourceStatus.Missing());
         refreshWorkflow
             .Setup(w => w.HasStoredSourcesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+            .ReturnsAsync(hasStoredSources);
 
         var dropTables = new MainWindowViewModel(
             refreshWorkflow.Object,
@@ -245,7 +297,7 @@ public sealed class MainWindowShellViewModelTests
             Mock.Of<IDropTableLocalFileSourceWorkflow>(),
             Mock.Of<IDropTableSourceExporter>(),
             Mock.Of<IDropTableImportStore>(),
-            CreateEmptySourceStore());
+            CreateSourceStore(hasStoredSources));
 
         var primeGearReader = new Mock<IPrimeGearReader>();
         primeGearReader.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
@@ -305,11 +357,19 @@ public sealed class MainWindowShellViewModelTests
         return mock;
     }
 
-    private static IDropTableSourceStore CreateEmptySourceStore()
+    private static IDropTableSourceStore CreateSourceStore(bool hasStoredSources = false)
     {
+        // MainWindowViewModel.LoadStatusAsync derives HasStoredSources from
+        // AvailableSources.Count after RefreshSourceListAsync reads ListSummariesAsync
+        // (overwriting whatever HasStoredSourcesAsync reported), so the source list is
+        // the actual signal that must vary here.
+        var summaries = hasStoredSources
+            ? new List<DropTableSourceSummary> { new(1, "https://example.test/drops.html", DateTimeOffset.UnixEpoch, "08 April, 2026") }
+            : new List<DropTableSourceSummary>();
+
         var mock = new Mock<IDropTableSourceStore>();
         mock.Setup(s => s.ListSummariesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<DropTableSourceSummary>());
+            .ReturnsAsync(summaries);
         return mock.Object;
     }
 }

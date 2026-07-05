@@ -44,6 +44,9 @@ public sealed class DropTableSourceRefreshServiceTests
         store
             .Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(stored);
+        store
+            .Setup(store => store.SaveAsync(It.IsAny<DropTableSourceContent>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(123L);
         metadataReader
             .Setup(reader => reader.ReadLastUpdate(download.Html))
             .Returns("08 April, 2026");
@@ -59,6 +62,7 @@ public sealed class DropTableSourceRefreshServiceTests
             Assert.That(result.Status.FileExists, Is.True);
             Assert.That(result.Status.DownloadedAt, Is.EqualTo(downloadedAt));
             Assert.That(result.Status.LastUpdate, Is.EqualTo("08 April, 2026"));
+            Assert.That(result.Id, Is.EqualTo(123L));
         });
         client.Verify(client => client.DownloadAsync(configuredSourceUrl, It.IsAny<CancellationToken>()), Times.Once);
         store.Verify(

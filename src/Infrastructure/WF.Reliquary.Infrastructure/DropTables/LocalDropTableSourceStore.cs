@@ -53,18 +53,21 @@ public sealed class LocalDropTableSourceStore : IDropTableSourceStore
                 entity.SourceLastUpdate);
         }, cancellationToken);
 
-    public Task SaveAsync(DropTableSourceContent content, CancellationToken cancellationToken = default)
+    public Task<long> SaveAsync(DropTableSourceContent content, CancellationToken cancellationToken = default)
         => executor.RunAsync(async (context, ct) =>
         {
-            context.SourceFiles.Add(new SourceFileEntity
+            var entity = new SourceFileEntity
             {
                 Content = content.Html,
                 SourceUrl = content.SourceUrl?.ToString() ?? string.Empty,
                 DownloadedAt = content.DownloadedAt.ToString("O"),
                 SourceLastUpdate = content.LastUpdate
-            });
+            };
+            context.SourceFiles.Add(entity);
 
             await context.SaveChangesAsync(ct).ConfigureAwait(false);
+
+            return entity.Id;
         }, cancellationToken);
 
     public Task<bool> HasAnyAsync(CancellationToken cancellationToken = default)

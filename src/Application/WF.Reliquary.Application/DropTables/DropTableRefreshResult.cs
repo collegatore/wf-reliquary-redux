@@ -5,13 +5,14 @@ public sealed record DropTableRefreshResult(
     DropTableSourceStatus Status,
     string? ErrorMessage,
     DropTableSourceContent? Pending = null,
-    long? ExistingId = null)
+    long? ExistingId = null,
+    long? Id = null)
 {
     public bool IsDuplicateVersion => Pending is not null;
 
-    public static DropTableRefreshResult Success(DropTableSourceStatus status)
+    public static DropTableRefreshResult Success(DropTableSourceStatus status, long? id = null)
     {
-        return new DropTableRefreshResult(true, status, null);
+        return new DropTableRefreshResult(true, status, null, Id: id);
     }
 
     public static DropTableRefreshResult Failure(DropTableSourceStatus status, string errorMessage)

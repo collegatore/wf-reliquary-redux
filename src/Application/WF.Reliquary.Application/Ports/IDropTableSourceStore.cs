@@ -6,7 +6,7 @@ public interface IDropTableSourceStore
 {
     Task<DropTableSourceContent?> LoadAsync(CancellationToken cancellationToken = default);
 
-    Task SaveAsync(DropTableSourceContent content, CancellationToken cancellationToken = default);
+    Task<long> SaveAsync(DropTableSourceContent content, CancellationToken cancellationToken = default);
 
     Task<bool> HasAnyAsync(CancellationToken cancellationToken = default);
 

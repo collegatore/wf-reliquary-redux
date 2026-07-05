@@ -6,6 +6,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using AsyncAwaitBestPractices;
 using WF.Reliquary.Application;
+using WF.Reliquary.Application.Ports;
 using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Composition;
 
@@ -187,9 +188,12 @@ public sealed partial class MainWindow : Window
             }
         };
 
+        var dropTableRefreshWorkflow = ReliquaryServiceFactory.CreateDropTableSourceRefreshService(userSettingsStore);
+        var dropTableImportWorkflow = ReliquaryServiceFactory.CreateDropTableImportService();
+
         var dropTablesVm = new MainWindowViewModel(
-            ReliquaryServiceFactory.CreateDropTableSourceRefreshService(userSettingsStore),
-            ReliquaryServiceFactory.CreateDropTableImportService(),
+            dropTableRefreshWorkflow,
+            dropTableImportWorkflow,
             ReliquaryServiceFactory.CreateImportMetadataReader(),
             ReliquaryServiceFactory.CreateDropTableLocalFileSourceWorkflow(),
             ReliquaryServiceFactory.CreateDropTableSourceExporter(),
@@ -215,6 +219,30 @@ public sealed partial class MainWindow : Window
         shell.Orientation = initialSettings.Orientation;
         shell.SideBySideRelicsWidth = initialSettings.SideBySideRelicsWidth;
         shell.RelicCardWidth = initialRelicCardWidth;
+        shell.OfferAutomatedSetup = () => FirstStartSetupWindow.ShowAsync(
+            this,
+            dropTableRefreshWorkflow,
+            dropTableImportWorkflow,
+            (IDropTableSourceSettingsStore)userSettingsStore,
+            AppErrors.Reporter,
+            // Successful download: refresh the Drop Tables tab's own acquisition/import
+            // display so the newly saved source shows up there immediately.
+            onDownloadSucceeded: () => dropTablesVm.LoadStatusAsync(),
+            // Successful import: the automated routine calls the raw import workflow
+            // directly, bypassing MainWindowViewModel.ImportAsync — so HasImportedData
+            // (and ImportStatusText/FooterImportStatusText) never refresh on their own,
+            // which left "Clear imported data" disabled after a successful automated
+            // setup. LoadStatusAsync refreshes those, then the shell's existing reload
+            // cascade (Prime Gear, Wishlist Relics, Wishlist Farming Missions) runs,
+            // matching what a manual Import click already does end-to-end.
+            onImportSucceeded: async () =>
+            {
+                await dropTablesVm.LoadStatusAsync();
+                if (dropTablesVm.OnImportSucceeded is not null)
+                {
+                    await dropTablesVm.OnImportSucceeded();
+                }
+            });
         wishlistRelicsVm.ViewMode = initialSettings.ViewMode;
         wishlistRelicsVm.LoadSortSettings(initialSettings.SortMode, initialSettings.SortDescending);
         wishlistRelicsVm.SaveSortSettingsAsync = async () =>

@@ -57,10 +57,10 @@ public sealed class DropTableSourceRefreshService : IDropTableSourceRefreshWorkf
                 return DropTableRefreshResult.DuplicateVersion(pending, existing.Id);
             }
 
-            await sourceStore.SaveAsync(pending, cancellationToken);
+            var id = await sourceStore.SaveAsync(pending, cancellationToken);
 
             var status = await GetStatusAsync(cancellationToken);
-            return DropTableRefreshResult.Success(status);
+            return DropTableRefreshResult.Success(status, id);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
