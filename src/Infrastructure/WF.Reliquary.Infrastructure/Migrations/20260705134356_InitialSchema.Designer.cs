@@ -10,8 +10,8 @@ using WF.Reliquary.Infrastructure.Storage;
 namespace WF.Reliquary.Infrastructure.Migrations
 {
     [DbContext(typeof(ReliquaryDbContext))]
-    [Migration("20260704162421_AddSourceFilesUniqueVersionIndex")]
-    partial class AddSourceFilesUniqueVersionIndex
+    [Migration("20260705134356_InitialSchema")]
+    partial class InitialSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

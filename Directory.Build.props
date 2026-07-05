@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>1.0.0-alpha</Version>
+    <Version>1.0.0</Version>
     <Product>WF Reliquary Redux</Product>
     <Authors>collegatore</Authors>
     <Copyright>Copyright © 2025 collegatore</Copyright>

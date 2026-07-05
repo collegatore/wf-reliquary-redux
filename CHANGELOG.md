@@ -5,22 +5,18 @@ All notable changes to WF Reliquary Redux are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] — 2026-07-05
+
+First stable release, out of preview.
+
+> ### Platform scope
+>
+> **Windows x64 is the only supported platform in this release.** Linux support
+> is planned but has not yet been built or tested.
+
 ## [1.0.0-alpha] — 2026-07-03
 
 First public preview.
-
-> ### ⚠️ Data wipe required for pre-release users
->
-> If you ran any development build of this app before 1.0.0-alpha, **delete the
-> application data directory before first launch**:
->
-> ```text
-> %LOCALAPPDATA%\WF Reliquary Redux\
-> ```
->
-> The database migrations were squashed into a single initial migration for this
-> release, and earlier databases are not upgraded — the app will fail to start
-> over an old database. Fresh installs are unaffected.
 
 > ### Platform scope
 >
@@ -50,4 +46,5 @@ First public preview.
   app version.
 - Version identity: the window title and startup log line show the app version.
 
+[1.0.0]: https://github.com/collegatore/wf-reliquary-redux/releases/tag/v1.0.0
 [1.0.0-alpha]: https://github.com/collegatore/wf-reliquary-redux/releases/tag/v1.0.0-alpha
