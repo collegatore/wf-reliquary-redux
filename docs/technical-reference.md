@@ -97,7 +97,7 @@ Presentation  →  Application  ←  Infrastructure
 
 **Location:** `%LOCALAPPDATA%\WF Reliquary Redux\DropTables\drop-table-import.sqlite`
 
-**Migrations:** `src/Infrastructure/WF.Reliquary.Infrastructure/Migrations/`; see the pre-V1 persistence rule below.
+**Migrations:** `src/Infrastructure/WF.Reliquary.Infrastructure/Migrations/`. Schema changes use the standard EF Core migration workflow; migrations accrue incrementally.
 
 **Queries:** complex joins (prime gear, wishlist relics, farming missions) use embedded `.sql` files in `src/Infrastructure/Storage/Queries/`, loaded by `SqlQueryLoader`. Prefer embedded SQL over LINQ when it is stylistically or functionally clearer.
 
@@ -146,17 +146,6 @@ The snapshot import (replace everything on each drop-table import) does not fit 
 
 `ReliquaryDesignTimeDbContextFactory` implements `IDesignTimeDbContextFactory<ReliquaryDbContext>` so `dotnet ef migrations add` works without a startup project. The tool is pinned as a local tool in `.config/dotnet-tools.json`; run `dotnet tool restore` before first use.
 
-## Pre-V1 Persistence Rule
-
-Applies to **all persistent state**: database data, settings files, config files, and any other stored format.
-
-- **Non-schema formats evolve in place.** Do not write migration, upgrade, or backwards-compatibility code for settings, config, data files, or other stored formats — change the format directly.
-- **EF Core schema migrations are allowed.** Schema changes use the normal EF Core migration workflow; incremental migrations accrue in the migrations folder throughout development.
-- **Notify on re-initialization.** Whenever a change requires the developer to wipe and re-initialize persisted state (database, settings, etc.) — typically a non-schema format change, since those are not migrated — say so explicitly at the point the change is made.
-- **Squash to a single init on the verge of release.** Squashing all accumulated migrations into one clean init migration is a mandatory step of release preparation. This was performed at **1.0.0-alpha** (six development migrations collapsed into a single `InitialSchema`; existing databases require deleting `%LOCALAPPDATA%\WF Reliquary Redux\`). Migrations accrue incrementally again until V1, where a final squash repeats if any have accumulated.
-
-**This rule lifts at V1.** After V1, migrations are kept incrementally and stored formats migrate forward rather than re-initializing.
-
 ## Testing
 
 - **Unit tests** — cover Application-layer logic only. One test class per service class. All ports are mocked with Moq.
@@ -170,7 +159,7 @@ Each relic card on the Relics and Missions tab has a `⋮` overflow menu (same p
 
 **Settings**: a sub-section in the Settings tab edits the pattern and option groups with Parse / Save / Restore defaults. The template is held as a draft; Save persists; Restore defaults resets to `RecruitingMessageTemplate.Default` without persisting.
 
-**Persistence**: the template is stored in `user-settings.json` (nested `recruitingMessageTemplate` object). **Pre-V1 note**: existing `user-settings.json` files have no `recruitingMessageTemplate` field and will load `RecruitingMessageTemplate.Default` until the user opens Settings and saves. No wipe or migration needed.
+**Persistence**: the template is stored in `user-settings.json` (nested `recruitingMessageTemplate` object). Existing files without a `recruitingMessageTemplate` field load `RecruitingMessageTemplate.Default` until the user opens Settings and saves — no wipe or migration needed.
 
 ## UI Design
 
@@ -215,7 +204,7 @@ All UI mutations are posted to `Dispatcher.UIThread` so `Report()` is safe to ca
 
 `%LOCALAPPDATA%\WF Reliquary Redux\logs\app.log`
 
-The directory is created on first write. Pre-V1 persistence rule: no migration — safe to delete.
+The directory is created on first write; deleting it is safe, a fresh one is created on next write.
 
 ### Settings / Maintenance section
 
@@ -232,4 +221,4 @@ The directory is created on first write. Pre-V1 persistence rule: no migration �
 - All I/O methods are `async` and accept `CancellationToken`.
 - Nullable reference types are enabled project-wide; do not use `!` without a comment explaining why the null is impossible.
 - Immutable domain models use `record` types (`PrimeGearEntry`, `WishlistEntry`, etc.).
-- Pre-V1: no backwards-compatibility shims, data-migration helpers, or feature flags.
+- From `1.0.0` onward, schema and stored-format changes must migrate forward — no wipe-and-reinitialize shortcuts.

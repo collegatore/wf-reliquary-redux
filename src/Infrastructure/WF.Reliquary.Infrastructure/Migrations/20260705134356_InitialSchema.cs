@@ -28,7 +28,6 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 {
                     id = table.Column<long>(type: "INTEGER", nullable: false),
                     source_url = table.Column<string>(type: "TEXT", nullable: true),
-                    source_file_path = table.Column<string>(type: "TEXT", nullable: true),
                     downloaded_at = table.Column<string>(type: "TEXT", nullable: true),
                     source_last_update = table.Column<string>(type: "TEXT", nullable: true),
                     imported_at = table.Column<string>(type: "TEXT", nullable: false)
@@ -311,6 +310,12 @@ namespace WF.Reliquary.Infrastructure.Migrations
                 name: "IX_reward_rotations_mission_source_id_rotation_label",
                 table: "reward_rotations",
                 columns: new[] { "mission_source_id", "rotation_label" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_source_files_source_last_update",
+                table: "source_files",
+                column: "source_last_update",
                 unique: true);
 
             migrationBuilder.CreateIndex(
