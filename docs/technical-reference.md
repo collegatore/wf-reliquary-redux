@@ -25,6 +25,21 @@ dotnet test --filter "FullyQualifiedName~<TestClassName>"  # single test class
 dotnet run --project src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj
 ```
 
+### UI snapshots
+
+`tools/WF.Reliquary.UiSnapshots` renders the real views off-screen (Avalonia headless with Skia drawing) and saves one PNG per scene to `artifacts/ui-snapshots/` (git-ignored). Use it to check a styling change without launching the app:
+
+```bash
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots                    # all scenes
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --only prime    # scenes whose name contains "prime"
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --list          # list scenes
+```
+
+- It boots the real `App`, so `App.axaml` and `Styles/` load exactly as in the app; no services or database are created.
+- Views get stand-in DataContexts (`StandIn.cs`): anonymous objects with just the bound property paths. A new binding in a view needs a matching property there, or that control falls back to its default.
+- Scenes (`Scenes.cs`) set the window size, the font size (Small 11 / Medium 14 / Large 18), and an optional pointer position for hover states.
+- Run it in Release so it builds next to, not over, a Debug build that a running debug session has locked.
+
 VS Code workspace tasks (`Ctrl+Shift+B`): `dotnet: restore`, `dotnet: build`, `dotnet: test`, `dotnet: run presentation`. Launch configurations: `.NET: Debug Presentation` (with debugger), `.NET: Launch Presentation` (without).
 
 ## Publishing and Releases
@@ -74,6 +89,8 @@ src/
 tests/
   Unit/          — NUnit, Application layer only, Moq for all ports
   Integration/   — NUnit, real SQLite stack, ViewModel wiring, boundary checks
+tools/
+  WF.Reliquary.UiSnapshots/ — dev-only off-screen renderer for UI screenshots (not shipped)
 ```
 
 ## Architecture
