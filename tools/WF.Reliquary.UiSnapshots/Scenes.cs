@@ -26,10 +26,13 @@ internal static class Scenes
         new("relics-stacked", () => new RelicsMissionsView { DataContext = StandIn.RelicsShell(stacked: true) }, 900, 900),
         new("relics-side-by-side", () => new RelicsMissionsView { DataContext = StandIn.RelicsShell(stacked: false) }, 1200, 400),
         new("relics-table-mode", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(table: true) } }, 900, 260),
+        new("relics-sort-hover", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 900, 260, Hover: new Point(48, 137)),
         new("relics-small-font", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 760, 220, FontSize: 11),
         new("relics-large-font", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 760, 260, FontSize: 18),
         new("prime-gear", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300),
         new("prime-gear-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(260, 37)),
+        new("prime-gear-joined-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(240, 149)),
+        new("prime-gear-chip-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(283, 93)),
         new("prime-gear-large-font", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 760, 300, FontSize: 18),
     ];
 }

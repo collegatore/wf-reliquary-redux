@@ -33,6 +33,7 @@ dotnet run --project src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Pre
 dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots                    # all scenes
 dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --only prime    # scenes whose name contains "prime"
 dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --list          # list scenes
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --set ControlHoverBrush=#D7E8D5   # try a color without editing styles
 ```
 
 - It boots the real `App`, so `App.axaml` and `Styles/` load exactly as in the app; no services or database are created.

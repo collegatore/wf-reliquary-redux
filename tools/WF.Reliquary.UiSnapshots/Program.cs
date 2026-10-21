@@ -1,6 +1,8 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Media;
 using Avalonia.Threading;
 using WF.Reliquary.Presentation;
 using WF.Reliquary.UiSnapshots;
@@ -11,6 +13,9 @@ using WF.Reliquary.UiSnapshots;
 //
 //   --out <dir>      output folder (default: artifacts/ui-snapshots under the current directory)
 //   --only <text>    render only scenes whose name contains <text>
+//   --set <k>=<v>    override an app resource for this run (repeatable); a color value
+//                    (#RRGGBB / #AARRGGBB) becomes a SolidColorBrush, a number a double.
+//                    Handy for trying palettes: --set ControlHoverBrush=#E3EEE5
 //   --list           print scene names and exit
 //
 // The real App is used, so App.axaml's themes, styles and resources all load; with no
@@ -18,12 +23,17 @@ using WF.Reliquary.UiSnapshots;
 
 var outDir = Path.Combine("artifacts", "ui-snapshots");
 string? only = null;
+var overrides = new List<(string Key, string Value)>();
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
     {
         case "--out" when i + 1 < args.Length: outDir = args[++i]; break;
         case "--only" when i + 1 < args.Length: only = args[++i]; break;
+        case "--set" when i + 1 < args.Length && args[i + 1].Contains('='):
+            var pair = args[++i].Split('=', 2);
+            overrides.Add((pair[0], pair[1]));
+            break;
         case "--list":
             foreach (var s in Scenes.All) Console.WriteLine(s.Name);
             return 0;
@@ -48,6 +58,15 @@ AppBuilder.Configure<App>()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .WithInterFont()
     .SetupWithoutStarting();
+
+// Application.Resources is searched before the resources of Application.Styles, so an
+// override here wins over e.g. the brushes declared in Styles/ControlBars.axaml.
+foreach (var (key, value) in overrides)
+{
+    Application.Current!.Resources[key] = Color.TryParse(value, out var color)
+        ? new SolidColorBrush(color)
+        : double.Parse(value, CultureInfo.InvariantCulture);
+}
 
 Directory.CreateDirectory(outDir);
 var failed = 0;
