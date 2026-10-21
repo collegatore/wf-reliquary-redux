@@ -182,6 +182,14 @@ Each relic card on the Relics and Missions tab has a `⋮` overflow menu (same p
 ## UI Design
 
 - **Card display** — the rationale behind the relic and farming-mission cards, the three relic view modes (Verbatim / Compact / Table), the Compact word-clipping rule, the Table mode TreeDataGrid decision, tier accent bars, the light-theme palette, and font-scaled card widths, is documented in [card-display-design.md](card-display-design.md).
+- **Control-bar styling** — the tab control bars (Relics control panel and its Filters/Sorting rows, the missions separator panel, the Prime Gear bars) take their look from `Presentation/Styles/ControlBars.axaml`, included from `App.axaml`. Bars declare structure with classes and do not use inline colors or separator elements:
+  - `Border.control-bar` (bar surface; add `compact` for the missions divider bar)
+  - `StackPanel.button-group` around related `Button`s: each button is its own outlined pill with the field look, and the group's tighter spacing keeps related buttons together; add `joined` for a pair that acts as one control (one outline, single divider; members must stay visible, since the corners are chosen by position)
+  - `ComboBox` on a bar gets the same field look and hover automatically (no class needed)
+  - `CheckBox.chip` with the label as `Content` (checked chips use `CardSelectedBrush`, the app's "selected/on" color)
+  - `TextBlock.section-heading` for pane titles (sized by `SectionHeadingFontSize`, which scales with the font-size setting)
+  - `TextBlock.field-caption` inside a `Button.bar-field` for a label that belongs to one control (the Wishlist selector's "Wishlist:")
+  - Colors are the `Control*Brush` resources at the top of the file (bar, field background, outline, hover and pressed tints)
 
 ## UI Concurrency
 

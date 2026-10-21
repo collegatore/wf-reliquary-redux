@@ -123,12 +123,8 @@
   <DockPanel Margin="0,12,0,0">
     <StackPanel DockPanel.Dock="Top">
 
-      <!-- Wishlist selector / filter row -->
-      <Border
-          Margin="8,0,8,8"
-          Padding="12,8"
-          Background="#1A808080"
-          CornerRadius="4">
+      <!-- Wishlist selector / filter row. Look comes from Styles/ControlBars.axaml. -->
+      <Border Classes="control-bar">
         <DockPanel>
 
           <!-- Right side: search box and hidden-match hint -->
@@ -149,21 +145,22 @@
                 FontStyle="Italic" />
           </StackPanel>
 
-          <!-- Left side: wishlist selector and toggles -->
+          <!-- Left side: wishlist selector and toggles. The "Wishlist" caption sits
+               inside the selector it labels, so it can't read as a row title. -->
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <TextBlock Text="Wishlist:" VerticalAlignment="Center" />
             <Button
                 x:Name="WishlistDropdownButton"
-                MinWidth="160"
-                Padding="10,6"
-                Background="Transparent"
-                BorderBrush="Gray"
-                BorderThickness="1">
-              <TextBlock
-                  MaxWidth="{StaticResource NameDisplayMaxWidth}"
-                  Text="{Binding Wishlist.ActiveWishlistName}"
-                  TextTrimming="CharacterEllipsis"
-                  ToolTip.Tip="{Binding Wishlist.ActiveWishlistName}" />
+                Classes="bar-field"
+                MinWidth="160">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Classes="field-caption" Text="Wishlist:" />
+                <TextBlock
+                    MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                    Text="{Binding Wishlist.ActiveWishlistName}"
+                    TextTrimming="CharacterEllipsis"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding Wishlist.ActiveWishlistName}" />
+              </StackPanel>
               <Button.Flyout>
                 <Flyout Placement="Bottom">
                   <StackPanel MinWidth="200" Spacing="0">
@@ -215,22 +212,16 @@
                 </Flyout>
               </Button.Flyout>
             </Button>
-            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-            <Button
-                Padding="10,6"
-                Background="Transparent"
-                BorderThickness="0"
-                Command="{Binding PrimeGear.ToggleFilterPanelCommand}"
-                Content="Filters"
-                ToolTip.Tip="Show or hide filter options" />
-            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-            <Button
-                Padding="10,6"
-                Background="Transparent"
-                BorderThickness="0"
-                Command="{Binding PrimeGear.ToggleGroupModeCommand}"
-                Content="Group operations"
-                ToolTip.Tip="Enable or disable group selection and bulk actions" />
+            <StackPanel Classes="button-group">
+              <Button
+                  Command="{Binding PrimeGear.ToggleFilterPanelCommand}"
+                  Content="Filters"
+                  ToolTip.Tip="Show or hide filter options" />
+              <Button
+                  Command="{Binding PrimeGear.ToggleGroupModeCommand}"
+                  Content="Group operations"
+                  ToolTip.Tip="Enable or disable group selection and bulk actions" />
+            </StackPanel>
           </StackPanel>
 
         </DockPanel>
@@ -238,47 +229,32 @@
 
       <!-- Filter panel: shown when the Filters button is toggled on. -->
       <Border
-          Margin="8,0,8,8"
-          Padding="12,8"
-          Background="#1A808080"
-          CornerRadius="4"
+          Classes="control-bar"
           IsVisible="{Binding PrimeGear.IsFilterPanelOpen}">
-        <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <CheckBox IsChecked="{Binding PrimeGear.ShowVaulted}" VerticalAlignment="Center" />
-            <TextBlock Text="Show vaulted gear" VerticalAlignment="Center" />
-          </StackPanel>
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <CheckBox IsChecked="{Binding PrimeGear.ShowOwned}" VerticalAlignment="Center" />
-            <TextBlock Text="Show owned gear" VerticalAlignment="Center" />
-          </StackPanel>
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <CheckBox IsChecked="{Binding PrimeGear.ShowWishlistedOnly}" VerticalAlignment="Center" />
-            <TextBlock Text="Wishlisted only" VerticalAlignment="Center" />
-          </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <CheckBox Classes="chip" Content="Show vaulted gear" IsChecked="{Binding PrimeGear.ShowVaulted}" />
+          <CheckBox Classes="chip" Content="Show owned gear" IsChecked="{Binding PrimeGear.ShowOwned}" />
+          <CheckBox Classes="chip" Content="Wishlisted only" IsChecked="{Binding PrimeGear.ShowWishlistedOnly}" />
         </StackPanel>
       </Border>
 
       <!-- Group-operations control row: only shown while group operations is enabled. -->
       <Border
-          Margin="8,0,8,8"
-          Padding="12,8"
-          Background="#1A808080"
-          CornerRadius="4"
+          Classes="control-bar"
           IsVisible="{Binding PrimeGear.IsGroupMode}">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
           <TextBlock
               Text="{Binding PrimeGear.SelectedCount, StringFormat='{}{0} selected'}"
               VerticalAlignment="Center"
               MinWidth="80" />
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" Background="Transparent" BorderThickness="0" />
-          <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" Background="Transparent" BorderThickness="0" />
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" Background="Transparent" BorderThickness="0" />
-          <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" Background="Transparent" BorderThickness="0" />
+          <StackPanel Classes="button-group joined">
+            <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" />
+            <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" />
+          </StackPanel>
+          <StackPanel Classes="button-group joined">
+            <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" />
+            <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" />
+          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -319,7 +295,7 @@
       <Border
           Margin="8,8,8,0"
           Padding="12,8"
-          Background="#1A808080"
+          Background="{DynamicResource ControlBarBackgroundBrush}"
           CornerRadius="4"
           IsVisible="{Binding PrimeGear.ShowVaulted}">
         <TextBlock FontWeight="SemiBold" Text="Vaulted" />

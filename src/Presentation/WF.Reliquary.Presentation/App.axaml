@@ -97,6 +97,9 @@
     <Style Selector="TextBox">
       <Setter Property="FontSize" Value="{DynamicResource ContentFontSize}" />
     </Style>
+    <!-- Shared control-bar look; must follow the TextBlock font-size style above
+         so section headings keep their larger size. -->
+    <StyleInclude Source="/Styles/ControlBars.axaml" />
   </Application.Styles>
   <Application.Resources>
     <x:Double x:Key="FontSizeSmall">11</x:Double>
@@ -104,6 +107,9 @@
     <x:Double x:Key="FontSizeLarge">18</x:Double>
     <!-- ContentFontSize is overwritten at runtime; Medium is the startup default -->
     <x:Double x:Key="ContentFontSize">14</x:Double>
+    <!-- Control-bar section headings ("Relics", "Missions"); rescaled with the
+         font size at runtime like the card widths below. Medium-font anchor. -->
+    <x:Double x:Key="SectionHeadingFontSize">16</x:Double>
 
     <!-- Card widths track the font size at runtime (see SettingsViewModel.ApplyFontSize);
          these are the Medium-font anchors. RelicCardWidth's anchor is user-configurable

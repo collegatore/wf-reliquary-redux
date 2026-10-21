@@ -105,7 +105,7 @@
     <Border
         DockPanel.Dock="Bottom"
         Padding="12,6"
-        Background="#1A808080">
+        Background="{DynamicResource ControlBarBackgroundBrush}">
       <StackPanel
           HorizontalAlignment="Left"
           VerticalAlignment="Center"
