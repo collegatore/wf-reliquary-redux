@@ -37,7 +37,7 @@ The application SHALL expose a profile-scoped store for Prime gear ownership. Li
 
 ### Requirement: Owned overflow menu on gear card header
 
-Each Prime gear card SHALL display an overflow-menu button — a vertical three-dot ("⋮") affordance — on the right side of the card header, aligned opposite the gear name. Activating the button SHALL open a menu containing a single entry whose label reflects the action it will perform: **Mark as owned** when the gear is not owned, and **Unmark as owned** when it is. Invoking the entry SHALL toggle the gear's owned state for the active profile and immediately persist the change to the owned gear store. The menu SHALL open offset toward the gear name rather than centered directly under the button. A floating hint SHALL be available on the button conveying the action it performs. **While group operations is enabled, the overflow-menu button SHALL be suppressed** along with the card's other controls (see the prime-gear-group-operations capability), so per-card owned actions are performed through the group-operations control row instead; the button is restored when group operations is disabled.
+Each Prime gear card SHALL display an overflow-menu button — a vertical three-dot ("⋮") affordance — on the right side of the card header, aligned opposite the gear name. Activating the button SHALL open a menu containing a single entry whose label reflects the action it will perform: **Mark as owned** when the gear is not owned, and **Unmark as owned** when it is. Invoking the entry SHALL toggle the gear's owned state for the active profile and immediately persist the change to the owned gear store. The menu SHALL open offset toward the gear name rather than centered directly under the button. A floating hint SHALL be available on the button conveying the action it performs. **While group operations is enabled, the overflow-menu button SHALL be replaced by the card's selection checkbox** (see the prime-gear-group-operations capability), so per-card owned actions are performed through the group-operations control row instead; the button is restored when group operations is disabled.
 
 #### Scenario: Overflow-menu button appears on the right of the header
 
@@ -47,7 +47,7 @@ Each Prime gear card SHALL display an overflow-menu button — a vertical three-
 #### Scenario: Overflow-menu button is suppressed in group mode
 
 - **WHEN** a prime gear card is displayed and group operations is enabled
-- **THEN** the overflow-menu button does not respond to clicks (the card body is the selection target instead)
+- **THEN** the overflow-menu button is not shown; the card's selection checkbox occupies its place in the header
 
 #### Scenario: Menu entry reads "Mark as owned" for unowned gear
 
