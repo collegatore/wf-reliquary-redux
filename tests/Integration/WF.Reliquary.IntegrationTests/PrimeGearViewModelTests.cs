@@ -518,6 +518,154 @@ public sealed class PrimeGearViewModelTests
         Assert.That(vm.SelectedCount, Is.EqualTo(0));
     }
 
+    // ── Group operations: selection status text ───────────────────────────────
+
+    private const string SelectionHint = "Click cards to select them";
+
+    [Test]
+    public async Task SelectionStatusText_ShowsHint_WhenGroupModeStartsEmpty()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+
+        Assert.That(vm.SelectionStatusText, Is.EqualTo(SelectionHint));
+    }
+
+    [Test]
+    public async Task SelectionStatusText_ShowsCount_AfterSelecting_AndNotifies()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+        Assert.That(vm.SelectionStatusText, Is.EqualTo("1 selected"));
+
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectionStatusText, Is.EqualTo("2 selected"));
+            Assert.That(raised, Does.Contain(nameof(PrimeGearViewModel.SelectionStatusText)));
+        });
+    }
+
+    [Test]
+    public async Task SelectionStatusText_ReturnsToHint_AfterSelectNone()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        vm.SelectAllCommand.Execute(null);
+        Assert.That(vm.SelectionStatusText, Is.Not.EqualTo(SelectionHint));
+
+        vm.SelectNoneCommand.Execute(null);
+        Assert.That(vm.SelectionStatusText, Is.EqualTo(SelectionHint));
+    }
+
+    [Test]
+    public async Task SelectionStatusText_ReturnsToHint_AfterBulkAction()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+
+        vm.MarkSelectedOwnedCommand.Execute(null);
+        await SettleAsync();
+
+        Assert.That(vm.SelectionStatusText, Is.EqualTo(SelectionHint));
+    }
+
+    // ── Group operations: actions inactive without a selection ────────────────
+
+    [Test]
+    public async Task SelectionActions_AreInactive_WhileNothingIsSelected()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectNoneCommand.CanExecute(null), Is.False);
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.False);
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.False);
+            Assert.That(vm.SelectAllCommand.CanExecute(null), Is.True, "Select all is always available");
+        });
+    }
+
+    [Test]
+    public async Task SelectNone_ActivatesOnFirstSelection_AndDeactivatesWhenEmptied()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        var changes = 0;
+        vm.SelectNoneCommand.CanExecuteChanged += (_, _) => changes++;
+
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+        Assert.That(vm.SelectNoneCommand.CanExecute(null), Is.True);
+
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+        Assert.That(changes, Is.EqualTo(1), "Select none is re-evaluated only when the selection becomes empty or non-empty");
+
+        vm.SelectNoneCommand.Execute(null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectNoneCommand.CanExecute(null), Is.False);
+            Assert.That(changes, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public async Task MarkAndUnmark_FollowWhatIsSelected()
+    {
+        var vm = await MakeMultiCardVm(ownedGear: "Ember Prime");
+        vm.ShowOwned = true; // reveal the owned card so it can be selected
+        await SettleAsync();
+        vm.IsGroupMode = true;
+        var ember = vm.ActiveCards.Single(c => c.GearName == "Ember Prime");
+        var ash = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
+
+        ember.IsSelected = true;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.False, "only an owned card is selected");
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.True);
+        });
+
+        ash.IsSelected = true;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.True, "owned and unowned cards are selected");
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.True);
+        });
+
+        ember.IsSelected = false;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.True);
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.False, "only an unowned card is selected");
+        });
+    }
+
+    [Test]
+    public async Task MarkAndUnmark_ReevaluateOnEverySelectionChange()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        var markChanges = 0;
+        var unmarkChanges = 0;
+        vm.MarkSelectedOwnedCommand.CanExecuteChanged += (_, _) => markChanges++;
+        vm.UnmarkSelectedCommand.CanExecuteChanged += (_, _) => unmarkChanges++;
+
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(markChanges, Is.EqualTo(2));
+            Assert.That(unmarkChanges, Is.EqualTo(2));
+        });
+    }
+
     // ── Group operations: bulk mark / unmark ──────────────────────────────────
 
     [Test]

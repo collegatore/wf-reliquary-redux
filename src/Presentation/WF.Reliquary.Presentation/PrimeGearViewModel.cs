@@ -284,9 +284,12 @@ public sealed class PrimeGearViewModel : ObservableObject
         ActiveCards = [];
         VaultedCards = [];
         SelectAllCommand = new RelayCommand(SelectAllVisible);
-        SelectNoneCommand = new RelayCommand(ClearSelection);
-        MarkSelectedOwnedCommand = new RelayCommand(() => MarkSelectedOwnedAsync().SafeFireAndForget());
-        UnmarkSelectedCommand = new RelayCommand(UnmarkSelected);
+        // Selection-dependent actions are inactive when they have nothing to act on:
+        // Select none without a selection, Mark owned without a selected unowned card,
+        // Unmark owned without a selected owned card. RecountSelected refreshes them.
+        selectNoneCommand = new RelayCommand(ClearSelection, HasSelection);
+        markSelectedOwnedCommand = new RelayCommand(() => MarkSelectedOwnedAsync().SafeFireAndForget(), HasUnownedSelected);
+        unmarkSelectedCommand = new RelayCommand(UnmarkSelected, HasOwnedSelected);
         ToggleFilterPanelCommand = new RelayCommand(() => IsFilterPanelOpen = !IsFilterPanelOpen);
         ToggleGroupModeCommand = new RelayCommand(() => IsGroupMode = !IsGroupMode);
         // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
@@ -307,14 +310,25 @@ public sealed class PrimeGearViewModel : ObservableObject
     /// <summary>Selects every currently visible card for group operations.</summary>
     public ICommand SelectAllCommand { get; }
 
-    /// <summary>Clears the group-operations selection.</summary>
-    public ICommand SelectNoneCommand { get; }
+    private readonly RelayCommand selectNoneCommand;
+    private readonly RelayCommand markSelectedOwnedCommand;
+    private readonly RelayCommand unmarkSelectedCommand;
 
-    /// <summary>Marks every selected card owned (with a single batched tracking prompt).</summary>
-    public ICommand MarkSelectedOwnedCommand { get; }
+    /// <summary>Clears the group-operations selection. Inactive while nothing is selected.</summary>
+    public ICommand SelectNoneCommand => selectNoneCommand;
 
-    /// <summary>Clears the owned mark on every selected card.</summary>
-    public ICommand UnmarkSelectedCommand { get; }
+    /// <summary>
+    /// Marks every selected card owned (with a single batched tracking prompt).
+    /// Inactive unless at least one selected card is not owned yet.
+    /// </summary>
+    public ICommand MarkSelectedOwnedCommand => markSelectedOwnedCommand;
+
+    /// <summary>Clears the owned mark on every selected card. Inactive unless a selected card is owned.</summary>
+    public ICommand UnmarkSelectedCommand => unmarkSelectedCommand;
+
+    private bool HasSelection() => selectedCount > 0;
+    private bool HasUnownedSelected() => allCards.Any(c => c.IsSelected && !c.IsOwned);
+    private bool HasOwnedSelected() => allCards.Any(c => c.IsSelected && c.IsOwned);
 
     /// <summary>Toggles the filter panel open or closed.</summary>
     public ICommand ToggleFilterPanelCommand { get; }
@@ -428,10 +442,22 @@ public sealed class PrimeGearViewModel : ObservableObject
         private set
         {
             if (selectedCount == value) return;
+            var hadSelection = selectedCount > 0;
             selectedCount = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectionStatusText));
+            if (hadSelection != selectedCount > 0)
+                selectNoneCommand.NotifyCanExecuteChanged();
         }
     }
+
+    /// <summary>
+    /// The group-operations row's status: a hint on how to select while nothing is
+    /// selected, the selection count otherwise. Every path that changes the selection
+    /// goes through <see cref="SelectedCount"/>, so the hint returns on its own.
+    /// </summary>
+    public string SelectionStatusText =>
+        selectedCount == 0 ? "Click cards to select them" : $"{selectedCount} selected";
 
     /// <summary>
     /// Filters cards by a case-insensitive title substring. Active when 3+ characters;
@@ -684,8 +710,16 @@ public sealed class PrimeGearViewModel : ObservableObject
 
     // --- Group operations -------------------------------------------------
 
-    /// <summary>Recomputes <see cref="SelectedCount"/> from the current card selection.</summary>
-    private void RecountSelected() => SelectedCount = allCards.Count(c => c.IsSelected);
+    /// <summary>
+    /// Recomputes <see cref="SelectedCount"/> from the current card selection, and refreshes
+    /// Mark/Unmark owned, whose availability depends on which cards are selected.
+    /// </summary>
+    private void RecountSelected()
+    {
+        SelectedCount = allCards.Count(c => c.IsSelected);
+        markSelectedOwnedCommand.NotifyCanExecuteChanged();
+        unmarkSelectedCommand.NotifyCanExecuteChanged();
+    }
 
     /// <summary>Clears the selection on every card and resets the count.</summary>
     private void ClearSelection()

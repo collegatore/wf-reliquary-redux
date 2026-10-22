@@ -11,7 +11,9 @@
     <DataTemplate x:Key="GearCardTemplate" DataType="{x:Type local:PrimeGearCardViewModel}">
       <!-- Panel layers a transparent full-card click target over the card. In group
            mode the overlay is shown: clicking anywhere selects the card and the inner
-           controls (parts, overflow menu) are suppressed. -->
+           controls (parts, overflow menu) are suppressed. To make that discoverable,
+           group mode also swaps the ⋮ button for a selection checkbox, dims the parts
+           list, and outlines the card on hover (overlay style in MainWindow.axaml). -->
       <Panel IsVisible="{Binding IsShown}">
         <Border
             Margin="8"
@@ -49,29 +51,52 @@
                     VerticalAlignment="Center"
                     ToolTip.Tip="Owned" />
               </StackPanel>
-              <Button
-                  Grid.Column="1"
-                  Margin="4,0,0,0"
-                  Padding="6,2"
-                  VerticalAlignment="Center"
-                  Background="Transparent"
-                  BorderThickness="0"
-                  FontWeight="Bold"
-                  Content="⋮"
-                  ToolTip.Tip="{Binding OwnedMenuLabel}"
-                  ToolTip.ShowDelay="1000">
-                <Button.Flyout>
-                  <!-- Right-align the menu to the button so it opens to the
-                       left, then nudge it 30px back toward the button. -->
-                  <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
-                    <MenuItem
-                        Header="{Binding OwnedMenuLabel}"
-                        Command="{Binding MarkOwnedCommand}" />
-                  </MenuFlyout>
-                </Button.Flyout>
-              </Button>
+              <!-- Fixed-width slot: the ⋮ menu outside group mode, the selection
+                   checkbox inside it, so the header doesn't shift on the swap. -->
+              <Panel Grid.Column="1" Margin="4,0,0,0" Width="20" Height="24" VerticalAlignment="Center">
+                <Button
+                    Padding="6,2"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    FontWeight="Bold"
+                    Content="⋮"
+                    ToolTip.Tip="{Binding OwnedMenuLabel}"
+                    ToolTip.ShowDelay="1000"
+                    IsVisible="{Binding !DataContext.PrimeGear.IsGroupMode, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
+                  <Button.Flyout>
+                    <!-- Right-align the menu to the button so it opens to the
+                         left, then nudge it 30px back toward the button. -->
+                    <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                      <MenuItem
+                          Header="{Binding OwnedMenuLabel}"
+                          Command="{Binding MarkOwnedCommand}" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+                <!-- Display-only: the selection overlay above the card takes every
+                     click (including on this box) and toggles the selection. -->
+                <CheckBox
+                    Padding="0"
+                    MinHeight="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding IsSelected, Mode=OneWay}"
+                    IsHitTestVisible="False"
+                    IsVisible="{Binding DataContext.PrimeGear.IsGroupMode, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
+                  <CheckBox.Resources>
+                    <!-- Fluent sizes the box row from this resource (32) inside the
+                         template; shrink it so the header keeps its height. -->
+                    <x:Double x:Key="CheckBoxMinHeight">20</x:Double>
+                  </CheckBox.Resources>
+                </CheckBox>
+              </Panel>
             </Grid>
-            <ItemsControl ItemsSource="{Binding Parts}">
+            <ItemsControl
+                ItemsSource="{Binding Parts}"
+                Classes="gear-parts"
+                Classes.group-mode="{Binding DataContext.PrimeGear.IsGroupMode, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
                   <Grid ColumnDefinitions="Auto,Auto,*">
@@ -243,17 +268,29 @@
           Classes="control-bar"
           IsVisible="{Binding PrimeGear.IsGroupMode}">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <TextBlock
-              Text="{Binding PrimeGear.SelectedCount, StringFormat='{}{0} selected'}"
-              VerticalAlignment="Center"
-              MinWidth="80" />
+          <!-- Selection status: hint while nothing is selected, then the count. The
+               invisible copy of the hint keeps the cell as wide as the hint at any
+               font size, so the action buttons don't shift as the text changes. -->
+          <Grid VerticalAlignment="Center">
+            <TextBlock Text="Click cards to select them" Opacity="0" IsHitTestVisible="False" />
+            <TextBlock Text="{Binding PrimeGear.SelectionStatusText}" />
+          </Grid>
           <StackPanel Classes="button-group joined">
             <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" />
             <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" />
           </StackPanel>
-          <StackPanel Classes="button-group joined">
+          <!-- Unmark owned only applies to owned cards, which are selectable only while
+               Show owned gear is on. The pair is joined only while both are visible
+               (joined corners are chosen by position, which counts hidden children);
+               otherwise Mark owned stands alone as a normal pill. -->
+          <StackPanel
+              Classes="button-group"
+              Classes.joined="{Binding PrimeGear.ShowOwned}">
             <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" />
-            <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" />
+            <Button
+                Content="Unmark owned"
+                Command="{Binding PrimeGear.UnmarkSelectedCommand}"
+                IsVisible="{Binding PrimeGear.ShowOwned}" />
           </StackPanel>
         </StackPanel>
       </Border>

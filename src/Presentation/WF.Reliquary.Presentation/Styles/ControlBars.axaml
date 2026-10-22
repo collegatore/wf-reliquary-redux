@@ -94,6 +94,12 @@
     <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
   </Style>
+  <!-- Inactive (command can't execute): greyed out as a whole; a disabled button gets
+       no hover or clicks. Interim look — add-color-palette-setting decides the final
+       inactive style and its palette color. -->
+  <Style Selector="StackPanel.button-group > Button:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
   <Style Selector="StackPanel.button-group > Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
