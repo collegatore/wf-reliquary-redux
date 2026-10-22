@@ -33,6 +33,10 @@ internal static class Scenes
         new("prime-gear-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(260, 37)),
         new("prime-gear-joined-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(240, 149)),
         new("prime-gear-chip-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(283, 93)),
+        new("prime-gear-cards", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(groupMode: false) }, 900, 480),
+        new("prime-gear-group-mode", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(groupMode: true, selected: false) }, 900, 480),
+        new("prime-gear-group-mode-selected-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 480, Hover: new Point(300, 300)),
+        new("prime-gear-owned-hidden", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(showOwned: false) }, 900, 480),
         new("prime-gear-large-font", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 760, 300, FontSize: 18),
     ];
 }

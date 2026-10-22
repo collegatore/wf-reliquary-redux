@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using WF.Reliquary.Presentation;
 using WF.Reliquary.UiSnapshots;
@@ -68,20 +69,25 @@ foreach (var (key, value) in overrides)
         : double.Parse(value, CultureInfo.InvariantCulture);
 }
 
+var windowStyles = WindowStyles.LoadMainWindowStyles();
+if (windowStyles is null)
+    Console.Error.WriteLine("MainWindow styles not found (run from inside the repo); card styles will be missing.");
+
 Directory.CreateDirectory(outDir);
 var failed = 0;
 foreach (var scene in scenes)
 {
     ApplyFontSize(scene.FontSize);
     var path = Path.GetFullPath(Path.Combine(outDir, scene.Name + ".png"));
-    if (Render(scene, path)) Console.WriteLine(path);
+    if (Render(scene, path, windowStyles)) Console.WriteLine(path);
     else { Console.Error.WriteLine($"{scene.Name}: no frame rendered"); failed++; }
 }
 return failed == 0 ? 0 : 1;
 
-static bool Render(Scene scene, string path)
+static bool Render(Scene scene, string path, Func<Styles>? windowStyles)
 {
     var window = new Window { Width = scene.Width, Height = scene.Height, Content = scene.Build() };
+    if (windowStyles is not null) window.Styles.Add(windowStyles());
     window.Show();
     Dispatcher.UIThread.RunJobs();
     if (scene.Hover is { } point)

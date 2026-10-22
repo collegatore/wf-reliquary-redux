@@ -37,7 +37,8 @@ dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --set ControlH
 ```
 
 - It boots the real `App`, so `App.axaml` and `Styles/` load exactly as in the app; no services or database are created.
-- Views get stand-in DataContexts (`StandIn.cs`): anonymous objects with just the bound property paths. A new binding in a view needs a matching property there, or that control falls back to its default.
+- Views get stand-in DataContexts (`StandIn.cs`): anonymous objects with just the bound property paths. A new binding in a view needs a matching property there, or that control falls back to its default. Gear cards are real `PrimeGearCardViewModel`s, so the typed card template applies.
+- `MainWindow.axaml`'s `Window.Styles` (card styles) are parsed from source at runtime (`WindowStyles.cs`) and added to each scene window, so card scenes look as they do in the app.
 - Scenes (`Scenes.cs`) set the window size, the font size (Small 11 / Medium 14 / Large 18), and an optional pointer position for hover states.
 - Run it in Release so it builds next to, not over, a Debug build that a running debug session has locked.
 
