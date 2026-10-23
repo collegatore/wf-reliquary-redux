@@ -78,6 +78,7 @@ var failed = 0;
 foreach (var scene in scenes)
 {
     ApplyFontSize(scene.FontSize);
+    PaletteApplier.Apply(scene.Palette);
     var path = Path.GetFullPath(Path.Combine(outDir, scene.Name + ".png"));
     if (Render(scene, path, windowStyles)) Console.WriteLine(path);
     else { Console.Error.WriteLine($"{scene.Name}: no frame rendered"); failed++; }

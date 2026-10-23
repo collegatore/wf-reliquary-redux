@@ -1,12 +1,14 @@
 using Avalonia;
 using Avalonia.Controls;
+using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Presentation;
 
 namespace WF.Reliquary.UiSnapshots;
 
 /// <summary>
 /// One snapshot: a view built with stand-in data, the window size to render it at, the
-/// app font size (pt) to apply first, and an optional pointer position for hover states.
+/// app font size (pt) and color palette to apply first, and an optional pointer position
+/// for hover states.
 /// </summary>
 internal sealed record Scene(
     string Name,
@@ -14,7 +16,8 @@ internal sealed record Scene(
     double Width,
     double Height,
     double FontSize = Scenes.MediumFontSize,
-    Point? Hover = null);
+    Point? Hover = null,
+    ColorPalette Palette = ColorPalette.Linen);
 
 internal static class Scenes
 {
@@ -37,6 +40,10 @@ internal static class Scenes
         new("prime-gear-group-mode", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(groupMode: true, selected: false) }, 900, 480),
         new("prime-gear-group-mode-selected-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 480, Hover: new Point(300, 300)),
         new("prime-gear-owned-hidden", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(showOwned: false) }, 900, 480),
+        new("relics-side-by-side-stone", () => new RelicsMissionsView { DataContext = StandIn.RelicsShell(stacked: false) }, 1200, 400, Palette: ColorPalette.Stone),
+        new("prime-gear-stone", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 480, Palette: ColorPalette.Stone),
+        new("prime-gear-hover-stone", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(260, 37), Palette: ColorPalette.Stone),
+        new("prime-gear-chip-hover-stone", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(283, 93), Palette: ColorPalette.Stone),
         new("prime-gear-large-font", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 760, 300, FontSize: 18),
     ];
 }
