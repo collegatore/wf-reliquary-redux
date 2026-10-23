@@ -101,7 +101,7 @@ Text input fields on control bars (the Prime Gear search box) SHALL use the pale
 - **THEN** the search box background matches the wishlist selector's background, not the linen bar
 
 ### Requirement: Inactive controls take their colors from the palette
-Each palette SHALL define the colors of inactive controls (an inactive text color and an inactive outline color), and every inactive bar button, chip, and dropdown SHALL use them, so inactive controls look the same across the app and each palette tunes their contrast. The exact treatment (which parts use these colors) is decided before implementation (see the design's Open Questions).
+Each palette SHALL define an inactive text color and an inactive outline color. Every inactive bar button, chip, and dropdown SHALL keep the field background and show its text and outline in those colors, so inactive controls look the same across the app and each palette tunes their contrast.
 
 #### Scenario: Inactive button follows the palette
 - **WHEN** group operations is enabled with nothing selected under the Stone palette

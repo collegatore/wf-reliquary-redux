@@ -68,7 +68,7 @@
                   <Button.Flyout>
                     <!-- Right-align the menu to the button so it opens to the
                          left, then nudge it 30px back toward the button. -->
-                    <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                    <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25" FlyoutPresenterClasses="card-menu">
                       <MenuItem
                           Header="{Binding OwnedMenuLabel}"
                           Command="{Binding MarkOwnedCommand}" />
@@ -175,7 +175,7 @@
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
             <Button
                 x:Name="WishlistDropdownButton"
-                Classes="bar-field"
+                Classes="dropdown-field"
                 MinWidth="160">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Classes="field-caption" Text="Wishlist:" />
@@ -198,12 +198,9 @@
                               HorizontalAlignment="Stretch"
                               HorizontalContentAlignment="Left"
                               Padding="12,6"
-                              Command="{Binding SelectCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                              <TextBlock Text="✓" IsVisible="{Binding IsActive}" Width="14" />
-                              <TextBlock Text=" " IsVisible="{Binding !IsActive}" Width="14" />
-                              <TextBlock Text="{Binding Name}" />
-                            </StackPanel>
+                              Command="{Binding SelectCommand}"
+                              Classes.active="{Binding IsActive}">
+                            <TextBlock Text="{Binding Name}" />
                           </Button>
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>

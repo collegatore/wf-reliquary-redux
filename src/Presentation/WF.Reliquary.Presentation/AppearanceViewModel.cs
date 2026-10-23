@@ -17,6 +17,7 @@ public sealed class AppearanceViewModel : ObservableObject
     private double relicCardWidthPx;    // base width at Medium font size
     private RelicsMissionsOrientation orientation;
     private RelicViewMode viewMode;
+    private ColorPalette palette;
 
     public AppearanceViewModel(IUserSettingsStore settingsStore, UserSettings initialSettings)
     {
@@ -26,6 +27,7 @@ public sealed class AppearanceViewModel : ObservableObject
         relicCardWidthPx = initialSettings.RelicCardWidthPx;
         orientation = initialSettings.Orientation;
         viewMode = initialSettings.ViewMode;
+        palette = initialSettings.Palette;
     }
 
     // ── Delegates wired by the shell ────────────────────────────────────────
@@ -157,6 +159,25 @@ public sealed class AppearanceViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// The active color palette. Applies live to the whole app (via the shared palette
+    /// resources) and auto-saves on selection, like the other appearance settings.
+    /// </summary>
+    public ColorPalette SelectedPalette
+    {
+        get => palette;
+        set
+        {
+            if (palette == value) return;
+
+            palette = value;
+            OnPropertyChanged();
+
+            PaletteApplier.Apply(value);
+            _ = SavePaletteNow();
+        }
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     private async Task SaveFontSizeNow()
@@ -181,6 +202,12 @@ public sealed class AppearanceViewModel : ObservableObject
     {
         var current = await settingsStore.LoadAsync();
         await settingsStore.SaveAsync(current with { ViewMode = viewMode });
+    }
+
+    private async Task SavePaletteNow()
+    {
+        var current = await settingsStore.LoadAsync();
+        await settingsStore.SaveAsync(current with { Palette = palette });
     }
 
     /// <summary>

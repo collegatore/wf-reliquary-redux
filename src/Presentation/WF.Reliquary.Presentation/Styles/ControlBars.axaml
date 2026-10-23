@@ -21,20 +21,8 @@
          therefore set on the control itself, state looks on the template part.
        ═══════════════════════════════════════════════════════════════════════ -->
 
-  <Styles.Resources>
-    <!-- Light-theme values; a future dark theme should redefine these via
-         ThemeDictionaries rather than changing the styles below. -->
-    <SolidColorBrush x:Key="ControlBarBackgroundBrush" Color="#1A808080" />
-    <SolidColorBrush x:Key="ControlFieldBackgroundBrush" Color="#B3FFFFFF" />
-    <SolidColorBrush x:Key="ControlOutlineBrush" Color="#59808080" />
-    <!-- Hover/press marks an available option with a washed sage, the same hue as
-         OwnedAccentBrush (#5E9E6E) so the app's greens stay one family. The washes
-         land near #E1ECE3 (hover) and #CFE2D3 (pressed) over the field background,
-         clearly apart from the grey bar (~#F2F2F2). -->
-    <SolidColorBrush x:Key="ControlOutlineHoverBrush" Color="#B35E9E6E" />
-    <SolidColorBrush x:Key="ControlHoverBrush" Color="#2E5E9E6E" />
-    <SolidColorBrush x:Key="ControlPressedBrush" Color="#4D5E9E6E" />
-  </Styles.Resources>
+  <!-- Colors come from the active palette (Styles/Palettes/*.axaml), merged into
+       App.axaml's resources: Control*Brush, CardSelectedBrush, SelectionAccentBrush. -->
 
   <!-- ── Bar surface ─────────────────────────────────────────────────────── -->
   <Style Selector="Border.control-bar">
@@ -68,8 +56,8 @@
   <!-- ── Button chips and fields ─────────────────────────────────────────── -->
   <!-- Every bar button is its own outlined pill. Related buttons share a
        <StackPanel Classes="button-group">, which keeps them closer together
-       than the bar's spacing between groups. The Wishlist selector
-       (Button.bar-field) shares the same field look. All of them match the
+       than the bar's spacing between groups. Dropdown fields (Styles/Dropdowns.axaml)
+       share the same look. All of them match the
        Fluent CheckBox/TextBox height (32) so chips, fields and the search box
        line up on a bar. -->
   <Style Selector="StackPanel.button-group">
@@ -77,7 +65,7 @@
     <Setter Property="Spacing" Value="6" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <Style Selector="StackPanel.button-group > Button, Button.bar-field">
+  <Style Selector="StackPanel.button-group > Button">
     <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -86,23 +74,21 @@
     <Setter Property="MinHeight" Value="32" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="StackPanel.button-group > Button:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.bar-field:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="StackPanel.button-group > Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
   </Style>
-  <Style Selector="StackPanel.button-group > Button:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.bar-field:pressed /template/ ContentPresenter#PART_ContentPresenter">
+  <Style Selector="StackPanel.button-group > Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
   </Style>
-  <!-- Inactive (command can't execute): greyed out as a whole; a disabled button gets
-       no hover or clicks. Interim look — add-color-palette-setting decides the final
-       inactive style and its palette color. -->
-  <Style Selector="StackPanel.button-group > Button:disabled">
-    <Setter Property="Opacity" Value="0.45" />
-  </Style>
+  <!-- Inactive (command can't execute): Avalonia disables the button, so it gets no
+       hover or clicks. It keeps the field background; text and outline switch to the
+       palette's muted inactive colors, which keeps a joined pair's divider intact. -->
   <Style Selector="StackPanel.button-group > Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlInactiveOutlineBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
   </Style>
   <!-- Joined variant (<StackPanel Classes="button-group joined">) for pairs that act
        as one control: the buttons touch, the outer corners stay rounded, and each
@@ -123,24 +109,6 @@
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
-  <!-- ── Bar dropdowns (relic sort mode) ─────────────────────────────────── -->
-  <!-- Same field look and hover as the Wishlist selector. ComboBox draws its
-       field in template part Border#Background (fed by Background/BorderBrush). -->
-  <Style Selector="Border.control-bar ComboBox">
-    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="MinHeight" Value="32" />
-  </Style>
-  <Style Selector="Border.control-bar ComboBox:pointerover /template/ Border#Background">
-    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
-  </Style>
-  <Style Selector="Border.control-bar ComboBox:pressed /template/ Border#Background">
-    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
-  </Style>
 
   <!-- ── Checkbox chips ──────────────────────────────────────────────────── -->
   <!-- Markup: <CheckBox Classes="chip" Content="Label" />. The box is shifted
@@ -180,5 +148,29 @@
   <Style Selector="CheckBox.chip:checked:pressed /template/ Border#PART_Border">
     <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <!-- Inactive chip: same muted treatment as inactive bar buttons. -->
+  <Style Selector="CheckBox.chip:disabled /template/ Border#PART_Border">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlInactiveOutlineBrush}" />
+  </Style>
+  <Style Selector="CheckBox.chip:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
+  </Style>
+  <!-- Checked chip's box uses the palette's selection accent instead of Fluent's
+       global accent. Scoped to chips: card part checkboxes and Settings checkboxes
+       keep the standard accent. -->
+  <Style Selector="CheckBox.chip:checked /template/ Border#NormalRectangle, CheckBox.chip:checked:pointerover /template/ Border#NormalRectangle, CheckBox.chip:checked:pressed /template/ Border#NormalRectangle">
+    <Setter Property="Background" Value="{DynamicResource SelectionAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SelectionAccentBrush}" />
+  </Style>
+
+  <!-- ── Bar text fields (Prime Gear search) ─────────────────────────────── -->
+  <!-- Solid field background like the other bar fields, instead of Fluent's
+       translucent one that lets the bar color show through. Fluent's own focus and
+       pointer-over looks still apply on top. -->
+  <Style Selector="Border.control-bar TextBox">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
   </Style>
 </Styles>

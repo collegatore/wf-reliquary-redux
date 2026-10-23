@@ -253,6 +253,50 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsPalette()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        await store.SaveAsync(UserSettings.Default with { Palette = ColorPalette.Stone });
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.Palette, Is.EqualTo(ColorPalette.Stone));
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenPaletteMissingFromFile_DefaultsToLinen()
+    {
+        // Simulate a settings file written by a version without the palette setting.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.Palette, Is.EqualTo(ColorPalette.Linen));
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenPaletteUnrecognized_DefaultsToLinen_AndKeepsOtherSettings()
+    {
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":18,"viewMode":"Table","palette":"Neon"}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.Palette, Is.EqualTo(ColorPalette.Linen));
+            Assert.That(loaded.FontSizePt, Is.EqualTo(18), "an unknown palette must not reset other settings");
+            Assert.That(loaded.ViewMode, Is.EqualTo(RelicViewMode.Table));
+            Assert.That(loaded.WindowWidth, Is.EqualTo(900));
+        });
+    }
+
+    [Test]
     public async Task AsDropTableSourceSettingsStore_LoadAsync_ReturnsSourceUrl()
     {
         var store = new LocalUserSettingsStore(tempDir);

@@ -37,7 +37,7 @@
                 FontWeight="Bold"
                 Content="⋮">
               <Button.Flyout>
-                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25" FlyoutPresenterClasses="card-menu">
                   <MenuItem
                       Header="Compose Recruiting Chat message…"
                       Command="{Binding ComposeCommand}" />
@@ -100,8 +100,17 @@
     <!-- Shared control-bar look; must follow the TextBlock font-size style above
          so section headings keep their larger size. -->
     <StyleInclude Source="/Styles/ControlBars.axaml" />
+    <!-- App-wide dropdowns (ComboBoxes, selector popups) and card menus. -->
+    <StyleInclude Source="/Styles/Dropdowns.axaml" />
   </Application.Styles>
   <Application.Resources>
+    <ResourceDictionary>
+    <!-- The active color palette (control bars, dropdowns, card menus, selection
+         color). Linen at load; PaletteApplier replaces this single merged entry
+         when the user picks another palette. Palette keys live only there. -->
+    <ResourceDictionary.MergedDictionaries>
+      <ResourceInclude Source="/Styles/Palettes/Linen.axaml" />
+    </ResourceDictionary.MergedDictionaries>
     <x:Double x:Key="FontSizeSmall">11</x:Double>
     <x:Double x:Key="FontSizeMedium">14</x:Double>
     <x:Double x:Key="FontSizeLarge">18</x:Double>
@@ -135,12 +144,11 @@
     <!-- Owned-gear accent: an unintrusive muted green, used for the owned card outline
          and the owned ✓ marker so owned reads as a positive state distinct from vaulting. -->
     <SolidColorBrush x:Key="OwnedAccentBrush" Color="#5E9E6E" />
-    <!-- Subtle wash applied to a card selected for group operations. -->
-    <SolidColorBrush x:Key="CardSelectedBrush" Color="#332D7DC4" />
 
     <!-- Highlighter-style wash behind wishlisted reward text in the Table mode
          rewards modal, so the wishlisted reward stands out against the rest of
          the (otherwise dimmed) reward list. -->
     <SolidColorBrush x:Key="WishlistHighlightBrush" Color="#40FFD54F" />
+    </ResourceDictionary>
   </Application.Resources>
 </Application>

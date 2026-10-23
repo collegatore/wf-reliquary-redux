@@ -41,7 +41,7 @@
                 FontWeight="Bold"
                 Content="⋮">
               <Button.Flyout>
-                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25" FlyoutPresenterClasses="card-menu">
                   <MenuItem
                       Header="Compose Recruiting Chat message…"
                       Command="{Binding ComposeCommand}" />

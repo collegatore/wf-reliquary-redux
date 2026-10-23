@@ -15,7 +15,7 @@ The control-bar restyle gave the bars a structure, but their colors are still a 
 - In the Wishlist and Profile selector popups, the active entry is marked **by the selection color alone**, the same way a ComboBox marks its selected item. The ✓ glyph goes away.
 - The cards' **`⋮` menus** (relic cards in Verbatim and Compact modes, gear cards) follow the palette too: an item under the pointer uses the hover tint, pressed uses the pressed tint.
 - A card menu **opens with no item highlighted**. Today its first item shows the hover look as soon as the menu opens. Pointing at an item, or moving to it with the keyboard, still highlights it.
-- **Inactive controls** (a disabled bar button, chip, or dropdown) get palette-defined colors. How they should look (fade, muted text and outline, or flattened) is an open question to settle with the user before building. It replaces the interim 45% opacity fade from `group-selection-discoverability`.
+- **Inactive controls** (a disabled bar button, chip, or dropdown) keep the field background and show muted text and outline in palette-defined colors, replacing the interim 45% opacity fade from `group-selection-discoverability`.
 - **Visible default change:** existing users move from the current grey/blue look to Linen on upgrade. Their settings files, which have no palette field, load as Linen.
 
 Out of scope: a dark theme (palettes are light-only; the brushes stay grouped so a dark variant can be added later), palettes for anything beyond the control bars, dropdowns, card menus, and selection color (card bodies, relic tier colors, the wishlist highlight), the main menu bar's File menu, and user-defined colors.

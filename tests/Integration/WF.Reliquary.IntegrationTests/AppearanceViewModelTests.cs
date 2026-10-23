@@ -111,6 +111,31 @@ public sealed class AppearanceViewModelTests
     }
 
     [Test]
+    public async Task SelectedPalette_Change_AutoSavesToStore()
+    {
+        var store = new Mock<IUserSettingsStore>();
+        UserSettings? saved = null;
+        store
+            .Setup(s => s.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DefaultSettings);
+        store
+            .Setup(s => s.SaveAsync(It.IsAny<UserSettings>(), It.IsAny<CancellationToken>()))
+            .Callback<UserSettings, CancellationToken>((s, _) => saved = s)
+            .Returns(Task.CompletedTask);
+
+        var vm = CreateViewModel(store.Object);
+
+        vm.SelectedPalette = ColorPalette.Stone;
+        await SettleAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectedPalette, Is.EqualTo(ColorPalette.Stone));
+            Assert.That(saved?.Palette, Is.EqualTo(ColorPalette.Stone));
+        });
+    }
+
+    [Test]
     public async Task RelicCardWidthPx_Change_AutoSavesToStore()
     {
         var store = new Mock<IUserSettingsStore>();

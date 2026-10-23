@@ -1,0 +1,122 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       DROPDOWNS — app-wide look of every dropdown (all ComboBoxes, the Wishlist
+       and Profile selector buttons and their popups) and of the cards' ⋮ menus.
+       Colors come from the active palette (Styles/Palettes/*.axaml).
+
+       Fluent (Avalonia 12.0.5) template facts these selectors rely on:
+       - ComboBox: the closed field is Border#Background (fed by Background /
+         BorderBrush); ComboBoxItem draws in its template ContentPresenter, which
+         the theme recolors on :pointerover, :pressed and :selected.
+       - MenuItem has no separate hover style: its hover look is the :selected
+         state on Border#PART_LayoutRoot, which the pointer sets on enter and the
+         menu also sets on its first item when it opens.
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── Dropdown field (Wishlist and Profile selector buttons) ──────────── -->
+  <Style Selector="Button.dropdown-field">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="10,5" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.dropdown-field:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <Style Selector="Button.dropdown-field:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+
+  <!-- ── ComboBox (closed field) ─────────────────────────────────────────── -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="MinHeight" Value="32" />
+  </Style>
+  <Style Selector="ComboBox:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <Style Selector="ComboBox:pressed /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+
+  <!-- Inactive dropdowns: same muted treatment as inactive bar buttons. -->
+  <Style Selector="ComboBox:disabled /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlInactiveOutlineBrush}" />
+  </Style>
+  <Style Selector="ComboBox:disabled /template/ ContentControl#ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
+  </Style>
+  <Style Selector="Button.dropdown-field:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlInactiveOutlineBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
+  </Style>
+  <Style Selector="FlyoutPresenter Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
+  </Style>
+
+  <!-- ── ComboBox items (open list) ──────────────────────────────────────── -->
+  <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+  </Style>
+  <Style Selector="ComboBoxItem:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+  </Style>
+  <!-- Selected item: the selection color, also while pointed at. Declared after the
+       hover styles so it wins on a selected item under the pointer. -->
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter, ComboBoxItem:selected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
+  </Style>
+
+  <!-- ── Selector popups (Wishlist, Profile): entries are flyout buttons ─── -->
+  <!-- Flyout buttons are dropdown entries in this app: flat, tinted on hover. The
+       active entry (Classes.active bound to IsActive) is marked by the selection
+       color alone, the same way a ComboBox marks its selected item. -->
+  <Style Selector="FlyoutPresenter Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="FlyoutPresenter Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+  </Style>
+  <Style Selector="FlyoutPresenter Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+  </Style>
+  <Style Selector="FlyoutPresenter Button.active">
+    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
+  </Style>
+  <Style Selector="FlyoutPresenter Button.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
+  </Style>
+
+  <!-- ── Card ⋮ menus (MenuFlyout with FlyoutPresenterClasses="card-menu") ── -->
+  <!-- Neutralize the theme's :selected look (which highlights the first item as
+       soon as the menu opens), tint the item under the pointer, and tint the
+       :selected item only once the user navigates with the keyboard (the
+       keyboard-nav class set by CardMenuKeyboardHighlight). Scoped to card menus,
+       so the File menu keeps its stock look. -->
+  <Style Selector="MenuFlyoutPresenter.card-menu MenuItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter.card-menu MenuItem:pointerover /template/ Border#PART_LayoutRoot, MenuFlyoutPresenter.card-menu.keyboard-nav MenuItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter.card-menu MenuItem:pressed /template/ Border#PART_LayoutRoot:pointerover">
+    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+  </Style>
+</Styles>

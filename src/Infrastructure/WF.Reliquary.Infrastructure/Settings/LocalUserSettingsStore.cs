@@ -80,7 +80,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 RelicCardWidthPx: file.RelicCardWidthPx > 0 ? file.RelicCardWidthPx : UserSettings.Default.RelicCardWidthPx,
                 ViewMode: file.ViewMode ?? UserSettings.Default.ViewMode,
                 SortMode: file.SortMode ?? UserSettings.Default.SortMode,
-                SortDescending: file.SortDescending ?? UserSettings.Default.SortDescending);
+                SortDescending: file.SortDescending ?? UserSettings.Default.SortDescending,
+                Palette: ParsePalette(file.Palette));
         }
         catch (JsonException)
         {
@@ -106,7 +107,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.RelicCardWidthPx,
             settings.ViewMode,
             settings.SortMode,
-            settings.SortDescending);
+            settings.SortDescending,
+            settings.Palette.ToString());
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -129,6 +131,16 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
     // ── Private ─────────────────────────────────────────────────────────────
 
     private string SettingsPath() => Path.Combine(rootPath, "user-settings.json");
+
+    /// <summary>
+    /// Reads the palette leniently: a missing or unrecognized value falls back to the
+    /// default. It is stored as a plain string (not an enum converter) because a JSON
+    /// error would reset every setting, so one bad palette name must not throw.
+    /// </summary>
+    private static ColorPalette ParsePalette(string? value) =>
+        Enum.TryParse<ColorPalette>(value, ignoreCase: true, out var palette) && Enum.IsDefined(palette)
+            ? palette
+            : UserSettings.Default.Palette;
 
     private static RecruitingMessageTemplate ToTemplate(RecruitingMessageTemplateFile? file)
     {
@@ -174,7 +186,8 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         RelicViewMode? ViewMode = null,
         [property: JsonConverter(typeof(JsonStringEnumConverter))]
         RelicSortMode? SortMode = null,
-        bool? SortDescending = null);
+        bool? SortDescending = null,
+        string? Palette = null);
 
     private sealed record RecruitingMessageTemplateFile(
         string? Pattern,

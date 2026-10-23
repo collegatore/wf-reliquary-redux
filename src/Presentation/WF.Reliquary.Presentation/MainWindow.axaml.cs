@@ -77,6 +77,8 @@ public sealed partial class MainWindow : Window
 
         // Apply font size (and relic card width base) to Application resources.
         var initialRelicCardWidth = AppearanceViewModel.ApplyFontSize(initialSettings.FontSizePt, initialSettings.RelicCardWidthPx);
+        // Apply the saved color palette before the window is shown (no flash of the default).
+        PaletteApplier.Apply(initialSettings.Palette);
 
         var databaseInitializer = ReliquaryServiceFactory.CreateDatabaseInitializer();
         databaseInitializer.InitializeAsync().GetAwaiter().GetResult();

@@ -1,0 +1,28 @@
+<ResourceDictionary
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Linen (default palette): warm linen bars, white controls, a fern-green hover
+       marking available options, and an ink-blue selection color. Every palette
+       defines the same keys; PaletteApplier swaps the whole dictionary. -->
+
+  <!-- Identifies this dictionary as the active palette (PaletteApplier looks it up). -->
+  <x:String x:Key="PaletteName">Linen</x:String>
+
+  <!-- Control bars and their controls -->
+  <SolidColorBrush x:Key="ControlBarBackgroundBrush" Color="#E8E6DF" />
+  <SolidColorBrush x:Key="ControlFieldBackgroundBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="ControlOutlineBrush" Color="#B9B5A8" />
+  <SolidColorBrush x:Key="ControlOutlineHoverBrush" Color="#4E8A5C" />
+  <SolidColorBrush x:Key="ControlHoverBrush" Color="#D7E8D5" />
+  <SolidColorBrush x:Key="ControlPressedBrush" Color="#BCD9BA" />
+
+  <!-- Inactive controls (disabled bar buttons, chips, dropdowns): muted text and
+       outline over the unchanged field background. -->
+  <SolidColorBrush x:Key="ControlInactiveForegroundBrush" Color="#A39F94" />
+  <SolidColorBrush x:Key="ControlInactiveOutlineBrush" Color="#D6D2C8" />
+
+  <!-- Selection: checked chips, selected dropdown items, selected gear cards -->
+  <SolidColorBrush x:Key="CardSelectedBrush" Color="#D8E0EE" />
+  <SolidColorBrush x:Key="SelectionAccentBrush" Color="#3E5A8C" />
+</ResourceDictionary>

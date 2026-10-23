@@ -39,7 +39,7 @@ dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --set ControlH
 - It boots the real `App`, so `App.axaml` and `Styles/` load exactly as in the app; no services or database are created.
 - Views get stand-in DataContexts (`StandIn.cs`): anonymous objects with just the bound property paths. A new binding in a view needs a matching property there, or that control falls back to its default. Gear cards are real `PrimeGearCardViewModel`s, so the typed card template applies.
 - `MainWindow.axaml`'s `Window.Styles` (card styles) are parsed from source at runtime (`WindowStyles.cs`) and added to each scene window, so card scenes look as they do in the app.
-- Scenes (`Scenes.cs`) set the window size, the font size (Small 11 / Medium 14 / Large 18), and an optional pointer position for hover states.
+- Scenes (`Scenes.cs`) set the window size, the font size (Small 11 / Medium 14 / Large 18), the color palette (Linen by default; `*-stone` scenes use Stone), and an optional pointer position for hover states.
 - Run it in Release so it builds next to, not over, a Debug build that a running debug session has locked.
 
 VS Code workspace tasks (`Ctrl+Shift+B`): `dotnet: restore`, `dotnet: build`, `dotnet: test`, `dotnet: run presentation`. Launch configurations: `.NET: Debug Presentation` (with debugger), `.NET: Launch Presentation` (without).
@@ -186,12 +186,12 @@ Each relic card on the Relics and Missions tab has a `⋮` overflow menu (same p
 - **Control-bar styling** — the tab control bars (Relics control panel and its Filters/Sorting rows, the missions separator panel, the Prime Gear bars) take their look from `Presentation/Styles/ControlBars.axaml`, included from `App.axaml`. Bars declare structure with classes and do not use inline colors or separator elements:
   - `Border.control-bar` (bar surface; add `compact` for the missions divider bar)
   - `StackPanel.button-group` around related `Button`s: each button is its own outlined pill with the field look, and the group's tighter spacing keeps related buttons together; add `joined` for a pair that acts as one control (one outline, single divider). Corners are chosen by position, which counts hidden children, so if a member can be hidden, bind `Classes.joined` to the same condition as its visibility (as Mark/Unmark owned does with `ShowOwned`)
-  - `ComboBox` on a bar gets the same field look and hover automatically (no class needed)
-  - A bar button whose command can't execute is disabled by Avalonia (no hover, no clicks) and greyed out at 45% opacity; express availability through the command's `CanExecute`, not through bindings in the view
+  - A bar button whose command can't execute is disabled by Avalonia (no hover, no clicks) and shown inactive: field background kept, text and outline in the palette's inactive colors; express availability through the command's `CanExecute`, not through bindings in the view
   - `CheckBox.chip` with the label as `Content` (checked chips use `CardSelectedBrush`, the app's "selected/on" color)
   - `TextBlock.section-heading` for pane titles (sized by `SectionHeadingFontSize`, which scales with the font-size setting)
-  - `TextBlock.field-caption` inside a `Button.bar-field` for a label that belongs to one control (the Wishlist selector's "Wishlist:")
-  - Colors are the `Control*Brush` resources at the top of the file (bar, field background, outline, hover and pressed tints)
+  - `TextBlock.field-caption` inside a `Button.dropdown-field` for a label that belongs to one control (the Wishlist selector's "Wishlist:")
+- **Dropdowns and card menus** — `Presentation/Styles/Dropdowns.axaml` (included after `ControlBars.axaml`) styles every dropdown app-wide: all `ComboBox`es and their items, `Button.dropdown-field` (the Wishlist and Profile selectors), and selector-popup entries (`FlyoutPresenter Button`; the active entry binds `Classes.active` and is marked by the selection color alone). Card `⋮` menus opt in with `FlyoutPresenterClasses="card-menu"`: they open with no item highlighted, and `CardMenuKeyboardHighlight` (registered in `App.Initialize`) adds a `keyboard-nav` class on the first key press so arrow-key navigation still shows a highlight (Fluent's arrow keys never set `:focus-visible`).
+- **Color palettes** — every color used by these styles comes from the active palette, a `ResourceDictionary` in `Presentation/Styles/Palettes/` (`Linen.axaml`, the default, and `Stone.axaml`). All palettes define the same keys: `Control*Brush` (bar, field background, outline, hover/pressed tints, hover outline), `ControlInactive*Brush` (inactive text and outline), `CardSelectedBrush` (selection wash), `SelectionAccentBrush` (checked-chip tick), plus a `PaletteName` marker. `App.axaml` merges Linen at load; `PaletteApplier.Apply(ColorPalette)` swaps the merged palette (found by its marker), and everything follows via `DynamicResource`. To add a palette, copy a palette file, add a `ColorPalette` value, and add a radio button to `AppearanceWindow.axaml`.
 
 ## UI Concurrency
 

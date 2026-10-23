@@ -41,8 +41,8 @@ Current state relevant to the approach (assuming `restyle-control-bars` has land
 | `ControlPressedBrush` | `#BCD9BA` | `#CCE0D0` |
 | `CardSelectedBrush` (selection wash) | `#D8E0EE` | `#DFD2E3` |
 | `SelectionAccentBrush` (chip tick fill) | `#3E5A8C` | `#876391` |
-| `ControlInactiveForegroundBrush` (inactive text) | open, see Open Questions | open |
-| `ControlInactiveOutlineBrush` (inactive outline) | open, see Open Questions | open |
+| `ControlInactiveForegroundBrush` (inactive text) | `#A39F94` | `#A6A69D` |
+| `ControlInactiveOutlineBrush` (inactive outline) | `#D6D2C8` | `#DDDDD5` |
 
 ### D2. The chip tick is recolored by chip-scoped styles, not by overriding Fluent's resources
 `CheckBox.chip:checked /template/ Border#NormalRectangle` (and its `:pointerover` / `:pressed` combinations) set `Background` and `BorderBrush` to `SelectionAccentBrush`. These are pseudo-class style setters, so they win over the theme's.
@@ -63,13 +63,16 @@ Unlike the bar styles, these selectors are not scoped to `.control-bar`, because
 ### D3c. Card menus get palette styles scoped by a presenter class, and highlight only on pointer or keyboard
 The three card `MenuFlyout`s (the Verbatim relic card template in `App.axaml`, the Compact one in `RelicsPanelView.axaml`, and the gear card in `PrimeGearView.axaml`) set `FlyoutPresenterClasses="card-menu"`. Styles in `Dropdowns.axaml` target `MenuFlyoutPresenter.card-menu MenuItem`, so the File menu is not affected.
 
-Fluent 12.0.5 has no separate hover style for `MenuItem`. Its hover look is the `:selected` state (`Border#PART_LayoutRoot` background), which the pointer sets on enter, and which the menu also sets on its first item when it opens. That is the highlighted-on-open item. The styles therefore:
-1. reset `MenuItem:selected /template/ Border#PART_LayoutRoot` to a transparent background;
-2. apply `ControlHoverBrush` on `MenuItem:pointerover` and on `MenuItem:focus-visible` (keyboard focus), declared after the reset so they win;
-3. apply `ControlPressedBrush` on `:pressed /template/ Border#PART_LayoutRoot:pointerover`, as the theme does.
-An item selected programmatically on open is neither pointed at nor keyboard-focused, so it stays plain, and pointer and arrow-key navigation still highlight.
-- *Fallback:* if the menu opened by a click turns out to give its first item `:focus-visible`, handle the flyout's `Opened` event to clear the presenter's selection and keep focus on the presenter itself. Task 3.4 checks this first.
-- *Alternatives:* code-behind on every menu from the start (more moving parts for what styles can likely do); app-wide `MenuItem` styles (would also restyle the File menu, which is out of scope).
+Fluent 12.0.5 has no separate hover style for `MenuItem`. Its hover look is the `:selected` state (`Border#PART_LayoutRoot` background), which the pointer sets on enter, and which the menu also sets on its first item when it opens. That is the highlighted-on-open item. Checked headlessly: arrow keys move that same `:selected` (and `:focus`) between items without ever setting `:focus-visible`, so styles alone can't tell "just opened" from "moved with the keyboard". Hence:
+1. the styles reset `MenuItem:selected /template/ Border#PART_LayoutRoot` to a transparent background, and apply `ControlHoverBrush` on `MenuItem:pointerover`;
+2. a small app-wide helper, `CardMenuKeyboardHighlight` (registered in `App.Initialize`), adds a `keyboard-nav` class to a card menu's `MenuFlyoutPresenter` on its first key press, and removes it each time a card menu opens (the presenter is reused across opens);
+3. `MenuFlyoutPresenter.card-menu.keyboard-nav MenuItem:selected` applies `ControlHoverBrush`, and `:pressed` keeps the theme's pressed handling with `ControlPressedBrush`.
+Result (verified headlessly): the menu opens plain, the pointer highlights the hovered item, arrow keys highlight the item they move to, and a reopened menu is plain again.
+- *Alternatives:* clearing the selection after each open (timing-dependent, races the menu's own selection); per-menu code-behind (three places, one of them a DataTemplate in `App.axaml`); app-wide `MenuItem` styles (would also restyle the File menu, which is out of scope).
+
+### D3d. Inactive controls: muted text and outline over the unchanged field background
+Decided with the user (it was this design's open question; the alternatives were an opacity fade, the interim look from `group-selection-discoverability`, and a flattened look with no fill or outline). A disabled bar button, chip, dropdown field, or ComboBox keeps `ControlFieldBackgroundBrush`; its outline becomes `ControlInactiveOutlineBrush` and its text `ControlInactiveForegroundBrush`. Disabled entries in the selector popups get the inactive text on a transparent background. The styles target the template parts under `:disabled` (pseudo-class setters beat the theme's own disabled look), and the 45% opacity stopgap is removed.
+- *Why:* crisp and readable as "present but off"; no bar color shows through, and a joined pair's divider stays intact (it faded with the opacity look). Both colors are palette keys, so each palette tunes the contrast against its own bar.
 
 ### D4. The palette is persisted as a string and parsed leniently
 `ColorPalette { Linen, Stone }` lives in `Application/Settings`. `UserSettings` gains `ColorPalette Palette = ColorPalette.Linen`. `SettingsFile` stores `string? Palette`, written as the enum name and read with `Enum.TryParse(ignoreCase: true)`, falling back to Linen.
@@ -89,12 +92,3 @@ An item selected programmatically on open is neither pointed at nor keyboard-foc
 - [Fluent's `:selected` item style also changes the item's foreground, which could clash with the selection wash] → set the foreground explicitly in the `:selected` styles if needed. Verify the selected item's text in an open list under both palettes.
 - [`FlyoutPresenter Button` also matches buttons in any future flyout] → intended, since flyout buttons are dropdown entries in this app. If a flyout ever needs regular buttons, scope the selector with a class on the flyout's content.
 - [The translucent-to-opaque change: the old brushes were alpha over the window background; palette colors are opaque] → on purpose, for predictable colors. A dark variant will define its own opaque set.
-
-## Open Questions
-
-- **How should inactive controls look?** (Must be answered with the user before task 3.5; it decides the values of the two `ControlInactive*` keys and the inactive style.) Today `group-selection-discoverability` greys out an inactive bar button by fading the whole button to 45% opacity, as a stopgap. Candidates:
-  1. **Opacity fade** (the stopgap): simplest, but the faded fill lets the bar color show through, and a faded divider in a joined pair looks broken.
-  2. **Muted text and outline, unchanged fill:** the button keeps its field background, and its text and outline switch to the palette's `ControlInactiveForegroundBrush` / `ControlInactiveOutlineBrush`. Crisp, and it reads as "present but off". This is the likely recommendation.
-  3. **Flattened:** no fill and no outline, muted text only, so the button recedes into the bar. Clearest "not now", but the row's layout looks emptier.
-
-  Whichever is chosen, the colors come from the palette (one inactive text color and one inactive outline per palette), so Linen and Stone can each tune the contrast against their bar. The choice also applies to the dropdown and chip disabled states, for consistency.

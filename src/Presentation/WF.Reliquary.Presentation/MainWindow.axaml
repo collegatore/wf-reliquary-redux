@@ -76,11 +76,6 @@
     <Style Selector="TextBlock.dimmed">
       <Setter Property="Opacity" Value="0.5" />
     </Style>
-    <!-- Buttons inside Flyout popups: lighter background so they don't look
-         like heavy stand-alone buttons in a dropdown list context. -->
-    <Style Selector="FlyoutPresenter Button">
-      <Setter Property="Background" Value="#18FFFFFF" />
-    </Style>
     <!-- Per-tier accent bar color (left border of each tier group). -->
     <Style Selector="Border.tier-common">
       <Setter Property="BorderBrush" Value="{DynamicResource TierCommonBrush}" />

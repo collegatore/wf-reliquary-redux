@@ -5,6 +5,19 @@ All notable changes to WF Reliquary Redux are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Color palettes.** File → Appearance has a new Palette setting with two palettes: **Linen** (the default: warm linen bars, a fern-green hover, ink-blue selection) and **Stone** (stone bars, a sage hover, heather selection). The choice applies immediately and is remembered.
+
+### Changed
+
+- **New default look.** The control bars, dropdowns, card menus, and the selection color (checked filters, selected items, cards selected for group operations) now use the Linen palette instead of grey and stock blue.
+- **Dropdowns** across the app share one look: a light field with a green hover, and the selected item marked in the palette's selection color. The Wishlist and Profile selectors mark the active entry by color instead of a check mark.
+- **Card menus** (the `⋮` on relic and gear cards) open without highlighting their first item; hovering or using the arrow keys highlights an item.
+- **Inactive controls** keep their background and show muted text and outline.
+
 ## [1.0.0] — 2026-07-05
 
 First stable release, out of preview.
