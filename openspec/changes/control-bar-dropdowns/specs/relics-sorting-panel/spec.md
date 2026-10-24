@@ -3,20 +3,33 @@
 ## ADDED Requirements
 
 ### Requirement: Sort controls sit on the Relics bar
-The Relics control bar SHALL contain the sort controls directly, with no sorting row below it: a **sort-mode dropdown** whose closed field shows a fixed double-arrow sort icon before the active mode's name, followed closely by an icon-only **direction button**. The two icons SHALL be distinct: the mode's double arrow never changes, and only the direction button's icon reflects the direction. Both SHALL be available in every view mode.
+The Relics control bar SHALL contain the sort controls directly, with no sorting row below it: an icon-only **sort button** showing a fixed double-arrow icon, followed closely by an icon-only **direction button**. Neither SHALL show the mode's name; their tooltips state it. Only the direction button's icon SHALL reflect the direction.
 
 #### Scenario: Sort controls are on the bar
 - **WHEN** the Relics and Missions tab is displayed
-- **THEN** the Relics bar shows the sort-mode dropdown reading the active mode with a double-arrow icon, followed by the direction button, and no sorting row appears under the bar
+- **THEN** the Relics bar shows the sort button with a double-arrow icon and no mode name, followed by the direction button, and no sorting row appears under the bar
 
 #### Scenario: Only the direction icon changes with the direction
 - **WHEN** the user toggles the direction
-- **THEN** the direction button's icon flips while the sort-mode dropdown's double-arrow icon stays the same
+- **THEN** the direction button's icon flips while the sort button's double-arrow icon stays the same
+
+---
+
+### Requirement: Sort menu lists the modes
+Pressing the sort button SHALL open a menu listing the sort modes as radio entries under a "Sort by" caption, with the active mode marked. Choosing a mode SHALL apply it and close the menu.
+
+#### Scenario: Sort menu marks the active mode
+- **WHEN** Wishlist score is active and the user presses the sort button
+- **THEN** a menu opens listing Era, Alphabetical, and Wishlist score, with Wishlist score marked
+
+#### Scenario: Choosing a mode closes the menu
+- **WHEN** the user opens the sort menu and chooses Alphabetical
+- **THEN** the relics re-sort alphabetically and the menu closes
 
 ---
 
 ### Requirement: Newly selected sort mode starts in its default direction
-When the user selects a sort mode in the dropdown, the direction SHALL reset to that mode's default: **descending** for Era and Wishlist score, **ascending** for Alphabetical. The direction button SHALL remain freely toggleable afterwards. Re-selecting the already-active mode SHALL NOT change the direction. This rule applies only to user-initiated mode changes, not to loading saved settings at startup.
+When the user selects a sort mode in the sort menu, the direction SHALL reset to that mode's default: **descending** for Era and Wishlist score, **ascending** for Alphabetical. The direction button SHALL remain freely toggleable afterwards. Re-selecting the already-active mode SHALL NOT change the direction. This rule applies only to user-initiated mode changes, not to loading saved settings at startup.
 
 #### Scenario: Switching to Era defaults to descending
 - **WHEN** Alphabetical ascending is active and the user selects Era
@@ -54,11 +67,11 @@ The application SHALL save the sort mode and direction when the user changes the
 ---
 
 ### Requirement: Sort control marks a non-default sort
-The sort-mode dropdown SHALL show the non-default indicator defined by the `control-bar-visual-style` capability on its sort icon whenever the sort is anything other than Era descending. Its tooltip, and the direction button's tooltip, SHALL state the active mode and direction (e.g. "Sorted by Wishlist score, descending").
+The sort button SHALL show the non-default indicator defined by the `control-bar-visual-style` capability on its double-arrow icon whenever the sort is anything other than Era descending. Its tooltip, and the direction button's tooltip, SHALL state the active mode and direction (e.g. "Sorted by Wishlist score, descending").
 
 #### Scenario: Wishlist score marks the sort control
 - **WHEN** Wishlist score descending is active
-- **THEN** the sort-mode dropdown's double-arrow icon is tinted with the selection accent
+- **THEN** the sort button's double-arrow icon is tinted with the selection accent
 
 #### Scenario: Default sort is unmarked
 - **WHEN** Era descending is active
@@ -71,7 +84,7 @@ The sort-mode dropdown SHALL show the non-default indicator defined by the `cont
 ## MODIFIED Requirements
 
 ### Requirement: Sorting panel offers three sort modes via a dropdown
-The sort-mode dropdown on the Relics bar SHALL offer exactly three sort modes: **Era**, **Alphabetical**, and **Wishlist score**. The active mode SHALL determine relic-level ordering identically in all view modes (cards and table rows). Reward ordering within a relic SHALL NOT be affected by the sort mode.
+The sort menu on the Relics bar SHALL offer exactly three sort modes: **Era**, **Alphabetical**, and **Wishlist score**. The active mode SHALL determine relic-level ordering identically in all view modes (cards and table rows). Reward ordering within a relic SHALL NOT be affected by the sort mode.
 
 - **Era**: relics ordered by era rank (Lith → Meso → Neo → Axi), then by display name.
 - **Alphabetical**: relics ordered purely by display name.

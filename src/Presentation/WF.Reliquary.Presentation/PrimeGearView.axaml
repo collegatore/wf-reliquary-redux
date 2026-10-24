@@ -220,11 +220,35 @@
               </Button.Flyout>
             </Button>
             </StackPanel>
+            <!-- Filters: what to hide. Checked entries hide; the funnel takes the
+                 selection accent (non-default) while anything is hidden. -->
+            <Button
+                Classes="dropdown-field icon-only"
+                Classes.non-default="{Binding PrimeGear.IsFilterActive}"
+                ToolTip.Tip="{Binding PrimeGear.FilterSummary}">
+              <PathIcon Data="{StaticResource Icon.Funnel}" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+                  <MenuItem Classes="menu-caption" Header="Hide" IsEnabled="False" />
+                  <MenuItem
+                      Header="Vaulted"
+                      ToggleType="CheckBox"
+                      StaysOpenOnClick="True"
+                      IsChecked="{Binding PrimeGear.HideVaulted, Mode=TwoWay}" />
+                  <MenuItem
+                      Header="Owned"
+                      ToggleType="CheckBox"
+                      StaysOpenOnClick="True"
+                      IsChecked="{Binding PrimeGear.HideOwned, Mode=TwoWay}" />
+                  <MenuItem
+                      Header="Not wishlisted"
+                      ToggleType="CheckBox"
+                      StaysOpenOnClick="True"
+                      IsChecked="{Binding PrimeGear.HideNotWishlisted, Mode=TwoWay}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
             <StackPanel Classes="button-group">
-              <Button
-                  Command="{Binding PrimeGear.ToggleFilterPanelCommand}"
-                  Content="Filters"
-                  ToolTip.Tip="Show or hide filter options" />
               <Button
                   Command="{Binding PrimeGear.ToggleGroupModeCommand}"
                   Content="Group operations"
@@ -233,17 +257,6 @@
           </StackPanel>
 
         </DockPanel>
-      </Border>
-
-      <!-- Filter panel: shown when the Filters button is toggled on. -->
-      <Border
-          Classes="control-bar"
-          IsVisible="{Binding PrimeGear.IsFilterPanelOpen}">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <CheckBox Classes="chip" Content="Show vaulted gear" IsChecked="{Binding PrimeGear.ShowVaulted}" />
-          <CheckBox Classes="chip" Content="Show owned gear" IsChecked="{Binding PrimeGear.ShowOwned}" />
-          <CheckBox Classes="chip" Content="Wishlisted only" IsChecked="{Binding PrimeGear.ShowWishlistedOnly}" />
-        </StackPanel>
       </Border>
 
       <!-- Group-operations control row: only shown while group operations is enabled. -->
@@ -262,18 +275,11 @@
             <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" />
             <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" />
           </StackPanel>
-          <!-- Unmark owned only applies to owned cards, which are selectable only while
-               Show owned gear is on. The pair is joined only while both are visible
-               (joined corners are chosen by position, which counts hidden children);
-               otherwise Mark owned stands alone as a normal pill. -->
-          <StackPanel
-              Classes="button-group"
-              Classes.joined="{Binding PrimeGear.ShowOwned}">
+          <!-- Always shown and joined; Unmark owned is inactive while no selected card is
+               owned (e.g. while owned gear is hidden), rather than hidden. -->
+          <StackPanel Classes="button-group joined">
             <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" />
-            <Button
-                Content="Unmark owned"
-                Command="{Binding PrimeGear.UnmarkSelectedCommand}"
-                IsVisible="{Binding PrimeGear.ShowOwned}" />
+            <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -317,7 +323,7 @@
           Padding="12,8"
           Background="{DynamicResource ControlBarBackgroundBrush}"
           CornerRadius="4"
-          IsVisible="{Binding PrimeGear.ShowVaulted}">
+          IsVisible="{Binding !PrimeGear.HideVaulted}">
         <TextBlock FontWeight="SemiBold" Text="Vaulted" />
       </Border>
 
@@ -325,7 +331,7 @@
       <ItemsControl
           ItemsSource="{Binding PrimeGear.VaultedCards}"
           ItemTemplate="{StaticResource GearCardTemplate}"
-          IsVisible="{Binding PrimeGear.ShowVaulted}">
+          IsVisible="{Binding !PrimeGear.HideVaulted}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel Orientation="Horizontal" />

@@ -41,19 +41,20 @@
   - **"Hide" / "View" captions:** a `MenuItem` with `IsEnabled="False"` and `Classes="menu-caption"`, styled muted and smaller. A disabled item is skipped by keyboard navigation, so it can't be "chosen".
 - Alternative considered: CheckBoxes inside a plain `Flyout`. Rejected, because the user asked for stock menus, and `MenuItem` toggles give keyboard navigation and the menu look for free.
 
-### Sort controls: keep the ComboBox, add an icon through `SelectionBoxItemTemplate`
-- The sort-mode `ComboBox` and the direction button move into the Relics bar's row, inside a `StackPanel` with `Spacing` 4.
-- The ComboBox keeps its three `ComboBoxItem`s. A `SelectionBoxItemTemplate` (which receives the selected item's string content) shows `PathIcon Classes="sort-icon"` (`Icon.Sort`) before the text, so the list itself stays text-only.
-- The direction button becomes `dropdown-field icon-only`. Its icon is `Icon.SortDescending` or `Icon.SortAscending`, chosen by `SortDescending` through two `PathIcon`s with `IsVisible` bindings, so no converter is needed.
-- `SortDirectionLabel` is removed; the tooltip carries the words.
+### Sort controls: an icon-only menu button plus the direction button
+- The sort mode is a third menu button like Filters and Display: `Button.dropdown-field.icon-only` with `Icon.Sort` and a `MenuFlyout` whose radio `MenuItem`s ("Sort by" caption, then Era / Alphabetical / Wishlist score) bind `IsChecked` to `SortMode` through `EnumToBoolConverter` (two-way, `ConverterParameter` = mode). Choosing a mode closes the menu; re-choosing the active one leaves `SortMode` unchanged, so the direction stays.
+- The mode's name is not on the bar (user decision during apply); `SortSummary` in the tooltip states it.
+- The direction button follows in a `StackPanel` with `Spacing` 4: `dropdown-field icon-only`, showing `Icon.SortDescending` or `Icon.SortAscending` by `SortDescending` through two `PathIcon`s with `IsVisible` bindings, so no converter is needed.
+- `SortDirectionLabel` is removed; the tooltip carries the words. `SortModeIndex` stays for tests and is unused by the view.
+
+Alternative considered (and first built): keeping the sort-mode `ComboBox` with an icon in its closed field. Dropped once the mode name came off the bar, since an icon-only ComboBox would still show a chevron the other bar buttons don't have.
 
 ### Non-default marker: a `non-default` class on the control
 - Each control binds `Classes.non-default` to a view-model bool:
   - `WishlistRelicsViewModel.IsFilterActive`, `IsSortNonDefault`, `IsDisplayNonDefault`.
   - `PrimeGearViewModel.IsFilterActive`.
-- Styles in `Styles/Dropdowns.axaml`:
-  - `Button.dropdown-field.non-default PathIcon` sets `Foreground` to `SelectionAccentBrush`.
-  - `ComboBox.non-default PathIcon.sort-icon` does the same.
+- Styles in `Styles/Dropdowns.axaml` give a `Button.dropdown-field.non-default` the checked-chip look: `CardSelectedBrush` behind the icon (also on hover, press and while its menu is open, with the hover outline) and `SelectionAccentBrush` on its `PathIcon`.
+- The icon tint alone was the first version; the ink-blue accent next to near-black text proved too subtle at icon size (user feedback during apply), so the wash was added, reusing the app's existing "on" look.
 - Using the palette key means the marker follows Linen and Stone like the chip tick.
 - "Default" definitions live next to the state they describe:
   - Filters: any `Hide*` true.

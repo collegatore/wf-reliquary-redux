@@ -10,7 +10,7 @@ using Avalonia.Media;
 namespace WF.Reliquary.Presentation;
 
 /// <summary>
-/// The relics panel — control bar (Relics label, Show vaulted / Show all rewards)
+/// The relics panel — control bar (Relics label, Filters / sort / Display controls)
 /// plus the relic-cards scroll area — shared by both the stacked and side-by-side
 /// layouts of <see cref="RelicsMissionsView"/>. Extracted so its content (and the
 /// per-view-mode card subtrees) is defined once rather than duplicated per layout.

@@ -70,7 +70,7 @@
   <!-- Control bar stack (Auto) above the relic-cards scroll (*). -->
   <Grid RowDefinitions="Auto,*">
 
-    <!-- Panel stack: control bar + optional filter panel + optional sort panel -->
+    <!-- Control bar: Relics heading, Filters and Display menus, sort controls. -->
     <StackPanel Grid.Row="0">
 
       <!-- Relics control bar: "Relics" heads the relic-cards pane beneath it.
@@ -78,16 +78,102 @@
       <Border Classes="control-bar">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <TextBlock Classes="section-heading" Text="Relics" />
-          <StackPanel Classes="button-group">
+
+          <!-- Filters: what to hide. Checked entries hide; the funnel takes the
+               selection accent (non-default) while anything is hidden. -->
+          <Button
+              Classes="dropdown-field icon-only"
+              Classes.non-default="{Binding WishlistRelics.IsFilterActive}"
+              ToolTip.Tip="{Binding WishlistRelics.FilterSummary}">
+            <PathIcon Data="{StaticResource Icon.Funnel}" />
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+                <MenuItem Classes="menu-caption" Header="Hide" IsEnabled="False" />
+                <MenuItem
+                    Header="Vaulted"
+                    ToggleType="CheckBox"
+                    StaysOpenOnClick="True"
+                    IsChecked="{Binding WishlistRelics.HideVaulted, Mode=TwoWay}" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+
+          <!-- Sort: mode (fixed double-arrow icon, never changes; the mode itself is in
+               the menu and the tooltip) and direction (the only icon that flips), kept
+               tighter than the bar's spacing. -->
+          <StackPanel Orientation="Horizontal" Spacing="4">
             <Button
-                Command="{Binding WishlistRelics.ToggleFilterPanelCommand}"
-                Content="Filters"
-                ToolTip.Tip="Show or hide filter options" />
+                Classes="dropdown-field icon-only"
+                Classes.non-default="{Binding WishlistRelics.IsSortNonDefault}"
+                ToolTip.Tip="{Binding WishlistRelics.SortSummary}">
+              <PathIcon Data="{StaticResource Icon.Sort}" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+                  <MenuItem Classes="menu-caption" Header="Sort by" IsEnabled="False" />
+                  <MenuItem
+                      Header="Era"
+                      ToggleType="Radio"
+                      GroupName="RelicSortMode"
+                      IsChecked="{Binding WishlistRelics.SortMode, Mode=TwoWay, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Era}" />
+                  <MenuItem
+                      Header="Alphabetical"
+                      ToggleType="Radio"
+                      GroupName="RelicSortMode"
+                      IsChecked="{Binding WishlistRelics.SortMode, Mode=TwoWay, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Alphabetical}" />
+                  <MenuItem
+                      Header="Wishlist score"
+                      ToggleType="Radio"
+                      GroupName="RelicSortMode"
+                      IsChecked="{Binding WishlistRelics.SortMode, Mode=TwoWay, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=WishlistScore}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
             <Button
-                Command="{Binding WishlistRelics.ToggleSortPanelCommand}"
-                Content="Sorting"
-                ToolTip.Tip="Show or hide sorting options" />
+                Classes="dropdown-field icon-only"
+                Command="{Binding WishlistRelics.ToggleSortDirectionCommand}"
+                ToolTip.Tip="{Binding WishlistRelics.SortSummary}">
+              <Panel>
+                <PathIcon Data="{StaticResource Icon.SortDescending}" IsVisible="{Binding WishlistRelics.SortDescending}" />
+                <PathIcon Data="{StaticResource Icon.SortAscending}" IsVisible="{Binding !WishlistRelics.SortDescending}" />
+              </Panel>
+            </Button>
           </StackPanel>
+
+          <!-- Display: how relics are shown (view mode, Show all rewards). -->
+          <Button
+              Classes="dropdown-field icon-only"
+              Classes.non-default="{Binding WishlistRelics.IsDisplayNonDefault}"
+              ToolTip.Tip="{Binding WishlistRelics.DisplaySummary}">
+            <PathIcon Data="{StaticResource Icon.Eye}" />
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+                <MenuItem Classes="menu-caption" Header="View" IsEnabled="False" />
+                <MenuItem
+                    Header="Verbatim"
+                    ToggleType="Radio"
+                    GroupName="RelicViewMode"
+                    IsChecked="{Binding WishlistRelics.ViewMode, Mode=TwoWay, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Verbatim}" />
+                <MenuItem
+                    Header="Compact"
+                    ToggleType="Radio"
+                    GroupName="RelicViewMode"
+                    IsChecked="{Binding WishlistRelics.ViewMode, Mode=TwoWay, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Compact}" />
+                <MenuItem
+                    Header="Table"
+                    ToggleType="Radio"
+                    GroupName="RelicViewMode"
+                    IsChecked="{Binding WishlistRelics.ViewMode, Mode=TwoWay, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Table}" />
+                <Separator />
+                <!-- Card modes only: greyed out (state kept) in Table mode. -->
+                <MenuItem
+                    Header="Show all rewards"
+                    ToggleType="CheckBox"
+                    StaysOpenOnClick="True"
+                    IsEnabled="{Binding !WishlistRelics.IsViewModeTable}"
+                    IsChecked="{Binding WishlistRelics.ShowAllRewards, Mode=TwoWay}" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
           <!-- In-content busy indicator for the Relics/Missions reload. -->
           <TextBlock
               Text="Updating…"
@@ -95,43 +181,6 @@
               FontStyle="Italic"
               VerticalAlignment="Center"
               IsVisible="{Binding WishlistRelics.IsBusy}" />
-        </StackPanel>
-      </Border>
-
-      <!-- Filter panel: shown when the Filters button is toggled on. -->
-      <Border
-          Classes="control-bar"
-          IsVisible="{Binding WishlistRelics.IsFilterPanelOpen}">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <CheckBox
-              Classes="chip"
-              Content="Show vaulted"
-              IsChecked="{Binding WishlistRelics.ShowVaulted}" />
-          <!-- Show all rewards applies only to the card modes; hidden while Table
-               mode is active. Its checked state is retained. -->
-          <CheckBox
-              Classes="chip"
-              Content="Show all rewards"
-              IsChecked="{Binding WishlistRelics.ShowAllRewards}"
-              IsVisible="{Binding !WishlistRelics.IsViewModeTable}" />
-        </StackPanel>
-      </Border>
-
-      <!-- Sorting panel: shown when the Sorting button is toggled on. -->
-      <Border
-          Classes="control-bar"
-          IsVisible="{Binding WishlistRelics.IsSortPanelOpen}">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <ComboBox SelectedIndex="{Binding WishlistRelics.SortModeIndex}">
-            <ComboBoxItem Content="Era" />
-            <ComboBoxItem Content="Alphabetical" />
-            <ComboBoxItem Content="Wishlist score" />
-          </ComboBox>
-          <StackPanel Classes="button-group">
-            <Button
-                Command="{Binding WishlistRelics.ToggleSortDirectionCommand}"
-                Content="{Binding WishlistRelics.SortDirectionLabel}" />
-          </StackPanel>
         </StackPanel>
       </Border>
 

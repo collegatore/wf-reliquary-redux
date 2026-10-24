@@ -245,17 +245,47 @@ public sealed partial class MainWindow : Window
                     await dropTablesVm.OnImportSucceeded();
                 }
             });
-        wishlistRelicsVm.ViewMode = initialSettings.ViewMode;
-        wishlistRelicsVm.LoadSortSettings(initialSettings.SortMode, initialSettings.SortDescending);
-        wishlistRelicsVm.SaveSortSettingsAsync = async () =>
+        // Bar-state saves (sort, filters, display) are read-modify-write and fire-and-forget;
+        // one gate runs them one at a time so quick toggles can't overwrite each other.
+        var barSettingsGate = new SemaphoreSlim(1, 1);
+        async Task SaveBarSettingsAsync(Func<UserSettings, UserSettings> update)
         {
-            var current = await userSettingsStore.LoadAsync();
-            await userSettingsStore.SaveAsync(current with
+            await barSettingsGate.WaitAsync();
+            try
             {
-                SortMode = wishlistRelicsVm.SortMode,
-                SortDescending = wishlistRelicsVm.SortDescending,
-            });
-        };
+                var current = await userSettingsStore.LoadAsync();
+                await userSettingsStore.SaveAsync(update(current));
+            }
+            finally
+            {
+                barSettingsGate.Release();
+            }
+        }
+
+        wishlistRelicsVm.LoadDisplaySettings(initialSettings.ViewMode, initialSettings.ShowAllRewards);
+        wishlistRelicsVm.LoadSortSettings(initialSettings.SortMode, initialSettings.SortDescending);
+        wishlistRelicsVm.LoadFilterSettings(initialSettings.RelicsHideVaulted);
+        wishlistRelicsVm.SaveSortSettingsAsync = () => SaveBarSettingsAsync(s => s with
+        {
+            SortMode = wishlistRelicsVm.SortMode,
+            SortDescending = wishlistRelicsVm.SortDescending,
+        });
+        wishlistRelicsVm.SaveFilterSettingsAsync = () => SaveBarSettingsAsync(s => s with
+        {
+            RelicsHideVaulted = wishlistRelicsVm.HideVaulted,
+        });
+        wishlistRelicsVm.SaveDisplaySettingsAsync = () => SaveBarSettingsAsync(s => s with
+        {
+            ViewMode = wishlistRelicsVm.ViewMode,
+            ShowAllRewards = wishlistRelicsVm.ShowAllRewards,
+        });
+        primeGearVm.LoadFilterSettings(initialSettings.GearHideVaulted, initialSettings.GearHideOwned, initialSettings.GearHideNotWishlisted);
+        primeGearVm.SaveFilterSettingsAsync = () => SaveBarSettingsAsync(s => s with
+        {
+            GearHideVaulted = primeGearVm.HideVaulted,
+            GearHideOwned = primeGearVm.HideOwned,
+            GearHideNotWishlisted = primeGearVm.HideNotWishlisted,
+        });
 
         DataContext = shell;
         _ = shell.InitializeAsync();

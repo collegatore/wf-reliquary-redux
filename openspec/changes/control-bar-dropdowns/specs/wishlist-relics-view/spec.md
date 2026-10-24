@@ -51,7 +51,7 @@ The application SHALL display a tab labeled **"Relics and Missions"** in the mai
 
 #### Scenario: Relics control panel shows Relics label and panel buttons
 - **WHEN** the "Relics and Missions" tab is displayed
-- **THEN** the top control panel shows a "Relics" section heading followed by the Filters button, the sort-mode dropdown with its direction button, and the Display button, shows no checkboxes and no row below it, and does NOT show a "Missions" heading or "Show exact drop chances" checkbox
+- **THEN** the top control panel shows a "Relics" section heading followed by the Filters button, the sort button with its direction button, and the Display button, shows no checkboxes and no row below it, and does NOT show a "Missions" heading or "Show exact drop chances" checkbox
 
 #### Scenario: Missions separator panel shows Missions label and checkbox
 - **WHEN** the "Relics and Missions" tab is displayed

@@ -112,9 +112,6 @@ public sealed class MainWindowShellViewModel : ObservableObject
         // Propagate the effective (font-scaled) relic card width so the side-by-side
         // splitter's minimum width stays correct as either setting changes.
         appearance.ApplyRelicCardWidth = w => RelicCardWidth = w;
-        // Apply the relic view mode live so the Appearance window's radio takes
-        // effect immediately on the Relics/Missions tab (mirrors orientation).
-        appearance.ApplyViewMode = m => wishlistRelics.ViewMode = m;
     }
 
     public MainWindowViewModel DropTables { get; }

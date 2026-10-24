@@ -15,7 +15,7 @@ This change builds on `stock-dropdown-controls` (archived), which provides the i
   - The view-model flags invert where the wording inverts (`ShowVaulted` becomes `HideVaulted`, `ShowOwned` becomes `HideOwned`). "Wishlisted only" keeps its polarity as "Hide Not wishlisted".
   - Filter state now **persists** in user settings, separately per tab. It was session-only before, so nothing needs migrating.
 - **Sort becomes a split control** on the Relics bar, replacing the sorting row:
-  - The existing sort-mode `ComboBox` (Era / Alphabetical / Wishlist score) moves onto the bar. Its closed field shows a fixed double-arrow sort icon before the mode name.
+  - An icon-only sort button with a fixed double-arrow icon opens a menu of Era / Alphabetical / Wishlist score (radio entries). The mode's name is not shown on the bar; the tooltip states it.
   - A separate, icon-only direction button shows a single arrow with bars, which flips with the direction.
   - **BREAKING (defaults)**: the default sort becomes **Era descending** (Axi → Lith). Picking Era from the menu also defaults to descending. Settings without a sort direction load as Era descending. Installs that already saved Era ascending keep it.
 - **An icon-only Display menu button (eye icon)** is added to the Relics bar. Its menu holds the relic view mode as radio items (Verbatim / Compact / Table) and **Show all rewards** as a checkbox item, which is greyed out in Table mode. The view mode selector is **removed from the Appearance window**. Show all rewards now persists like the view mode.
@@ -34,14 +34,16 @@ Non-goals: the missions bar's "Show exact drop chances" chip stays a chip (a Dis
 ### Modified Capabilities
 - `relics-filter-panel`: the filter row becomes a funnel menu with a "Hide Vaulted" entry, default nothing hidden, persisted. Show all rewards moves out to the Display menu.
 - `prime-gear-filter-panel`: the filter row becomes a funnel menu with Hide Vaulted / Owned / Not wishlisted, default nothing hidden, persisted.
-- `relics-sorting-panel`: the sorting row becomes a split mode/direction control on the bar with distinct icons. The default becomes Era descending, and Era's mode-change default becomes descending. The "button label reflects the active sort" requirement is replaced by the non-default indicator and the tooltip.
+- `relics-sorting-panel`: the sorting row becomes an icon-only sort menu button plus a direction button on the bar, with distinct icons. The default becomes Era descending, and Era's mode-change default becomes descending. The "button label reflects the active sort" requirement is replaced by the non-default indicator and the tooltip.
 - `control-bar-visual-style`:
   - Icon-only menu buttons on the bars.
   - The non-default accent and the hover tooltip.
   - The filter and sorting rows removed from the pill, separator and chip rules.
   - The Mark/Unmark owned pair always joined.
+  - "Control-bar dropdowns share the wishlist selector's field look" is removed: no dropdown is left on a bar besides the Wishlist selector.
 - `color-palette-setting`:
   - Scenarios that used filter chips now use the remaining Show exact drop chances chip.
+  - The dropdown rules no longer use the sort-mode dropdown as their example (it is now a menu button).
   - Menu check and radio markers use the selection accent.
 - `prime-gear-group-operations`: Unmark owned is always shown. Wording moves from the Show checkboxes to the Hide filters.
 - `prime-gear-owned-status`: owned gear is visible by default and hidden by the Hide Owned filter.

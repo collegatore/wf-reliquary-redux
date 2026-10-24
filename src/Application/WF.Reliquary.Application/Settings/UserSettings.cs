@@ -17,8 +17,13 @@ public sealed record UserSettings(
     double RelicCardWidthPx = 200.0,
     RelicViewMode ViewMode = RelicViewMode.Compact,
     RelicSortMode SortMode = RelicSortMode.Era,
-    bool SortDescending = false,
-    ColorPalette Palette = ColorPalette.Linen)
+    bool SortDescending = true,
+    ColorPalette Palette = ColorPalette.Linen,
+    bool RelicsHideVaulted = false,
+    bool GearHideVaulted = false,
+    bool GearHideOwned = false,
+    bool GearHideNotWishlisted = false,
+    bool ShowAllRewards = false)
 {
     public static UserSettings Default { get; } = new(
         SourceUrl: new Uri(DropTableSourceDefaults.SourceUrl),

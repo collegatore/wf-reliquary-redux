@@ -29,22 +29,30 @@ Most players need exactly one profile and one wishlist; the defaults ("Default"/
 
 ## Prime Gear: owned, vaulted, and group operations
 
-- **Vaulted** gear is collected in its own section (hidden by default — toggle **Show vaulted** to expand it); vault status comes from the imported tables.
-- Marking gear **Owned** moves it to a separate group; if the item still has wishlisted parts, the app asks whether to keep tracking them.
+- **Vaulted** gear is collected in its own section below the active gear; vault status comes from the imported tables.
+- Marking gear **Owned** greys its card out with a ✓; if the item still has wishlisted parts, the app asks whether to keep tracking them.
+- The **funnel** button (Filters) hides what you don't need: tick **Vaulted**, **Owned**, or **Not wishlisted** under "Hide". Nothing is hidden until you tick something, the funnel is highlighted while anything is hidden, and your choice is remembered.
 - Cards can be **selected** (click to toggle) for group operations: select all visible, mark selected owned (one confirmation for the whole batch), or unmark selected.
 - The search box filters as you type (more than 2 symbols)
 
+## Relics bar: filters, sort, and display
+
+- The **funnel** button (Filters) can hide **Vaulted** relics (shown by default).
+- The **sort** button (double arrow) picks Era, Alphabetical, or Wishlist score; the button next to it flips the direction. Hover either to see the current sort. The default is Era descending (Axi first).
+- The **eye** button (Display) picks the view mode (below) and **Show all rewards** (card modes only).
+- A button whose setting differs from the default is highlighted like a checked filter; hover it to see what's set. All of these are remembered.
+
 ## Relic view modes
 
-The Relics and Missions tab renders relics in one of three modes (switchable in the Appearance window):
+The Relics and Missions tab renders relics in one of three modes (switchable from the eye button on the Relics bar):
 
 - **Verbatim** — full card, rewards grouped under tier label rows, names exactly as DE prints them. For when you're matching against the in-game reward screen.
 - **Compact** (default) — one line per reward, led by a bold tier letter (**C**/**U**/**R**). Names are clipped for density: trailing "Relic" is dropped from relic names, "Prime" is dropped from reward names, and a trailing "Blueprint" is dropped *unless* it's a main blueprint (`Revenant Prime Blueprint` → `Revenant Blueprint`, but `Revenant Prime Neuroptics Blueprint` → `Revenant Neuroptics`). Display-only — the underlying data is untouched.
-- **Table** — one expandable row per relic, showing only wishlisted rewards when expanded. Each row has ⊞ (full reward card in a popup) and 💬 (Recruiting Chat message composer).
+- **Table** — one expandable row per relic, showing only wishlisted rewards when expanded. Each row has a treasure-chest icon (full reward card in a popup) and a chat icon (Recruiting Chat message composer).
 
 ## Recruiting Chat message
 
-Each relic card's `⋮` menu (or 💬 in Table mode) opens a message composer that builds recruiting-chat text like `LF [Axi A1 Relic] rad` from a template. The template lives in the Settings tab:
+Each relic card's `⋮` menu (or the chat icon in Table mode) opens a message composer that builds recruiting-chat text like `LF [Axi A1 Relic] rad` from a template. The template lives in the Settings tab:
 
 - The **pattern** is free text with `{placeholder}` slots. `{relic_name}` is built in and required — it resolves to the full relic name.
 - Every other placeholder defines a **custom option group**: you list the choices (descriptor + inserted value) and a default. The composer shows a selector per group with a live preview.
@@ -56,7 +64,6 @@ Each relic card's `⋮` menu (or 💬 in Table mode) opens a message composer th
 
 - **Font size** — Small / Medium / Large; scales the whole content area, including card widths.
 - **Relic card width** — base width in pixels; the effective width also scales with font size.
-- **Relic view mode** — Verbatim / Compact / Table (see above).
 - **Layout orientation** — Relics and Missions side-by-side (default) or stacked vertically. Both layouts have a draggable splitter, and its position is remembered separately per orientation.
 
 All appearance settings apply immediately and save automatically.

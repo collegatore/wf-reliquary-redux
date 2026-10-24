@@ -81,7 +81,12 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
                 ViewMode: file.ViewMode ?? UserSettings.Default.ViewMode,
                 SortMode: file.SortMode ?? UserSettings.Default.SortMode,
                 SortDescending: file.SortDescending ?? UserSettings.Default.SortDescending,
-                Palette: ParsePalette(file.Palette));
+                Palette: ParsePalette(file.Palette),
+                RelicsHideVaulted: file.RelicsHideVaulted ?? UserSettings.Default.RelicsHideVaulted,
+                GearHideVaulted: file.GearHideVaulted ?? UserSettings.Default.GearHideVaulted,
+                GearHideOwned: file.GearHideOwned ?? UserSettings.Default.GearHideOwned,
+                GearHideNotWishlisted: file.GearHideNotWishlisted ?? UserSettings.Default.GearHideNotWishlisted,
+                ShowAllRewards: file.ShowAllRewards ?? UserSettings.Default.ShowAllRewards);
         }
         catch (JsonException)
         {
@@ -108,7 +113,12 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
             settings.ViewMode,
             settings.SortMode,
             settings.SortDescending,
-            settings.Palette.ToString());
+            settings.Palette.ToString(),
+            settings.RelicsHideVaulted,
+            settings.GearHideVaulted,
+            settings.GearHideOwned,
+            settings.GearHideNotWishlisted,
+            settings.ShowAllRewards);
 
         var json = JsonSerializer.Serialize(file, SerializerOptions);
         await File.WriteAllTextAsync(SettingsPath(), json, cancellationToken);
@@ -187,7 +197,12 @@ public sealed class LocalUserSettingsStore : IUserSettingsStore, IDropTableSourc
         [property: JsonConverter(typeof(JsonStringEnumConverter))]
         RelicSortMode? SortMode = null,
         bool? SortDescending = null,
-        string? Palette = null);
+        string? Palette = null,
+        bool? RelicsHideVaulted = null,
+        bool? GearHideVaulted = null,
+        bool? GearHideOwned = null,
+        bool? GearHideNotWishlisted = null,
+        bool? ShowAllRewards = null);
 
     private sealed record RecruitingMessageTemplateFile(
         string? Pattern,

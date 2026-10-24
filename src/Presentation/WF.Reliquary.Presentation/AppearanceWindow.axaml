@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:WF.Reliquary.Presentation"
     Width="498"
-    Height="385"
+    Height="320"
     CanResize="False"
     FontSize="{StaticResource FontSizeSmall}"
     Title="Appearance">
@@ -80,25 +80,6 @@
             Content="Side by side"
             IsChecked="{Binding SelectedOrientation, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=SideBySide}"
             GroupName="RmLayout" />
-      </StackPanel>
-    </StackPanel>
-
-    <!-- Relic view mode -->
-    <StackPanel Spacing="8">
-      <TextBlock Foreground="Gray" Text="Relic view mode" />
-      <StackPanel Orientation="Horizontal" Spacing="16">
-        <RadioButton
-            Content="Verbatim"
-            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Verbatim}"
-            GroupName="RelicViewMode" />
-        <RadioButton
-            Content="Compact"
-            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Compact}"
-            GroupName="RelicViewMode" />
-        <RadioButton
-            Content="Table"
-            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Table}"
-            GroupName="RelicViewMode" />
       </StackPanel>
     </StackPanel>
 

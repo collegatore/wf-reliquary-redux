@@ -138,6 +138,8 @@
     <!-- Icon size (PathIcon style above); rescaled with the font size at runtime.
          Medium-font anchor. -->
     <x:Double x:Key="IconSize">16</x:Double>
+    <!-- Menu captions ("Hide", "View"); rescaled with the font size. Medium anchor. -->
+    <x:Double x:Key="MenuCaptionFontSize">12</x:Double>
 
     <!-- Card widths track the font size at runtime (see SettingsViewModel.ApplyFontSize);
          these are the Medium-font anchors. RelicCardWidth's anchor is user-configurable
