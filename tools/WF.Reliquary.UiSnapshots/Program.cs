@@ -117,6 +117,7 @@ static void ApplyFontSize(double pt)
     resources["ContentFontSize"] = pt;
     resources["SectionHeadingFontSize"] = 16 * ratio;
     resources["IconSize"] = 16 * ratio;
+    resources["MenuCaptionFontSize"] = 12 * ratio;
     resources["RelicCardWidth"] = 300 * ratio;
     resources["MissionCardWidth"] = 300 * ratio;
 }

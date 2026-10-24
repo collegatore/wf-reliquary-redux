@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using WF.Reliquary.Application.Settings;
 using WF.Reliquary.Presentation;
 
 namespace WF.Reliquary.UiSnapshots;
@@ -24,22 +25,30 @@ internal static class StandIn
     /// <summary>A command that can't execute, so its button renders inactive.</summary>
     public static readonly ICommand DisabledCommand = new NoOpCommand(canExecute: false);
 
-    public static object WishlistRelics(bool table = false) => new
+    /// <param name="table">Table view mode (otherwise Compact).</param>
+    /// <param name="nonDefault">
+    /// Every bar control off its default: Vaulted hidden, Wishlist score ascending, all
+    /// rewards shown, so each control shows the accent marker.
+    /// </param>
+    public static object WishlistRelics(bool table = false, bool nonDefault = false) => new
     {
-        ToggleFilterPanelCommand = Command,
-        ToggleSortPanelCommand = Command,
         ToggleSortDirectionCommand = Command,
-        IsFilterPanelOpen = true,
-        IsSortPanelOpen = true,
         IsBusy = false,
-        ShowVaulted = true,
-        ShowAllRewards = false,
+        HideVaulted = nonDefault,
+        IsFilterActive = nonDefault,
+        FilterSummary = nonDefault ? "Filters: hiding vaulted relics" : "Filters: nothing hidden",
+        SortMode = nonDefault ? RelicSortMode.WishlistScore : RelicSortMode.Era,
+        SortDescending = !nonDefault,
+        IsSortNonDefault = nonDefault,
+        SortSummary = nonDefault ? "Sorted by wishlist score, ascending" : "Sorted by era, descending",
+        ViewMode = table ? RelicViewMode.Table : RelicViewMode.Compact,
+        ShowAllRewards = nonDefault,
         IsViewModeTable = table,
         IsViewModeVerbatim = false,
         IsViewModeCompact = !table,
+        IsDisplayNonDefault = table || nonDefault,
+        DisplaySummary = table ? "Display: Table view" : nonDefault ? "Display: Compact view, all rewards shown" : "Display: Compact view",
         IsEmpty = true,
-        SortDirectionLabel = "Ascending",
-        SortModeIndex = 0,
     };
 
     public static object WishlistFarming() => new { ShowExactDropChances = false };
@@ -54,33 +63,33 @@ internal static class StandIn
 
     /// <param name="groupMode">Group-operations mode on (one card selected) or off.</param>
     /// <param name="selected">Whether the first card is selected (only meaningful in group mode).</param>
-    /// <param name="showOwned">The "Show owned gear" filter; when off, owned cards are hidden.</param>
+    /// <param name="hideOwned">The Filters menu's "Hide: Owned" entry; when on, owned cards are hidden.</param>
     /// <param name="singleWishlist">Only one wishlist exists (so Delete is unavailable).</param>
     /// <param name="longWishlistName">A second list's name is wider than the selector field.</param>
-    public static object PrimeGearShell(bool groupMode = true, bool selected = true, bool showOwned = true, bool singleWishlist = false, bool longWishlistName = false)
+    public static object PrimeGearShell(bool groupMode = true, bool selected = true, bool hideOwned = false, bool singleWishlist = false, bool longWishlistName = false)
     {
         var cards = GearCards();
-        foreach (var card in cards.Where(c => c.IsOwned)) card.IsShown = showOwned;
+        foreach (var card in cards.Where(c => c.IsOwned)) card.IsShown = !hideOwned;
         if (groupMode && selected) cards[0].IsSelected = true;
         var selectedCount = cards.Count(c => c.IsSelected);
         return new
         {
             PrimeGear = new
             {
-                ToggleFilterPanelCommand = Command,
                 ToggleGroupModeCommand = Command,
                 SelectAllCommand = Command,
                 SelectNoneCommand = selectedCount > 0 ? Command : DisabledCommand,
                 MarkSelectedOwnedCommand = cards.Any(c => c.IsSelected && !c.IsOwned) ? Command : DisabledCommand,
                 UnmarkSelectedCommand = cards.Any(c => c.IsSelected && c.IsOwned) ? Command : DisabledCommand,
-                IsFilterPanelOpen = true,
                 IsGroupMode = groupMode,
                 SelectedCount = selectedCount,
                 SelectionStatusText = selectedCount == 0 ? "Click cards to select them" : $"{selectedCount} selected",
                 IsBusy = false,
-                ShowVaulted = false,
-                ShowOwned = showOwned,
-                ShowWishlistedOnly = false,
+                HideVaulted = false,
+                HideOwned = hideOwned,
+                HideNotWishlisted = false,
+                IsFilterActive = hideOwned,
+                FilterSummary = hideOwned ? "Filters: hiding owned" : "Filters: nothing hidden",
                 SearchText = "",
                 HasHiddenMatches = false,
                 HiddenMatchHint = "",

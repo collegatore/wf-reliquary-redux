@@ -40,7 +40,7 @@ internal static class Scenes
         new("relics-table-rows", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(table: true) } }, 900, 260, Prepare: FillTable),
         new("relics-table-rows-hover", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(table: true) } }, 900, 260, Hover: new Point(88, 180), Prepare: FillTable),
         new("relics-table-rows-stone", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(table: true) } }, 900, 260, Prepare: FillTable, Palette: ColorPalette.Stone),
-        new("relics-sort-hover", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 900, 260, Hover: new Point(48, 137)),
+        new("relics-sort-hover", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 900, 260, Hover: new Point(150, 24)),
         new("relics-small-font", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 760, 220, FontSize: 11),
         new("relics-large-font", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 760, 260, FontSize: 18),
         new("prime-gear", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300),
@@ -50,7 +50,7 @@ internal static class Scenes
         new("prime-gear-cards", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(groupMode: false) }, 900, 480),
         new("prime-gear-group-mode", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(groupMode: true, selected: false) }, 900, 480),
         new("prime-gear-group-mode-selected-hover", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 480, Hover: new Point(300, 300)),
-        new("prime-gear-owned-hidden", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(showOwned: false) }, 900, 480),
+        new("prime-gear-owned-hidden", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(hideOwned: true) }, 900, 480),
         new("relics-side-by-side-stone", () => new RelicsMissionsView { DataContext = StandIn.RelicsShell(stacked: false) }, 1200, 400, Palette: ColorPalette.Stone),
         new("prime-gear-stone", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 480, Palette: ColorPalette.Stone),
         new("prime-gear-hover-stone", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell() }, 900, 300, Hover: new Point(260, 37), Palette: ColorPalette.Stone),
@@ -70,6 +70,19 @@ internal static class Scenes
         new("settings-profile-open", () => new SettingsView { DataContext = StandIn.SettingsShell() }, 900, 260, Prepare: w => w.GetVisualDescendants().OfType<ComboBox>().First().IsDropDownOpen = true),
         new("settings-profile-actions", () => new SettingsView { DataContext = StandIn.SettingsShell() }, 900, 260, Prepare: OpenFirstActionsMenu),
         new("recruiting-message-dialog", RecruitingDialogContent, 460, 360),
+        new("appearance-window", AppearanceWindowContent, 498, 320),
+        new("relics-bar", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics() } }, 760, 70),
+        new("relics-bar-non-default", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 70),
+        new("relics-bar-non-default-stone", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 70, Palette: ColorPalette.Stone),
+        new("relics-bar-non-default-hover", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 70, Hover: new Point(107, 24)),
+        new("relics-filters-open", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 200, Prepare: w => OpenMenu(w, 0)),
+        new("relics-filters-open-stone", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 200, Prepare: w => OpenMenu(w, 0), Palette: ColorPalette.Stone),
+        new("relics-display-open", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 260, Prepare: w => OpenMenu(w, 2)),
+        new("relics-display-open-table", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(table: true) } }, 760, 260, Prepare: w => OpenMenu(w, 2)),
+        new("relics-display-open-stone", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 260, Prepare: w => OpenMenu(w, 2), Palette: ColorPalette.Stone),
+        new("relics-sort-open", () => new RelicsPanelView { DataContext = new { WishlistRelics = StandIn.WishlistRelics(nonDefault: true) } }, 760, 220, Prepare: w => OpenMenu(w, 1)),
+        new("prime-gear-filters-open", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(hideOwned: true) }, 900, 300, Prepare: w => OpenMenu(w, 1)),
+        new("prime-gear-filters-open-stone", () => new PrimeGearView { DataContext = StandIn.PrimeGearShell(hideOwned: true) }, 900, 300, Prepare: w => OpenMenu(w, 1), Palette: ColorPalette.Stone),
         new("icons", IconGallery, 760, 200),
         new("icons-large-font", IconGallery, 760, 240, FontSize: 18),
     ];
@@ -122,6 +135,16 @@ internal static class Scenes
         if (keyboard) window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
     }
 
+    /// <summary>Opens the <paramref name="index"/>-th icon-only menu button in the view
+    /// (Relics bar: 0 Filters, 1 Sort, 2 Display; Prime Gear bar: 0 wishlist actions, 1 Filters).</summary>
+    private static void OpenMenu(Window window, int index)
+    {
+        var button = window.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.Classes.Contains("icon-only") && b.Flyout is MenuFlyout)
+            .ElementAt(index);
+        button.Flyout!.ShowAt(button);
+    }
+
     private static void OpenWishlistActions(Window window) => OpenFirstActionsMenu(window);
 
     private static void OpenFirstActionsMenu(Window window)
@@ -141,6 +164,19 @@ internal static class Scenes
         var dataContext = dialog.DataContext;
         dialog.Content = null;
         content.DataContext = dataContext;
+        return content;
+    }
+
+    /// <summary>
+    /// The Appearance window's content at the window's own fixed size (scene size must
+    /// match AppearanceWindow.axaml), so clipping shows. Its store is only used on change.
+    /// </summary>
+    private static Control AppearanceWindowContent()
+    {
+        var window = new AppearanceWindow();
+        var content = (Control)window.Content!;
+        window.Content = null;
+        content.DataContext = new AppearanceViewModel(null!, WF.Reliquary.Application.Settings.UserSettings.Default);
         return content;
     }
 
