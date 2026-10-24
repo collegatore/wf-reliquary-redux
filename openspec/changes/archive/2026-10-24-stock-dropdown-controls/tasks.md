@@ -51,7 +51,7 @@
 
 ## 6. Integration check
 
-- [ ] 6.1 In the running app, under both palettes and at Small and Large font sizes:
+- [x] 6.1 In the running app, under both palettes and at Small and Large font sizes:
   - Switch wishlists and profiles with mouse and keyboard.
   - Rename, create and delete via the actions menus.
   - Open a card `⋮` menu.
