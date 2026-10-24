@@ -16,7 +16,7 @@ public sealed partial class RewardsModalWindow : Window
     /// <summary>
     /// Shows the modal as a modal child of <paramref name="owner"/>, hosting
     /// <paramref name="card"/> (an all-rewards, Verbatim-mode card) for the relic
-    /// behind a Table row's ⊞ pictogram.
+    /// behind a Table row's rewards pictogram.
     /// </summary>
     public static Task ShowAsync(Window owner, WishlistRelicCardViewModel card) =>
         new RewardsModalWindow(card).ShowDialog(owner);

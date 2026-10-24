@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dropdowns** across the app share one look: a light field with a green hover, and the selected item marked in the palette's selection color. The Wishlist and Profile selectors mark the active entry by color instead of a check mark.
 - **Card menus** (the `⋮` on relic and gear cards) open without highlighting their first item; hovering or using the arrow keys highlights an item.
 - **Inactive controls** keep their background and show muted text and outline.
+- **Wishlist and Profile selectors** are now standard dropdowns that list only the wishlists or profiles, so they open aligned under the field and work with the arrow keys and Enter. Rename, Delete and New moved to a `⋮` menu right next to each selector, with icons; Delete turns red on hover. "+ New list" / "+ New profile" are now "New list" / "New profile".
+- **Table mode** row actions use icons instead of the `⊞` and `💬` symbols, stay muted until hovered, and name themselves in a tooltip. The Recruiting Chat message window's Copy button uses a standard copy icon instead of `📋`.
 
 ## [1.0.0] — 2026-07-05
 

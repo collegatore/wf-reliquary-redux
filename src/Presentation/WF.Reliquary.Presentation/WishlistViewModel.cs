@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using AsyncAwaitBestPractices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Ports;
@@ -30,9 +31,6 @@ public sealed class WishlistViewModel : ObservableObject
     /// <summary>Raised after the active wishlist changes, so gear cards can reload.</summary>
     public Func<Task>? OnActiveWishlistChanged { get; set; }
 
-    /// <summary>Raised after the user selects a list, so the view can close the dropdown.</summary>
-    public Action? FlyoutCloseRequested { get; set; }
-
     public ObservableCollection<WishlistEntryViewModel> Wishlists { get; }
 
     public WishlistEntryViewModel? ActiveEntry
@@ -41,14 +39,28 @@ public sealed class WishlistViewModel : ObservableObject
         private set
         {
             if (activeEntry == value) return;
-            if (activeEntry is not null) activeEntry.IsActive = false;
             activeEntry = value;
-            if (activeEntry is not null) activeEntry.IsActive = true;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedEntry));
             OnPropertyChanged(nameof(ActiveWishlistName));
             OnPropertyChanged(nameof(CanDelete));
             ((AsyncRelayCommand)RenameCommand).NotifyCanExecuteChanged();
             ((AsyncRelayCommand)DeleteCommand).NotifyCanExecuteChanged();
+        }
+    }
+
+    /// <summary>
+    /// The selector's two-way <c>SelectedItem</c>: reads as <see cref="ActiveEntry"/>, and
+    /// a user's pick activates and persists that entry. Ignores <c>null</c>, which the
+    /// selector pushes back while <see cref="ReloadAsync"/> clears the list.
+    /// </summary>
+    public WishlistEntryViewModel? SelectedEntry
+    {
+        get => ActiveEntry;
+        set
+        {
+            if (value is null || value == ActiveEntry) return;
+            SelectAsync(value).SafeFireAndForget();
         }
     }
 
@@ -64,7 +76,6 @@ public sealed class WishlistViewModel : ObservableObject
     {
         if (ActiveEntry == entry) return;
         ActiveEntry = entry;
-        FlyoutCloseRequested?.Invoke();
         await store.SetActiveAsync(entry.Id);
         if (OnActiveWishlistChanged is not null) await OnActiveWishlistChanged();
     }
@@ -153,14 +164,12 @@ public sealed class WishlistViewModel : ObservableObject
 public sealed class WishlistEntryViewModel : ObservableObject
 {
     private string name;
-    private bool isActive;
 
     public WishlistEntryViewModel(WishlistEntry entry, WishlistViewModel parent)
     {
         Id = entry.Id;
         name = entry.Name;
         Parent = parent;
-        SelectCommand = new AsyncRelayCommand(() => parent.SelectAsync(this));
     }
 
     public long Id { get; }
@@ -172,12 +181,4 @@ public sealed class WishlistEntryViewModel : ObservableObject
         get => name;
         set => SetProperty(ref name, value);
     }
-
-    public bool IsActive
-    {
-        get => isActive;
-        set => SetProperty(ref isActive, value);
-    }
-
-    public ICommand SelectCommand { get; }
 }

@@ -68,7 +68,7 @@
                   <Button.Flyout>
                     <!-- Right-align the menu to the button so it opens to the
                          left, then nudge it 30px back toward the button. -->
-                    <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25" FlyoutPresenterClasses="card-menu">
+                    <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25" FlyoutPresenterClasses="app-menu">
                       <MenuItem
                           Header="{Binding OwnedMenuLabel}"
                           Command="{Binding MarkOwnedCommand}" />
@@ -171,69 +171,55 @@
           </StackPanel>
 
           <!-- Left side: wishlist selector and toggles. The "Wishlist" caption sits
-               inside the selector it labels, so it can't read as a row title. -->
+               inside the selector's closed field (SelectionBoxItemTemplate), so it
+               can't read as a row title; the open list shows names only. -->
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <Button
-                x:Name="WishlistDropdownButton"
-                Classes="dropdown-field"
-                MinWidth="160">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Classes="field-caption" Text="Wishlist:" />
-                <TextBlock
-                    MaxWidth="{StaticResource NameDisplayMaxWidth}"
-                    Text="{Binding Wishlist.ActiveWishlistName}"
-                    TextTrimming="CharacterEllipsis"
-                    VerticalAlignment="Center"
-                    ToolTip.Tip="{Binding Wishlist.ActiveWishlistName}" />
-              </StackPanel>
-              <Button.Flyout>
-                <Flyout Placement="Bottom">
-                  <StackPanel MinWidth="200" Spacing="0">
-
-                    <!-- Existing wishlists -->
-                    <ItemsControl ItemsSource="{Binding Wishlist.Wishlists}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type local:WishlistEntryViewModel}">
-                          <Button
-                              HorizontalAlignment="Stretch"
-                              HorizontalContentAlignment="Left"
-                              Padding="12,6"
-                              Command="{Binding SelectCommand}"
-                              Classes.active="{Binding IsActive}">
-                            <TextBlock Text="{Binding Name}" />
-                          </Button>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Separator -->
-                    <Separator Margin="0,4" />
-
-                    <!-- Management actions -->
-                    <Button
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        Padding="12,6"
-                        Command="{Binding Wishlist.RenameCommand}"
-                        Content="Rename this list…" />
-                    <Button
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        Padding="12,6"
-                        Command="{Binding Wishlist.DeleteCommand}"
-                        IsEnabled="{Binding Wishlist.CanDelete}"
-                        Content="Delete this list" />
-                    <Button
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        Padding="12,6"
-                        Command="{Binding Wishlist.CreateCommand}"
-                        Content="+ New list" />
-
+            <!-- Selector + its ⋮ actions menu, kept tighter than the bar's spacing. -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
+            <ComboBox
+                MinWidth="160"
+                ItemsSource="{Binding Wishlist.Wishlists}"
+                SelectedItem="{Binding Wishlist.SelectedEntry, Mode=TwoWay}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:WishlistEntryViewModel}">
+                  <TextBlock
+                      MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                      Text="{Binding Name}"
+                      TextTrimming="CharacterEllipsis"
+                      ToolTip.Tip="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+              <ComboBox.SelectionBoxItemTemplate>
+                <DataTemplate DataType="{x:Type local:WishlistEntryViewModel}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Classes="field-caption" Text="Wishlist:" />
+                    <TextBlock
+                        MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                        Text="{Binding Name}"
+                        TextTrimming="CharacterEllipsis"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="{Binding Name}" />
                   </StackPanel>
-                </Flyout>
+                </DataTemplate>
+              </ComboBox.SelectionBoxItemTemplate>
+            </ComboBox>
+            <Button Classes="dropdown-field icon-only" ToolTip.Tip="Wishlist actions">
+              <PathIcon Data="{StaticResource Icon.MoreVertical}" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+                  <MenuItem Header="Rename this list…" Command="{Binding Wishlist.RenameCommand}">
+                    <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Pencil}" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Classes="destructive" Header="Delete this list" Command="{Binding Wishlist.DeleteCommand}">
+                    <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Trash}" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Header="New list" Command="{Binding Wishlist.CreateCommand}">
+                    <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Plus}" /></MenuItem.Icon>
+                  </MenuItem>
+                </MenuFlyout>
               </Button.Flyout>
             </Button>
+            </StackPanel>
             <StackPanel Classes="button-group">
               <Button
                   Command="{Binding PrimeGear.ToggleFilterPanelCommand}"

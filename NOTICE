@@ -48,3 +48,7 @@ SQLitePCLRaw (SQLitePCLRaw.bundle_e_sqlite3)
 SQLite (native engine bundled via SQLitePCLRaw)
   https://www.sqlite.org/
   License: Public Domain
+
+Material Design Icons (icon path data in Styles/Icons.axaml)
+  Pictogrammers, https://github.com/Templarian/MaterialDesign
+  License: Apache-2.0

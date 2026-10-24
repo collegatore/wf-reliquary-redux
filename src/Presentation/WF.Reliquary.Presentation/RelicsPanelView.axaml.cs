@@ -30,12 +30,12 @@ public sealed partial class RelicsPanelView : UserControl
         // the fork's API. It reads the VM's TableRows collection, so populating that on
         // reload flows through automatically (no rebuild needed here).
         if (DataContext is MainWindowShellViewModel shell)
-            RelicsTable.Source = BuildTableSource(shell.WishlistRelics);
+            RelicsTable.Source = BuildTableSource(shell.WishlistRelics.TableRows);
     }
 
-    private static ITreeDataGridSource BuildTableSource(WishlistRelicsViewModel vm)
+    private static ITreeDataGridSource BuildTableSource(IList<WishlistRelicTableRow> rows)
     {
-        var source = new HierarchicalTreeDataGridSource<WishlistRelicTableRow>(vm.TableRows)
+        var source = new HierarchicalTreeDataGridSource<WishlistRelicTableRow>(rows)
         {
             Columns =
             {
@@ -60,13 +60,13 @@ public sealed partial class RelicsPanelView : UserControl
                 // Rewards modal pictogram (relic rows only).
                 new TemplateColumn<WishlistRelicTableRow>(
                     null,
-                    new FuncDataTemplate<WishlistRelicTableRow>((row, _) => BuildPictogramCell(row, "⊞", static r => r.ShowRewardsCommand), supportsRecycling: false),
+                    new FuncDataTemplate<WishlistRelicTableRow>((row, _) => BuildPictogramCell(row, "Icon.Table.Rewards", "View this relic's rewards", static r => r.ShowRewardsCommand), supportsRecycling: false),
                     width: GridLength.Auto),
 
                 // Recruiting Chat message composer pictogram (relic rows only).
                 new TemplateColumn<WishlistRelicTableRow>(
                     null,
-                    new FuncDataTemplate<WishlistRelicTableRow>((row, _) => BuildPictogramCell(row, "💬", static r => r.ComposeRecruitingMessageCommand), supportsRecycling: false),
+                    new FuncDataTemplate<WishlistRelicTableRow>((row, _) => BuildPictogramCell(row, "Icon.Table.Recruit", "Compose Recruiting Chat message…", static r => r.ComposeRecruitingMessageCommand), supportsRecycling: false),
                     width: GridLength.Auto),
 
                 // Scrollbar gutter — 18 px matches the Fluent theme scrollbar width so
@@ -111,20 +111,28 @@ public sealed partial class RelicsPanelView : UserControl
         return tb;
     }
 
-    private static Control BuildPictogramCell(WishlistRelicTableRow? row, string glyph, Func<WishlistRelicTableRow, ICommand?> commandSelector)
+    private static Control BuildPictogramCell(WishlistRelicTableRow? row, string iconKey, string tooltip, Func<WishlistRelicTableRow, ICommand?> commandSelector)
     {
         // Pictogram cells are empty on child reward rows.
         if (row is not { ShowsActions: true })
             return new Panel();
 
-        return new Button
+        // The icon inherits the row's text color; the button fades with vaulted rows like
+        // the text cells. The table-action class dims the icon until hover (App.axaml).
+        var icon = new PathIcon();
+        icon.Bind(PathIcon.DataProperty, icon.GetResourceObservable(iconKey));
+        var button = new Button
         {
-            Content = glyph,
+            Classes = { "table-action" },
+            Opacity = row.RowOpacity,
+            Content = icon,
             Command = commandSelector(row),
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(6, 2),
             VerticalAlignment = VerticalAlignment.Center,
         };
+        ToolTip.SetTip(button, tooltip);
+        return button;
     }
 }

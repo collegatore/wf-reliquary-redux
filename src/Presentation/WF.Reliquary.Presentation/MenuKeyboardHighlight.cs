@@ -8,7 +8,7 @@ using Avalonia.VisualTree;
 namespace WF.Reliquary.Presentation;
 
 /// <summary>
-/// Lets card ⋮ menus (MenuFlyouts with <c>FlyoutPresenterClasses="card-menu"</c>) open
+/// Lets the app's ⋮ menus (MenuFlyouts with <c>FlyoutPresenterClasses="app-menu"</c>) open
 /// with no item highlighted while keyboard navigation still shows where it is.
 /// Fluent's menu selects its first item on open, and arrow keys move that same
 /// <c>:selected</c> state without setting <c>:focus-visible</c>, so styles alone can't
@@ -17,9 +17,9 @@ namespace WF.Reliquary.Presentation;
 /// time the menu opens; Styles/Dropdowns.axaml highlights <c>:selected</c> items only
 /// under that class.
 /// </summary>
-public static class CardMenuKeyboardHighlight
+public static class MenuKeyboardHighlight
 {
-    private const string MenuClass = "card-menu";
+    private const string MenuClass = "app-menu";
     private const string KeyboardClass = "keyboard-nav";
 
     /// <summary>Registers the app-wide handlers. Call once at startup.</summary>
@@ -34,7 +34,7 @@ public static class CardMenuKeyboardHighlight
             RoutingStrategies.Tunnel,
             handledEventsToo: true);
 
-        // The presenter is reused across opens, so reset the flag whenever a card menu opens.
+        // The presenter is reused across opens, so reset the flag whenever such a menu opens.
         Avalonia.Controls.Primitives.FlyoutBase.IsOpenProperty.Changed.AddClassHandler<MenuFlyout>(
             (flyout, e) =>
             {

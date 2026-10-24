@@ -3,8 +3,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       DROPDOWNS — app-wide look of every dropdown (all ComboBoxes, the Wishlist
-       and Profile selector buttons and their popups) and of the cards' ⋮ menus.
+       DROPDOWNS — app-wide look of every dropdown (all ComboBoxes, including the
+       Wishlist and Profile selectors), of the ⋮ actions buttons, and of the ⋮ menus.
        Colors come from the active palette (Styles/Palettes/*.axaml).
 
        Fluent (Avalonia 12.0.5) template facts these selectors rely on:
@@ -16,7 +16,7 @@
          menu also sets on its first item when it opens.
        ═══════════════════════════════════════════════════════════════════════ -->
 
-  <!-- ── Dropdown field (Wishlist and Profile selector buttons) ──────────── -->
+  <!-- ── Dropdown field (the selectors' ⋮ actions buttons) ──────────────── -->
   <Style Selector="Button.dropdown-field">
     <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
@@ -30,6 +30,15 @@
     <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
   </Style>
+  <!-- While its menu is open the field keeps the hover outline, so the menu reads as
+       belonging to it. -->
+  <Style Selector="Button.dropdown-field:flyout-open /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <!-- Icon-only field (⋮): square-ish padding around the icon. -->
+  <Style Selector="Button.dropdown-field.icon-only">
+    <Setter Property="Padding" Value="7,5" />
+  </Style>
   <Style Selector="Button.dropdown-field:pressed /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
@@ -42,6 +51,12 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="4" />
     <Setter Property="MinHeight" Value="32" />
+  </Style>
+  <!-- Open list: left-aligned under the field with a small gap. The theme's Popup
+       (PART_Popup, Placement=Bottom) centers a list wider than its field. -->
+  <Style Selector="ComboBox /template/ Popup#PART_Popup">
+    <Setter Property="Placement" Value="BottomEdgeAlignedLeft" />
+    <Setter Property="VerticalOffset" Value="4" />
   </Style>
   <Style Selector="ComboBox:pointerover /template/ Border#Background">
     <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
@@ -65,10 +80,6 @@
     <Setter Property="BorderBrush" Value="{DynamicResource ControlInactiveOutlineBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
   </Style>
-  <Style Selector="FlyoutPresenter Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
-  </Style>
 
   <!-- ── ComboBox items (open list) ──────────────────────────────────────── -->
   <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
@@ -83,40 +94,29 @@
     <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
   </Style>
 
-  <!-- ── Selector popups (Wishlist, Profile): entries are flyout buttons ─── -->
-  <!-- Flyout buttons are dropdown entries in this app: flat, tinted on hover. The
-       active entry (Classes.active bound to IsActive) is marked by the selection
-       color alone, the same way a ComboBox marks its selected item. -->
-  <Style Selector="FlyoutPresenter Button">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
-  </Style>
-  <Style Selector="FlyoutPresenter Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
-  </Style>
-  <Style Selector="FlyoutPresenter Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
-  </Style>
-  <Style Selector="FlyoutPresenter Button.active">
-    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
-  </Style>
-  <Style Selector="FlyoutPresenter Button.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
-  </Style>
-
-  <!-- ── Card ⋮ menus (MenuFlyout with FlyoutPresenterClasses="card-menu") ── -->
-  <!-- Neutralize the theme's :selected look (which highlights the first item as
-       soon as the menu opens), tint the item under the pointer, and tint the
-       :selected item only once the user navigates with the keyboard (the
-       keyboard-nav class set by CardMenuKeyboardHighlight). Scoped to card menus,
-       so the File menu keeps its stock look. -->
-  <Style Selector="MenuFlyoutPresenter.card-menu MenuItem:selected /template/ Border#PART_LayoutRoot">
+  <!-- ── ⋮ menus (MenuFlyout with FlyoutPresenterClasses="app-menu") ─────── -->
+  <!-- Card menus and the selectors' actions menus. Neutralize the theme's :selected
+       look (which highlights the first item as soon as the menu opens), tint the
+       item under the pointer, and tint the :selected item only once the user
+       navigates with the keyboard (the keyboard-nav class set by
+       MenuKeyboardHighlight). Scoped to app-menu, so the File menu keeps its stock
+       look. -->
+  <Style Selector="MenuFlyoutPresenter.app-menu MenuItem:selected /template/ Border#PART_LayoutRoot">
     <Setter Property="Background" Value="Transparent" />
   </Style>
-  <Style Selector="MenuFlyoutPresenter.card-menu MenuItem:pointerover /template/ Border#PART_LayoutRoot, MenuFlyoutPresenter.card-menu.keyboard-nav MenuItem:selected /template/ Border#PART_LayoutRoot">
+  <Style Selector="MenuFlyoutPresenter.app-menu MenuItem:pointerover /template/ Border#PART_LayoutRoot, MenuFlyoutPresenter.app-menu.keyboard-nav MenuItem:selected /template/ Border#PART_LayoutRoot">
     <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
   </Style>
-  <Style Selector="MenuFlyoutPresenter.card-menu MenuItem:pressed /template/ Border#PART_LayoutRoot:pointerover">
+  <Style Selector="MenuFlyoutPresenter.app-menu MenuItem:pressed /template/ Border#PART_LayoutRoot:pointerover">
     <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+  </Style>
+  <!-- Destructive items (Delete) turn the palette-independent destructive color
+       while pointed at; label and icon both follow Foreground. Never when disabled. -->
+  <Style Selector="MenuFlyoutPresenter.app-menu MenuItem.destructive:pointerover:not(:disabled)">
+    <Setter Property="Foreground" Value="{DynamicResource DestructiveForegroundBrush}" />
+  </Style>
+  <!-- The theme recolors the header part itself on hover, so set it there too. -->
+  <Style Selector="MenuFlyoutPresenter.app-menu MenuItem.destructive:pointerover:not(:disabled) /template/ ContentPresenter#PART_HeaderPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource DestructiveForegroundBrush}" />
   </Style>
 </Styles>

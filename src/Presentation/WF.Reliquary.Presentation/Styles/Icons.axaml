@@ -1,0 +1,42 @@
+<ResourceDictionary
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ICONS — vector shapes for PathIcon.Data, so icons don't depend on installed
+       fonts or the emoji font. Paths are Material Design Icons (Pictogrammers,
+       Apache-2.0, see NOTICE), 24×24 and fill-based: PathIcon fills them with its
+       inherited Foreground, so they follow hover, disabled and palette colors.
+       Size comes from the PathIcon style in App.axaml (IconSize).
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Menus and actions -->
+  <!-- mdi:dots-vertical -->
+  <StreamGeometry x:Key="Icon.MoreVertical">M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z</StreamGeometry>
+  <!-- mdi:pencil-outline -->
+  <StreamGeometry x:Key="Icon.Pencil">M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z</StreamGeometry>
+  <!-- mdi:trash-can-outline -->
+  <StreamGeometry x:Key="Icon.Trash">M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z</StreamGeometry>
+  <!-- mdi:plus -->
+  <StreamGeometry x:Key="Icon.Plus">M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z</StreamGeometry>
+  <!-- mdi:content-copy -->
+  <StreamGeometry x:Key="Icon.Copy">M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z</StreamGeometry>
+
+  <!-- Table mode relic-row actions -->
+  <!-- mdi:treasure-chest-outline (rewards modal) -->
+  <StreamGeometry x:Key="Icon.Table.Rewards">M2 20H22V7C22 6.2 21.68 5.44 21.12 4.88C20.56 4.32 19.8 4 19 4H5C4.2 4 3.44 4.32 2.88 4.88C2.32 5.44 2 6.2 2 7V20M20 11H15V9H9V11H4V7C4 6.74 4.11 6.5 4.29 6.29C4.5 6.11 4.74 6 5 6H19C19.27 6 19.5 6.11 19.71 6.29C19.9 6.5 20 6.74 20 7V11M15 13H20V18H4V13H9L11 15H13L15 13M11 11H13V13H11V11Z</StreamGeometry>
+  <!-- mdi:chat-outline (Recruiting Chat message) -->
+  <StreamGeometry x:Key="Icon.Table.Recruit">M12,3C6.5,3 2,6.58 2,11C2.05,13.15 3.06,15.17 4.75,16.5C4.75,17.1 4.33,18.67 2,21C4.37,20.89 6.64,20 8.47,18.5C9.61,18.83 10.81,19 12,19C17.5,19 22,15.42 22,11C22,6.58 17.5,3 12,3M12,17C7.58,17 4,14.31 4,11C4,7.69 7.58,5 12,5C16.42,5 20,7.69 20,11C20,14.31 16.42,17 12,17Z</StreamGeometry>
+
+  <!-- Control-bar dropdowns (Filters, Sort, Display) -->
+  <!-- mdi:filter-outline -->
+  <StreamGeometry x:Key="Icon.Funnel">M15,19.88C15.04,20.18 14.94,20.5 14.71,20.71C14.32,21.1 13.69,21.1 13.3,20.71L9.29,16.7C9.06,16.47 8.96,16.16 9,15.87V10.75L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L15,10.75V19.88M7.04,5L11,10.06V15.58L13,17.58V10.05L16.96,5H7.04Z</StreamGeometry>
+  <!-- mdi:swap-vertical (sort mode: "this is a sort", no direction) -->
+  <StreamGeometry x:Key="Icon.Sort">M9,3L5,7H8V14H10V7H13M16,17V10H14V17H11L15,21L19,17H16Z</StreamGeometry>
+  <!-- mdi:sort-ascending -->
+  <StreamGeometry x:Key="Icon.SortAscending">M19 17H22L18 21L14 17H17V3H19M2 17H12V19H2M6 5V7H2V5M2 11H9V13H2V11Z</StreamGeometry>
+  <!-- mdi:sort-descending -->
+  <StreamGeometry x:Key="Icon.SortDescending">M19 7H22L18 3L14 7H17V21H19M2 17H12V19H2M6 5V7H2V5M2 11H9V13H2V11Z</StreamGeometry>
+  <!-- mdi:eye-outline -->
+  <StreamGeometry x:Key="Icon.Eye">M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M12,4.5C17,4.5 21.27,7.61 23,12C21.27,16.39 17,19.5 12,19.5C7,19.5 2.73,16.39 1,12C2.73,7.61 7,4.5 12,4.5M3.18,12C4.83,15.36 8.24,17.5 12,17.5C15.76,17.5 19.17,15.36 20.82,12C19.17,8.64 15.76,6.5 12,6.5C8.24,6.5 4.83,8.64 3.18,12Z</StreamGeometry>
+</ResourceDictionary>

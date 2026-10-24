@@ -215,7 +215,7 @@ public sealed class AppearanceViewModel : ObservableObject
     /// <paramref name="relicCardBasePx"/> — the card's effective width at Medium
     /// font size — scaled by the current font-size ratio. <c>MissionCardWidth</c>
     /// keeps its historical fixed 300px base (not user-configurable), and
-    /// <c>SectionHeadingFontSize</c> its fixed 16pt base. Returns the
+    /// <c>SectionHeadingFontSize</c> and <c>IconSize</c> their fixed 16 bases. Returns the
     /// resulting effective relic card width, so callers can propagate it live
     /// (e.g. to the side-by-side layout's minimum column width).
     /// </summary>
@@ -232,6 +232,7 @@ public sealed class AppearanceViewModel : ObservableObject
             resources["RelicCardWidth"] = relicCardWidth;
             resources["MissionCardWidth"] = 300 * ratio;
             resources["SectionHeadingFontSize"] = 16 * ratio;
+            resources["IconSize"] = 16 * ratio;
             return relicCardWidth;
         }
 
