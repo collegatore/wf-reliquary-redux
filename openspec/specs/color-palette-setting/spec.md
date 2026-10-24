@@ -14,7 +14,7 @@ The application SHALL offer exactly two color palettes: **Linen** and **Stone**.
 - **THEN** the control bars use the Linen palette
 
 #### Scenario: Stone uses its own selection color
-- **WHEN** the Stone palette is active and the user checks a filter chip
+- **WHEN** the Stone palette is active and the user checks the Show exact drop chances chip
 - **THEN** the checked chip is tinted heather rather than ink blue
 
 ### Requirement: Palette covers the control bars, dropdowns, card menus, and the selection color
@@ -40,33 +40,7 @@ The checkbox tick inside a checked chip SHALL use the palette's selection accent
 
 #### Scenario: Gear card part checkboxes keep the standard accent
 - **WHEN** the Stone palette is active and a gear card shows a checked part
-- **THEN** that part's checkbox uses the standard accent color, while checked chips in the filter row use heather
-
-### Requirement: Dropdowns follow the palette
-Every dropdown in the application SHALL follow the active palette: all ComboBoxes, including the Wishlist and Profile selectors. A closed dropdown SHALL use the palette's field background and outline, with the hover tint while the pointer is over it. In an open list, the item under the pointer SHALL use the hover tint, and the selected item SHALL use the selection color.
-
-#### Scenario: Open sort list marks hover and selection
-- **WHEN** the user opens the relic sort-mode dropdown with Era selected and points at Alphabetical
-- **THEN** Era shows the palette's selection color and Alphabetical shows the hover tint
-
-#### Scenario: Pointed-at entry in the selector popup shows the hover tint
-- **WHEN** the user opens the Wishlist selector and points at an inactive wishlist
-- **THEN** that entry shows the palette's hover tint
-
-#### Scenario: Dropdowns outside the control bars follow the palette
-- **WHEN** the Stone palette is active and the user opens the Drop Tables source selector
-- **THEN** its field, hovered item, and selected item use the Stone colors
-
-### Requirement: Selector popups mark the active entry by color alone
-In the Wishlist and Profile selectors, the active entry SHALL be marked only by the palette's selection color, as any ComboBox marks its selected item. No check glyph SHALL be shown.
-
-#### Scenario: Active wishlist is marked like the selected sort mode
-- **WHEN** the user opens the Wishlist selector
-- **THEN** the active wishlist's entry shows the palette's selection color, as the selected item does in the sort-mode dropdown, and no ✓ appears next to it
-
-#### Scenario: Active profile is marked the same way
-- **WHEN** the user opens the Profile selector on the Settings tab
-- **THEN** the active profile's entry shows the selection color and no ✓
+- **THEN** that part's checkbox uses the standard accent color, while a checked Show exact drop chances chip uses heather
 
 ### Requirement: Profile selector shares the Wishlist selector's field look
 The Profile selector on the Settings tab SHALL have the same palette-driven field look (background, outline, hover tint) as the Wishlist selector on the Prime Gear tab, and its actions button SHALL look like the Wishlist actions button.
@@ -132,3 +106,36 @@ Opening a menu from a `⋮` button with the pointer SHALL NOT highlight any item
 #### Scenario: Keyboard navigation still highlights
 - **WHEN** a menu opened from a `⋮` button is open and the user presses the Down arrow key
 - **THEN** the item moved to is highlighted with the hover tint
+
+### Requirement: Menu markers use the palette's selection accent
+In menus opened from a control-bar button (the Filters, Sort, and Display menus), the check mark of a checked entry and the dot of the chosen radio entry SHALL use the palette's selection accent, the same color as a checked chip's tick.
+
+#### Scenario: Checked filter entry uses the selection accent
+- **WHEN** the Stone palette is active and the user opens a Filters menu with Vaulted checked
+- **THEN** the Vaulted entry's check mark is drawn in Stone's selection accent
+
+#### Scenario: Chosen view mode uses the selection accent
+- **WHEN** the Linen palette is active and the user opens the Display menu
+- **THEN** the dot marking the active view mode is drawn in Linen's selection accent
+
+### Requirement: ComboBoxes follow the palette
+Every ComboBox in the application, including the Wishlist and Profile selectors and the Drop Tables source selector, SHALL follow the active palette. A closed ComboBox SHALL use the palette's field background and outline, with the hover tint while the pointer is over it. In an open list, the item under the pointer SHALL use the hover tint, and the selected item SHALL use the selection color.
+
+#### Scenario: Open list marks hover and selection
+- **WHEN** the user opens the Wishlist selector with Default active and points at another wishlist
+- **THEN** Default shows the palette's selection color and the pointed-at wishlist shows the hover tint
+
+#### Scenario: ComboBoxes outside the control bars follow the palette
+- **WHEN** the Stone palette is active and the user opens the Drop Tables source selector
+- **THEN** its field, hovered item, and selected item use the Stone colors
+
+### Requirement: Selectors mark the active entry by the selection color only
+In the Wishlist and Profile selectors, the active entry SHALL be marked only by the palette's selection color, as any ComboBox marks its selected item. No check glyph SHALL be shown.
+
+#### Scenario: Active wishlist is marked by color
+- **WHEN** the user opens the Wishlist selector
+- **THEN** the active wishlist's entry shows the palette's selection color and no ✓ appears next to it
+
+#### Scenario: Active profile is marked the same way
+- **WHEN** the user opens the Profile selector on the Settings tab
+- **THEN** the active profile's entry shows the selection color and no ✓

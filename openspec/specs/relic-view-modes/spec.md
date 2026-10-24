@@ -7,15 +7,15 @@ Defines the three relic view modes available in the Relics and Missions tab: **V
 ## Requirements
 
 ### Requirement: Relic view mode selector
-The **Appearance window** SHALL contain a three-way relic view mode selector with the options **Verbatim**, **Compact**, and **Table**, alongside the existing layout orientation control. Selecting a mode SHALL immediately switch the relics panel content in the main window (live preview, per the Appearance window's existing behavior) without requiring a reload, in both the stacked and side-by-side layouts. The default mode SHALL be **Compact**.
+The **Display menu** on the Relics bar (see the `relics-display-menu` capability) SHALL offer a three-way relic view mode choice with the options **Verbatim**, **Compact**, and **Table**. Selecting a mode SHALL immediately switch the relics panel content without requiring a reload, in both the stacked and side-by-side layouts. The Appearance window SHALL NOT offer the view mode. The default mode SHALL be **Compact**.
 
 #### Scenario: Selector offers three modes
-- **WHEN** the Appearance window is open
-- **THEN** it shows a relic view mode selector with exactly the options Verbatim, Compact, and Table
+- **WHEN** the user opens the Display menu on the Relics bar
+- **THEN** it offers exactly the view modes Verbatim, Compact, and Table
 
 #### Scenario: Switching modes updates the relics panel immediately
-- **WHEN** the user changes the selected view mode in the Appearance window
-- **THEN** the relics panel in the main window re-renders in the newly selected mode without a reload
+- **WHEN** the user chooses a different view mode in the Display menu
+- **THEN** the relics panel re-renders in the newly selected mode without a reload
 
 #### Scenario: Compact is the default mode
 - **WHEN** the application runs with no previously saved view mode
@@ -78,7 +78,7 @@ Compact mode (cards and Table rows) SHALL clip display names as a presentation-l
 ---
 
 ### Requirement: Table mode renders one row per relic
-In **Table** mode, the relics panel SHALL render a table with one top-level row per relic showing: the clipped relic name, a wishlisted-tier marker listing the tiers that contain at least one wishlisted reward in Common → Uncommon → Rare order without parentheses (e.g. "C, R"), and two pictogram actions (rewards modal and Recruiting Chat message composer). When a tier contains more than one wishlisted reward, its marker SHALL be prefixed with the count (e.g. "C, 2 R" for one wishlisted Common and two wishlisted Rares). Rows SHALL follow the active sort mode and direction (see the `relics-sorting-panel` capability), matching the card modes; with default settings this is era order (Lith → Meso → Neo → Axi) then alphabetical by relic name. The **Show vaulted** filter SHALL apply, and vaulted rows SHALL use the same reduced-opacity treatment as vaulted cards.
+In **Table** mode, the relics panel SHALL render a table with one top-level row per relic showing: the clipped relic name, a wishlisted-tier marker listing the tiers that contain at least one wishlisted reward in Common → Uncommon → Rare order without parentheses (e.g. "C, R"), and two pictogram actions (rewards modal and Recruiting Chat message composer). When a tier contains more than one wishlisted reward, its marker SHALL be prefixed with the count (e.g. "C, 2 R" for one wishlisted Common and two wishlisted Rares). Rows SHALL follow the active sort mode and direction (see the `relics-sorting-panel` capability), matching the card modes; with default settings this is era order (Axi → Neo → Meso → Lith) then alphabetical by relic name. The **Vaulted** filter SHALL apply, and vaulted rows SHALL use the same reduced-opacity treatment as vaulted cards.
 
 #### Scenario: Row shows name, markers, and pictograms
 - **WHEN** a relic with wishlisted Common and Rare rewards is displayed in Table mode
@@ -94,11 +94,11 @@ In **Table** mode, the relics panel SHALL render a table with one top-level row 
 
 #### Scenario: Default sort orders rows by era then name
 - **WHEN** Lith and Meso relics are displayed in Table mode with default sort settings
-- **THEN** all Lith rows appear before any Meso rows, alphabetically within each era
+- **THEN** all Meso rows appear before any Lith rows, alphabetically within each era
 
 #### Scenario: Vaulted rows are dimmed and filterable
-- **WHEN** Show vaulted is checked and a vaulted relic is displayed in Table mode
-- **THEN** its row renders at reduced opacity; unchecking Show vaulted hides it
+- **WHEN** a vaulted relic is displayed in Table mode with nothing hidden by the Filters menu
+- **THEN** its row renders at reduced opacity; checking Vaulted in the Filters menu hides it
 
 ---
 
