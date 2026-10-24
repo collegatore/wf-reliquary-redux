@@ -91,6 +91,11 @@ static bool Render(Scene scene, string path, Func<Styles>? windowStyles)
     if (windowStyles is not null) window.Styles.Add(windowStyles());
     window.Show();
     Dispatcher.UIThread.RunJobs();
+    if (scene.Prepare is { } prepare)
+    {
+        prepare(window);
+        Dispatcher.UIThread.RunJobs();
+    }
     if (scene.Hover is { } point)
     {
         window.MouseMove(point);
@@ -111,6 +116,7 @@ static void ApplyFontSize(double pt)
     var ratio = pt / Scenes.MediumFontSize;
     resources["ContentFontSize"] = pt;
     resources["SectionHeadingFontSize"] = 16 * ratio;
+    resources["IconSize"] = 16 * ratio;
     resources["RelicCardWidth"] = 300 * ratio;
     resources["MissionCardWidth"] = 300 * ratio;
 }

@@ -8,7 +8,9 @@ namespace WF.Reliquary.UiSnapshots;
 /// property paths the view's bindings read (reflection bindings accept anonymous types),
 /// so no services, database, or real view models are needed. When a view gains a new
 /// binding, add the property here or the bound control falls back to its default.
-/// The real view models are never instantiated, so view code-behind that only reacts to
+/// The only real view models are the selectors' (<see cref="Wishlist"/>), backed by
+/// in-memory stores, because their entry types are what the views' typed templates need.
+/// The shell view model is never instantiated, so view code-behind that only reacts to
 /// <c>MainWindowShellViewModel</c> stays inert.
 /// </summary>
 internal static class StandIn
@@ -53,7 +55,9 @@ internal static class StandIn
     /// <param name="groupMode">Group-operations mode on (one card selected) or off.</param>
     /// <param name="selected">Whether the first card is selected (only meaningful in group mode).</param>
     /// <param name="showOwned">The "Show owned gear" filter; when off, owned cards are hidden.</param>
-    public static object PrimeGearShell(bool groupMode = true, bool selected = true, bool showOwned = true)
+    /// <param name="singleWishlist">Only one wishlist exists (so Delete is unavailable).</param>
+    /// <param name="longWishlistName">A second list's name is wider than the selector field.</param>
+    public static object PrimeGearShell(bool groupMode = true, bool selected = true, bool showOwned = true, bool singleWishlist = false, bool longWishlistName = false)
     {
         var cards = GearCards();
         foreach (var card in cards.Where(c => c.IsOwned)) card.IsShown = showOwned;
@@ -84,9 +88,34 @@ internal static class StandIn
                 ActiveCards = cards,
                 VaultedCards = new List<PrimeGearCardViewModel>(),
             },
-            Wishlist = new { ActiveWishlistName = "Default" },
+            Wishlist = singleWishlist ? Wishlist("Default")
+                : longWishlistName ? Wishlist("Default", "Stupidly long obtrusive and completely unnecessary name")
+                : Wishlist(),
         };
     }
+
+    /// <summary>Table mode rows: two available relics and one vaulted one (faded).</summary>
+    public static List<WishlistRelicTableRow> TableRows() =>
+    [
+        new RelicTableRowViewModel("Axi A1", "C, R", isVaulted: false, [], Command, Command),
+        new RelicTableRowViewModel("Lith B2", "U", isVaulted: false, [], Command, Command),
+        new RelicTableRowViewModel("Meso C3", "2 R", isVaulted: true, [], Command, Command),
+    ];
+
+    /// <summary>The Settings tab's profile section; the other sections render empty.</summary>
+    public static object SettingsShell() => new
+    {
+        Profiles = Profiles(),
+        Settings = new { SourceUrlText = "", BackCommand = Command, SaveCommand = Command, CopyLogPathCommand = Command, OpenLogFileCommand = Command },
+    };
+
+    /// <summary>The real Wishlist selector view model, the first list active (three lists by default).</summary>
+    public static WishlistViewModel Wishlist(params string[] names) =>
+        new(new StubWishlistStore(names.Length > 0 ? names : ["Default", "Farming", "Trade fodder"]), _ => Task.FromResult<string?>(null));
+
+    /// <summary>The real Profile selector view model over two profiles, "Main" active.</summary>
+    public static ProfileViewModel Profiles() =>
+        new(new StubProfileStore("Main", "Alt account"), _ => Task.FromResult<string?>(null));
 
     /// <summary>
     /// Real card view models, so the view's typed card template applies. Their stores
