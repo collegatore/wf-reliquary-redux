@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
+using AsyncAwaitBestPractices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WF.Reliquary.Application.Ports;
@@ -38,9 +39,6 @@ public sealed class ProfileViewModel : ObservableObject
     /// wishlist store. Not called on plain profile switches.</summary>
     public Func<Task>? SeedDefaultWishlist { get; set; }
 
-    /// <summary>Raised after the user selects a profile, so the view can close the dropdown.</summary>
-    public Action? FlyoutCloseRequested { get; set; }
-
     public ObservableCollection<ProfileEntryViewModel> Profiles { get; }
 
     public ProfileEntryViewModel? ActiveEntry
@@ -49,14 +47,28 @@ public sealed class ProfileViewModel : ObservableObject
         private set
         {
             if (activeEntry == value) return;
-            if (activeEntry is not null) activeEntry.IsActive = false;
             activeEntry = value;
-            if (activeEntry is not null) activeEntry.IsActive = true;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedEntry));
             OnPropertyChanged(nameof(ActiveProfileName));
             OnPropertyChanged(nameof(CanDelete));
             ((AsyncRelayCommand)RenameCommand).NotifyCanExecuteChanged();
             ((AsyncRelayCommand)DeleteCommand).NotifyCanExecuteChanged();
+        }
+    }
+
+    /// <summary>
+    /// The selector's two-way <c>SelectedItem</c>: reads as <see cref="ActiveEntry"/>, and
+    /// a user's pick activates and persists that entry. Ignores <c>null</c>, which the
+    /// selector pushes back while <see cref="ReloadAsync"/> clears the list.
+    /// </summary>
+    public ProfileEntryViewModel? SelectedEntry
+    {
+        get => ActiveEntry;
+        set
+        {
+            if (value is null || value == ActiveEntry) return;
+            SelectAsync(value).SafeFireAndForget();
         }
     }
 
@@ -72,7 +84,6 @@ public sealed class ProfileViewModel : ObservableObject
     {
         if (ActiveEntry == entry) return;
         ActiveEntry = entry;
-        FlyoutCloseRequested?.Invoke();
         await store.SetActiveAsync(entry.Id);
         if (OnActiveProfileChanged is not null) await OnActiveProfileChanged();
     }
@@ -162,14 +173,12 @@ public sealed class ProfileViewModel : ObservableObject
 public sealed class ProfileEntryViewModel : ObservableObject
 {
     private string name;
-    private bool isActive;
 
     public ProfileEntryViewModel(ProfileEntry entry, ProfileViewModel parent)
     {
         Id = entry.Id;
         name = entry.Name;
         Parent = parent;
-        SelectCommand = new AsyncRelayCommand(() => parent.SelectAsync(this));
     }
 
     public long Id { get; }
@@ -181,12 +190,4 @@ public sealed class ProfileEntryViewModel : ObservableObject
         get => name;
         set => SetProperty(ref name, value);
     }
-
-    public bool IsActive
-    {
-        get => isActive;
-        set => SetProperty(ref isActive, value);
-    }
-
-    public ICommand SelectCommand { get; }
 }

@@ -261,11 +261,10 @@ public sealed class PrimeGearViewModel : ObservableObject
     private readonly ReloadGate reloadGate = new();
     private CancellationTokenSource searchDebounce = new();
     private long activeWishlistId;
-    private bool showVaulted;
-    private bool showOwned;
+    private bool hideVaulted;
+    private bool hideOwned;
     private bool isGroupMode;
-    private bool isFilterPanelOpen;
-    private bool showWishlistedOnly;
+    private bool hideNotWishlisted;
     private int selectedCount;
     private bool isBusy;
     private string searchText = string.Empty;
@@ -284,16 +283,24 @@ public sealed class PrimeGearViewModel : ObservableObject
         ActiveCards = [];
         VaultedCards = [];
         SelectAllCommand = new RelayCommand(SelectAllVisible);
-        SelectNoneCommand = new RelayCommand(ClearSelection);
-        MarkSelectedOwnedCommand = new RelayCommand(() => MarkSelectedOwnedAsync().SafeFireAndForget());
-        UnmarkSelectedCommand = new RelayCommand(UnmarkSelected);
-        ToggleFilterPanelCommand = new RelayCommand(() => IsFilterPanelOpen = !IsFilterPanelOpen);
+        // Selection-dependent actions are inactive when they have nothing to act on:
+        // Select none without a selection, Mark owned without a selected unowned card,
+        // Unmark owned without a selected owned card. RecountSelected refreshes them.
+        selectNoneCommand = new RelayCommand(ClearSelection, HasSelection);
+        markSelectedOwnedCommand = new RelayCommand(() => MarkSelectedOwnedAsync().SafeFireAndForget(), HasUnownedSelected);
+        unmarkSelectedCommand = new RelayCommand(UnmarkSelected, HasOwnedSelected);
         ToggleGroupModeCommand = new RelayCommand(() => IsGroupMode = !IsGroupMode);
         // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
         ReloadAsync().SafeFireAndForget();
     }
 
     public Func<Task>? OnWishlistChanged { get; set; }
+
+    /// <summary>
+    /// Set by MainWindow to persist the Prime Gear filters when they change. Called
+    /// fire-and-forget after each user change; not on <see cref="LoadFilterSettings"/>.
+    /// </summary>
+    public Func<Task>? SaveFilterSettingsAsync { get; set; }
 
     /// <summary>Requests the three-way owned-confirmation dialog. Set by the view.</summary>
     public Func<string, Task<OwnedConfirmChoice>>? ConfirmOwnedTracking { get; set; }
@@ -307,47 +314,41 @@ public sealed class PrimeGearViewModel : ObservableObject
     /// <summary>Selects every currently visible card for group operations.</summary>
     public ICommand SelectAllCommand { get; }
 
-    /// <summary>Clears the group-operations selection.</summary>
-    public ICommand SelectNoneCommand { get; }
+    private readonly RelayCommand selectNoneCommand;
+    private readonly RelayCommand markSelectedOwnedCommand;
+    private readonly RelayCommand unmarkSelectedCommand;
 
-    /// <summary>Marks every selected card owned (with a single batched tracking prompt).</summary>
-    public ICommand MarkSelectedOwnedCommand { get; }
+    /// <summary>Clears the group-operations selection. Inactive while nothing is selected.</summary>
+    public ICommand SelectNoneCommand => selectNoneCommand;
 
-    /// <summary>Clears the owned mark on every selected card.</summary>
-    public ICommand UnmarkSelectedCommand { get; }
+    /// <summary>
+    /// Marks every selected card owned (with a single batched tracking prompt).
+    /// Inactive unless at least one selected card is not owned yet.
+    /// </summary>
+    public ICommand MarkSelectedOwnedCommand => markSelectedOwnedCommand;
 
-    /// <summary>Toggles the filter panel open or closed.</summary>
-    public ICommand ToggleFilterPanelCommand { get; }
+    /// <summary>Clears the owned mark on every selected card. Inactive unless a selected card is owned.</summary>
+    public ICommand UnmarkSelectedCommand => unmarkSelectedCommand;
+
+    private bool HasSelection() => selectedCount > 0;
+    private bool HasUnownedSelected() => allCards.Any(c => c.IsSelected && !c.IsOwned);
+    private bool HasOwnedSelected() => allCards.Any(c => c.IsSelected && c.IsOwned);
 
     /// <summary>Toggles group-operations mode on or off.</summary>
     public ICommand ToggleGroupModeCommand { get; }
 
-    /// <summary>Whether the collapsible filter panel is currently visible. Ephemeral — not persisted.</summary>
-    public bool IsFilterPanelOpen
-    {
-        get => isFilterPanelOpen;
-        set
-        {
-            if (isFilterPanelOpen == value) return;
-            isFilterPanelOpen = value;
-            OnPropertyChanged();
-        }
-    }
-
     /// <summary>
-    /// When true, only cards that have at least one part checked in the active wishlist are shown.
-    /// Ephemeral — not persisted.
+    /// The Filters menu's "Hide: Not wishlisted" entry: hides cards with no part checked
+    /// in the active wishlist. Off by default; persisted.
     /// </summary>
-    public bool ShowWishlistedOnly
+    public bool HideNotWishlisted
     {
-        get => showWishlistedOnly;
+        get => hideNotWishlisted;
         set
         {
-            if (showWishlistedOnly == value) return;
-            showWishlistedOnly = value;
-            OnPropertyChanged();
-            ClearSelection();
-            ApplyFilters();
+            if (hideNotWishlisted == value) return;
+            hideNotWishlisted = value;
+            OnFilterChanged();
         }
     }
 
@@ -379,30 +380,72 @@ public sealed class PrimeGearViewModel : ObservableObject
         }
     }
 
-    public bool ShowVaulted
+    /// <summary>The Filters menu's "Hide: Vaulted" entry: hides the Vaulted section. Off by default; persisted.</summary>
+    public bool HideVaulted
     {
-        get => showVaulted;
+        get => hideVaulted;
         set
         {
-            if (showVaulted == value) return;
-            showVaulted = value;
-            OnPropertyChanged();
-            ClearSelection();
-            ApplyFilters();
+            if (hideVaulted == value) return;
+            hideVaulted = value;
+            OnFilterChanged();
         }
     }
 
-    public bool ShowOwned
+    /// <summary>The Filters menu's "Hide: Owned" entry: hides owned gear in both sections. Off by default; persisted.</summary>
+    public bool HideOwned
     {
-        get => showOwned;
+        get => hideOwned;
         set
         {
-            if (showOwned == value) return;
-            showOwned = value;
-            OnPropertyChanged();
-            ClearSelection();
-            ApplyFilters();
+            if (hideOwned == value) return;
+            hideOwned = value;
+            OnFilterChanged();
         }
+    }
+
+    /// <summary>True while the Filters menu hides anything; drives the Filters button's marker.</summary>
+    public bool IsFilterActive => hideVaulted || hideOwned || hideNotWishlisted;
+
+    /// <summary>Tooltip text for the Filters button, e.g. "Filters: hiding vaulted, owned".</summary>
+    public string FilterSummary
+    {
+        get
+        {
+            var hidden = new List<string>(3);
+            if (hideVaulted) hidden.Add("vaulted");
+            if (hideOwned) hidden.Add("owned");
+            if (hideNotWishlisted) hidden.Add("not wishlisted");
+            return hidden.Count == 0 ? "Filters: nothing hidden" : "Filters: hiding " + string.Join(", ", hidden);
+        }
+    }
+
+    /// <summary>Restores the persisted Prime Gear filters at startup without saving them.</summary>
+    public void LoadFilterSettings(bool hideVaulted, bool hideOwned, bool hideNotWishlisted)
+    {
+        this.hideVaulted = hideVaulted;
+        this.hideOwned = hideOwned;
+        this.hideNotWishlisted = hideNotWishlisted;
+        NotifyFilterProperties();
+        ApplyFilters();
+    }
+
+    /// <summary>A user filter change: the visible set changes, so clear the selection, re-filter, and persist.</summary>
+    private void OnFilterChanged()
+    {
+        NotifyFilterProperties();
+        ClearSelection();
+        ApplyFilters();
+        SaveFilterSettingsAsync?.Invoke().SafeFireAndForget();
+    }
+
+    private void NotifyFilterProperties()
+    {
+        OnPropertyChanged(nameof(HideVaulted));
+        OnPropertyChanged(nameof(HideOwned));
+        OnPropertyChanged(nameof(HideNotWishlisted));
+        OnPropertyChanged(nameof(IsFilterActive));
+        OnPropertyChanged(nameof(FilterSummary));
     }
 
     /// <summary>
@@ -428,10 +471,22 @@ public sealed class PrimeGearViewModel : ObservableObject
         private set
         {
             if (selectedCount == value) return;
+            var hadSelection = selectedCount > 0;
             selectedCount = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectionStatusText));
+            if (hadSelection != selectedCount > 0)
+                selectNoneCommand.NotifyCanExecuteChanged();
         }
     }
+
+    /// <summary>
+    /// The group-operations row's status: a hint on how to select while nothing is
+    /// selected, the selection count otherwise. Every path that changes the selection
+    /// goes through <see cref="SelectedCount"/>, so the hint returns on its own.
+    /// </summary>
+    public string SelectionStatusText =>
+        selectedCount == 0 ? "Click cards to select them" : $"{selectedCount} selected";
 
     /// <summary>
     /// Filters cards by a case-insensitive title substring. Active when 3+ characters;
@@ -450,14 +505,14 @@ public sealed class PrimeGearViewModel : ObservableObject
         }
     }
 
-    /// <summary>Number of title matches currently hidden because they are owned and Show owned is off.</summary>
+    /// <summary>Number of title matches currently hidden because they are owned and Hide Owned is on.</summary>
     public int HiddenOwnedMatchCount
     {
         get => hiddenOwnedMatchCount;
         private set { if (hiddenOwnedMatchCount == value) return; hiddenOwnedMatchCount = value; OnPropertyChanged(); }
     }
 
-    /// <summary>Number of title matches currently hidden because they are vaulted and Show vaulted is off.</summary>
+    /// <summary>Number of title matches currently hidden because they are vaulted and Hide Vaulted is on.</summary>
     public int HiddenVaultedMatchCount
     {
         get => hiddenVaultedMatchCount;
@@ -658,12 +713,12 @@ public sealed class PrimeGearViewModel : ObservableObject
 
     /// <summary>
     /// Reacts to a card's owned state changing. When the card should be hidden (just
-    /// marked owned while Show owned is off), it fades then collapses via IsShown.
+    /// marked owned while owned gear is hidden), it fades then collapses via IsShown.
     /// Otherwise re-evaluates all visibility so the card's IsShown reflects current filters.
     /// </summary>
     private async Task OnCardOwnedChangedAsync(PrimeGearCardViewModel card)
     {
-        if (card.IsOwned && !showOwned)
+        if (card.IsOwned && hideOwned)
         {
             if (OwnedHideFadeDuration > TimeSpan.Zero)
             {
@@ -684,8 +739,16 @@ public sealed class PrimeGearViewModel : ObservableObject
 
     // --- Group operations -------------------------------------------------
 
-    /// <summary>Recomputes <see cref="SelectedCount"/> from the current card selection.</summary>
-    private void RecountSelected() => SelectedCount = allCards.Count(c => c.IsSelected);
+    /// <summary>
+    /// Recomputes <see cref="SelectedCount"/> from the current card selection, and refreshes
+    /// Mark/Unmark owned, whose availability depends on which cards are selected.
+    /// </summary>
+    private void RecountSelected()
+    {
+        SelectedCount = allCards.Count(c => c.IsSelected);
+        markSelectedOwnedCommand.NotifyCanExecuteChanged();
+        unmarkSelectedCommand.NotifyCanExecuteChanged();
+    }
 
     /// <summary>Clears the selection on every card and resets the count.</summary>
     private void ClearSelection()
@@ -702,7 +765,7 @@ public sealed class PrimeGearViewModel : ObservableObject
     private void SelectAllVisible()
     {
         foreach (var card in allCards)
-            card.IsSelected = card.IsShown && (!card.IsVaulted || showVaulted);
+            card.IsSelected = card.IsShown && (!card.IsVaulted || !hideVaulted);
         RecountSelected();
     }
 
@@ -778,8 +841,8 @@ public sealed class PrimeGearViewModel : ObservableObject
 
         foreach (var card in allCards)
         {
-            bool ownedHidden = card.IsOwned && !showOwned;
-            bool wishlistedHidden = showWishlistedOnly && !card.Parts.Any(p => p.IsChecked);
+            bool ownedHidden = card.IsOwned && hideOwned;
+            bool wishlistedHidden = hideNotWishlisted && !card.Parts.Any(p => p.IsChecked);
             bool searchMatch = !searchActive || card.GearName.Contains(query, StringComparison.OrdinalIgnoreCase);
 
             card.IsShown = !ownedHidden && !wishlistedHidden && (!searchActive || searchMatch);
@@ -790,7 +853,7 @@ public sealed class PrimeGearViewModel : ObservableObject
                     hiddenOwned++;
                 else if (wishlistedHidden)
                 { /* not broken out in the hint */ }
-                else if (card.IsVaulted && !showVaulted)
+                else if (card.IsVaulted && hideVaulted)
                     hiddenVaulted++;
                 else
                     visible++;

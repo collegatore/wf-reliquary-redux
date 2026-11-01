@@ -19,67 +19,35 @@
           Text="Track multiple accounts separately. Each profile has its own wishlists." />
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Text="Profile:" VerticalAlignment="Center" />
-        <Button
-            x:Name="ProfileDropdownButton"
+        <ComboBox
             MinWidth="160"
-            Padding="10,6"
-            Background="Transparent"
-            BorderBrush="Gray"
-            BorderThickness="1">
-          <TextBlock
-              MaxWidth="{StaticResource NameDisplayMaxWidth}"
-              Text="{Binding Profiles.ActiveProfileName}"
-              TextTrimming="CharacterEllipsis"
-              ToolTip.Tip="{Binding Profiles.ActiveProfileName}" />
+            ItemsSource="{Binding Profiles.Profiles}"
+            SelectedItem="{Binding Profiles.SelectedEntry, Mode=TwoWay}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate DataType="{x:Type local:ProfileEntryViewModel}">
+              <TextBlock
+                  MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                  Text="{Binding Name}"
+                  TextTrimming="CharacterEllipsis"
+                  ToolTip.Tip="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <!-- ⋮ actions menu; the negative margin keeps it 4px from its selector. -->
+        <Button Classes="dropdown-field icon-only" Margin="-6,0,0,0" ToolTip.Tip="Profile actions">
+          <PathIcon Data="{StaticResource Icon.MoreVertical}" />
           <Button.Flyout>
-            <Flyout Placement="Bottom">
-              <StackPanel MinWidth="200" Spacing="0">
-
-                <!-- Existing profiles -->
-                <ItemsControl ItemsSource="{Binding Profiles.Profiles}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type local:ProfileEntryViewModel}">
-                      <Button
-                          HorizontalAlignment="Stretch"
-                          HorizontalContentAlignment="Left"
-                          Padding="12,6"
-                          Command="{Binding SelectCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                          <TextBlock Text="✓" IsVisible="{Binding IsActive}" Width="14" />
-                          <TextBlock Text=" " IsVisible="{Binding !IsActive}" Width="14" />
-                          <TextBlock Text="{Binding Name}" />
-                        </StackPanel>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- Separator -->
-                <Separator Margin="0,4" />
-
-                <!-- Management actions -->
-                <Button
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Left"
-                    Padding="12,6"
-                    Command="{Binding Profiles.RenameCommand}"
-                    Content="Rename this profile…" />
-                <Button
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Left"
-                    Padding="12,6"
-                    Command="{Binding Profiles.DeleteCommand}"
-                    IsEnabled="{Binding Profiles.CanDelete}"
-                    Content="Delete this profile" />
-                <Button
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Left"
-                    Padding="12,6"
-                    Command="{Binding Profiles.CreateCommand}"
-                    Content="+ New profile" />
-
-              </StackPanel>
-            </Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+              <MenuItem Header="Rename this profile…" Command="{Binding Profiles.RenameCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Pencil}" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Classes="destructive" Header="Delete this profile" Command="{Binding Profiles.DeleteCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Trash}" /></MenuItem.Icon>
+              </MenuItem>
+              <MenuItem Header="New profile" Command="{Binding Profiles.CreateCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Plus}" /></MenuItem.Icon>
+              </MenuItem>
+            </MenuFlyout>
           </Button.Flyout>
         </Button>
       </StackPanel>

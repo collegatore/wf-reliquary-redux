@@ -124,15 +124,13 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     private readonly IWishlistStore wishlistStore;
     private readonly ReloadGate reloadGate = new();
     private IReadOnlyList<WishlistRelicEntry> allEntries = [];
-    private bool showVaulted;
+    private bool hideVaulted;
     private bool showAllRewards;
     private bool isEmpty = true;
     private bool isBusy;
-    private bool isFilterPanelOpen;
-    private bool isSortPanelOpen;
     private RelicViewMode viewMode = RelicViewMode.Compact;
     private RelicSortMode sortMode = RelicSortMode.Era;
-    private bool sortDescending;
+    private bool sortDescending = true;
 
     /// <summary>
     /// Set by MainWindow to open the Recruiting Chat message dialog for a given relic name.
@@ -151,14 +149,24 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     /// </summary>
     public Func<Task>? SaveSortSettingsAsync { get; set; }
 
+    /// <summary>
+    /// Set by MainWindow to persist the Relics filters (Hide vaulted) when they change.
+    /// Called fire-and-forget after each user change; not on <see cref="LoadFilterSettings"/>.
+    /// </summary>
+    public Func<Task>? SaveFilterSettingsAsync { get; set; }
+
+    /// <summary>
+    /// Set by MainWindow to persist the Display menu (view mode, Show all rewards) when it
+    /// changes. Called fire-and-forget after each user change; not on <see cref="LoadDisplaySettings"/>.
+    /// </summary>
+    public Func<Task>? SaveDisplaySettingsAsync { get; set; }
+
     public WishlistRelicsViewModel(IWishlistRelicsReader reader, IWishlistStore wishlistStore)
     {
         this.reader = reader;
         this.wishlistStore = wishlistStore;
         Cards = [];
         TableRows = [];
-        ToggleFilterPanelCommand = new RelayCommand(() => IsFilterPanelOpen = !IsFilterPanelOpen);
-        ToggleSortPanelCommand = new RelayCommand(() => IsSortPanelOpen = !IsSortPanelOpen);
         ToggleSortDirectionCommand = new RelayCommand(() => SortDescending = !SortDescending);
         // Fire-and-forget initial load: failures flow to the global SafeFireAndForget handler.
         ReloadAsync().SafeFireAndForget();
@@ -192,18 +200,21 @@ public sealed class WishlistRelicsViewModel : ObservableObject
         }
     }
 
-    public bool ShowVaulted
+    /// <summary>The Filters menu's "Hide: Vaulted" entry. Off by default (nothing hidden).</summary>
+    public bool HideVaulted
     {
-        get => showVaulted;
+        get => hideVaulted;
         set
         {
-            if (showVaulted == value) return;
-            showVaulted = value;
-            OnPropertyChanged();
+            if (hideVaulted == value) return;
+            hideVaulted = value;
+            OnFilterChanged();
             RebuildViews();
+            SaveFilterSettingsAsync?.Invoke().SafeFireAndForget();
         }
     }
 
+    /// <summary>The Display menu's Show all rewards entry (card modes only).</summary>
     public bool ShowAllRewards
     {
         get => showAllRewards;
@@ -211,14 +222,15 @@ public sealed class WishlistRelicsViewModel : ObservableObject
         {
             if (showAllRewards == value) return;
             showAllRewards = value;
-            OnPropertyChanged();
+            OnDisplayChanged();
             RebuildViews();
+            SaveDisplaySettingsAsync?.Invoke().SafeFireAndForget();
         }
     }
 
     /// <summary>
-    /// The active relic view mode (Verbatim / Compact / Table). Set live by the
-    /// Appearance window for immediate preview; persisted separately via settings.
+    /// The active relic view mode (Verbatim / Compact / Table), chosen in the Display menu.
+    /// A user change persists; <see cref="LoadDisplaySettings"/> restores without saving.
     /// </summary>
     public RelicViewMode ViewMode
     {
@@ -227,10 +239,8 @@ public sealed class WishlistRelicsViewModel : ObservableObject
         {
             if (viewMode == value) return;
             viewMode = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(IsViewModeVerbatim));
-            OnPropertyChanged(nameof(IsViewModeCompact));
-            OnPropertyChanged(nameof(IsViewModeTable));
+            OnDisplayChanged();
+            SaveDisplaySettingsAsync?.Invoke().SafeFireAndForget();
         }
     }
 
@@ -238,46 +248,49 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     public bool IsViewModeCompact => viewMode == RelicViewMode.Compact;
     public bool IsViewModeTable => viewMode == RelicViewMode.Table;
 
-    /// <summary>
-    /// Whether the collapsible filter panel is currently visible. Ephemeral — not persisted.
-    /// </summary>
-    public bool IsFilterPanelOpen
+    /// <summary>True while the Filters menu hides anything; drives the Filters button's marker.</summary>
+    public bool IsFilterActive => hideVaulted;
+
+    /// <summary>Tooltip text for the Filters button.</summary>
+    public string FilterSummary => hideVaulted ? "Filters: hiding vaulted relics" : "Filters: nothing hidden";
+
+    /// <summary>True unless the sort is the default Era descending; drives the sort icon's marker.</summary>
+    public bool IsSortNonDefault => sortMode != RelicSortMode.Era || !sortDescending;
+
+    /// <summary>Tooltip text for the sort-mode dropdown and the direction button.</summary>
+    public string SortSummary
     {
-        get => isFilterPanelOpen;
-        set
+        get
         {
-            if (isFilterPanelOpen == value) return;
-            isFilterPanelOpen = value;
-            OnPropertyChanged();
+            var mode = sortMode switch
+            {
+                RelicSortMode.Era => "Sorted by era",
+                RelicSortMode.Alphabetical => "Sorted alphabetically",
+                _ => "Sorted by wishlist score",
+            };
+            return $"{mode}, {(sortDescending ? "descending" : "ascending")}";
         }
     }
 
-    /// <summary>
-    /// Whether the collapsible sorting panel is currently visible. Ephemeral — not persisted.
-    /// </summary>
-    public bool IsSortPanelOpen
+    /// <summary>True unless the display is the default (Compact, Show all rewards off).</summary>
+    public bool IsDisplayNonDefault => viewMode != RelicViewMode.Compact || showAllRewards;
+
+    /// <summary>Tooltip text for the Display button.</summary>
+    public string DisplaySummary
     {
-        get => isSortPanelOpen;
-        set
+        get
         {
-            if (isSortPanelOpen == value) return;
-            isSortPanelOpen = value;
-            OnPropertyChanged();
+            var text = $"Display: {viewMode} view";
+            return showAllRewards && viewMode != RelicViewMode.Table ? text + ", all rewards shown" : text;
         }
     }
-
-    /// <summary>Toggles the filter panel open or closed.</summary>
-    public IRelayCommand ToggleFilterPanelCommand { get; }
-
-    /// <summary>Toggles the sorting panel open or closed.</summary>
-    public IRelayCommand ToggleSortPanelCommand { get; }
 
     /// <summary>Toggles the sort direction between ascending and descending.</summary>
     public IRelayCommand ToggleSortDirectionCommand { get; }
 
     /// <summary>
     /// Active sort mode. Changing to a different mode applies that mode's default direction
-    /// (ascending for Era/Alphabetical, descending for WishlistScore). Re-selecting the same
+    /// (descending for Era/WishlistScore, ascending for Alphabetical). Re-selecting the same
     /// mode leaves direction unchanged.
     /// </summary>
     public RelicSortMode SortMode
@@ -287,13 +300,10 @@ public sealed class WishlistRelicsViewModel : ObservableObject
         {
             if (sortMode == value) return;
             sortMode = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(SortModeIndex));
             // Apply the new mode's default direction directly on the backing field so that
             // RebuildViews is called only once (not once per field change).
-            sortDescending = value == RelicSortMode.WishlistScore;
-            OnPropertyChanged(nameof(SortDescending));
-            OnPropertyChanged(nameof(SortDirectionLabel));
+            sortDescending = value != RelicSortMode.Alphabetical;
+            OnSortChanged();
             RebuildViews();
             SaveSortSettingsAsync?.Invoke().SafeFireAndForget();
         }
@@ -319,15 +329,11 @@ public sealed class WishlistRelicsViewModel : ObservableObject
         {
             if (sortDescending == value) return;
             sortDescending = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(SortDirectionLabel));
+            OnSortChanged();
             RebuildViews();
             SaveSortSettingsAsync?.Invoke().SafeFireAndForget();
         }
     }
-
-    /// <summary>Human-readable direction label for the sort direction toggle button.</summary>
-    public string SortDirectionLabel => sortDescending ? "Descending" : "Ascending";
 
     /// <summary>
     /// Restores persisted sort settings at startup without triggering the default-direction
@@ -337,12 +343,55 @@ public sealed class WishlistRelicsViewModel : ObservableObject
     {
         sortMode = mode;
         sortDescending = descending;
+        OnSortChanged();
+        if (allEntries.Count > 0)
+            RebuildViews();
+    }
+
+    /// <summary>Restores the persisted Relics filters at startup without saving them.</summary>
+    public void LoadFilterSettings(bool hideVaulted)
+    {
+        this.hideVaulted = hideVaulted;
+        OnFilterChanged();
+        if (allEntries.Count > 0)
+            RebuildViews();
+    }
+
+    /// <summary>Restores the persisted Display menu state at startup without saving it.</summary>
+    public void LoadDisplaySettings(RelicViewMode viewMode, bool showAllRewards)
+    {
+        this.viewMode = viewMode;
+        this.showAllRewards = showAllRewards;
+        OnDisplayChanged();
+        if (allEntries.Count > 0)
+            RebuildViews();
+    }
+
+    private void OnFilterChanged()
+    {
+        OnPropertyChanged(nameof(HideVaulted));
+        OnPropertyChanged(nameof(IsFilterActive));
+        OnPropertyChanged(nameof(FilterSummary));
+    }
+
+    private void OnSortChanged()
+    {
         OnPropertyChanged(nameof(SortMode));
         OnPropertyChanged(nameof(SortModeIndex));
         OnPropertyChanged(nameof(SortDescending));
-        OnPropertyChanged(nameof(SortDirectionLabel));
-        if (allEntries.Count > 0)
-            RebuildViews();
+        OnPropertyChanged(nameof(IsSortNonDefault));
+        OnPropertyChanged(nameof(SortSummary));
+    }
+
+    private void OnDisplayChanged()
+    {
+        OnPropertyChanged(nameof(ViewMode));
+        OnPropertyChanged(nameof(IsViewModeVerbatim));
+        OnPropertyChanged(nameof(IsViewModeCompact));
+        OnPropertyChanged(nameof(IsViewModeTable));
+        OnPropertyChanged(nameof(ShowAllRewards));
+        OnPropertyChanged(nameof(IsDisplayNonDefault));
+        OnPropertyChanged(nameof(DisplaySummary));
     }
 
     public async Task ReloadAsync()
@@ -382,9 +431,9 @@ public sealed class WishlistRelicsViewModel : ObservableObject
         // Same filtered/sorted relic set feeds every view mode, so the modes stay
         // consistent. Reader guarantees grouping contiguity (display_name ORDER BY) and
         // within-relic reward order (tier + source_order); ViewModel owns relic-level ordering.
-        var visible = (showVaulted
-            ? allEntries
-            : allEntries.Where(e => !e.IsVaulted)).ToList();
+        var visible = (hideVaulted
+            ? allEntries.Where(e => !e.IsVaulted)
+            : allEntries).ToList();
 
         var sorted = ApplySort(visible);
 

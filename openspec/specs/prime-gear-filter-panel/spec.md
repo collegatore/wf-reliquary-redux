@@ -2,83 +2,54 @@
 
 ## Purpose
 
-<!-- TBD: describe the purpose of the filter panel capability -->
+Defines the Filters menu on the Prime Gear bar: a funnel-icon menu button whose "Hide" entries hide vaulted, owned, or unwishlisted gear, with nothing hidden by default, the choices saved across sessions, and a marked button while anything is hidden.
 
 ## Requirements
 
-### Requirement: Collapsible filter panel
+### Requirement: Filters menu button on the Prime Gear bar
+The Prime Gear primary bar SHALL contain an icon-only **Filters** menu button showing a funnel icon, as defined by the `control-bar-visual-style` capability, in place of the former Filters toggle. Pressing it SHALL open a menu below it listing what can be hidden. No filter row SHALL appear below the bar.
 
-The Prime Gear tab SHALL have a collapsible filter panel beneath the primary control panel (the wishlist selector / search row). The filter panel SHALL be hidden by default when the tab is first shown. A **Filters** button in the primary control panel SHALL toggle the filter panel open and closed. The filter panel's open/closed state SHALL be ephemeral — it SHALL NOT be persisted across application restarts.
+#### Scenario: Filters button opens its menu
+- **WHEN** the user presses the Filters button on the Prime Gear bar
+- **THEN** a menu opens below it, and no extra row appears under the bar
 
-#### Scenario: Filter panel is hidden by default
+### Requirement: Prime Gear Filters menu hides categories with checked entries
+The Prime Gear Filters menu SHALL list, under a non-interactive "Hide" caption, three checkbox entries: **Vaulted** (the Vaulted section, see `prime-gear-parts-view`), **Owned** (see `prime-gear-owned-status`), and **Not wishlisted** (cards with no part in the active wishlist). A checked entry SHALL hide that category; none SHALL be checked by default. Toggling an entry SHALL apply at once and keep the menu open.
 
-- **WHEN** the user navigates to the Prime Gear tab
-- **THEN** the filter panel is not visible
+#### Scenario: Nothing is hidden by default
+- **WHEN** the application starts with no saved filters and the user opens the Prime Gear tab
+- **THEN** active, vaulted, owned, and unwishlisted gear cards are all shown, and no Filters entry is checked
 
-#### Scenario: Filters button opens the filter panel
+#### Scenario: Not wishlisted hides cards with no checked parts
+- **WHEN** the user checks Not wishlisted and a gear card has no parts checked
+- **THEN** that card is hidden, while cards with at least one checked part stay visible
 
-- **WHEN** the filter panel is closed and the user clicks the Filters button
-- **THEN** the filter panel becomes visible
+#### Scenario: Unchecking restores hidden cards
+- **WHEN** Not wishlisted is checked and the user unchecks it
+- **THEN** cards hidden only because of that entry become visible again
 
-#### Scenario: Filters button closes the filter panel
+#### Scenario: Hide entries combine
+- **WHEN** both Owned and Not wishlisted are checked, and a gear card is owned with at least one part checked
+- **THEN** that card is hidden, because it is owned
 
-- **WHEN** the filter panel is open and the user clicks the Filters button
-- **THEN** the filter panel is hidden
+#### Scenario: Menu stays open while toggling
+- **WHEN** the user checks Owned in the Prime Gear Filters menu
+- **THEN** owned cards disappear and the menu stays open for further changes
 
-#### Scenario: Filter panel state resets on restart
+### Requirement: Prime Gear filters persist across sessions
+The Prime Gear filter choices SHALL be saved when changed and restored at startup, independently of the Relics filters. A settings file without them SHALL load with nothing hidden.
 
-- **WHEN** the user opens the filter panel and then restarts the application
-- **THEN** the filter panel is hidden again on next launch
+#### Scenario: Filters are restored after restart
+- **WHEN** the user checks Owned and Vaulted in the Prime Gear Filters menu and restarts the application
+- **THEN** owned gear and the Vaulted section are hidden and both entries are checked
 
-### Requirement: Show vaulted and Show owned controls in filter panel
+#### Scenario: Older settings hide nothing
+- **WHEN** the application loads a settings file that has no Prime Gear filter values
+- **THEN** no Prime Gear filter entry is checked
 
-The **Show vaulted** and **Show owned** checkboxes SHALL be located inside the filter panel. They SHALL NOT appear in the primary control panel. Their behavior (what they show/hide) is unchanged from the existing specs.
+### Requirement: Prime Gear Filters button marks active filters
+The Prime Gear Filters button SHALL show the non-default indicator defined by the `control-bar-visual-style` capability while any of its entries is checked. Its tooltip SHALL name the Filters control and list what is hidden, or state that nothing is hidden.
 
-#### Scenario: Show vaulted is in the filter panel
-
-- **WHEN** the filter panel is open on the Prime Gear tab
-- **THEN** a Show vaulted checkbox is visible inside the filter panel
-
-#### Scenario: Show owned is in the filter panel
-
-- **WHEN** the filter panel is open on the Prime Gear tab
-- **THEN** a Show owned checkbox is visible inside the filter panel
-
-#### Scenario: Show vaulted and Show owned are not in the primary panel
-
-- **WHEN** the Prime Gear tab is displayed and the filter panel is closed
-- **THEN** no Show vaulted or Show owned checkbox is visible in the primary control panel
-
-### Requirement: Wishlisted only filter
-
-The filter panel SHALL include a **Wishlisted only** checkbox. When checked, only gear cards that have at least one part checkbox checked (i.e. at least one part in the active wishlist) SHALL be shown. Cards with no checked parts SHALL be hidden. When unchecked, this filter has no effect and cards are shown according to the other active filters.
-
-#### Scenario: Wishlisted only is unchecked by default
-
-- **WHEN** the filter panel is opened for the first time
-- **THEN** the Wishlisted only checkbox is unchecked
-
-#### Scenario: Wishlisted only hides gear with no checked parts
-
-- **WHEN** Wishlisted only is checked and a gear card has no parts checked
-- **THEN** that gear card is not visible
-
-#### Scenario: Wishlisted only shows gear with at least one checked part
-
-- **WHEN** Wishlisted only is checked and a gear card has at least one part checked
-- **THEN** that gear card is visible (subject to other active filters)
-
-#### Scenario: Unchecking Wishlisted only restores hidden cards
-
-- **WHEN** Wishlisted only is checked and the user unchecks it
-- **THEN** gear cards that were hidden solely because of this filter become visible again
-
-#### Scenario: Wishlisted only interacts with owned filter
-
-- **WHEN** both Wishlisted only and Show owned are unchecked, and a gear card is owned with at least one part checked
-- **THEN** that card is hidden (owned filter takes precedence; owned-hidden cards are not shown regardless of wishlist state)
-
-#### Scenario: Wishlisted only state resets on restart
-
-- **WHEN** the user checks Wishlisted only and then restarts the application
-- **THEN** Wishlisted only is unchecked on next launch
+#### Scenario: Tooltip lists every hidden category
+- **WHEN** Owned and Not wishlisted are checked and the user rests the pointer on the Filters button
+- **THEN** the funnel icon is tinted with the selection accent and, after a short delay, a tooltip states that owned and unwishlisted gear are hidden

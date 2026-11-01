@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:WF.Reliquary.Presentation"
     Width="498"
-    Height="310"
+    Height="320"
     CanResize="False"
     FontSize="{StaticResource FontSizeSmall}"
     Title="Appearance">
@@ -83,22 +83,18 @@
       </StackPanel>
     </StackPanel>
 
-    <!-- Relic view mode -->
+    <!-- Color palette -->
     <StackPanel Spacing="8">
-      <TextBlock Foreground="Gray" Text="Relic view mode" />
+      <TextBlock Foreground="Gray" Text="Palette" />
       <StackPanel Orientation="Horizontal" Spacing="16">
         <RadioButton
-            Content="Verbatim"
-            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Verbatim}"
-            GroupName="RelicViewMode" />
+            Content="Linen"
+            IsChecked="{Binding SelectedPalette, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Linen}"
+            GroupName="ColorPalette" />
         <RadioButton
-            Content="Compact"
-            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Compact}"
-            GroupName="RelicViewMode" />
-        <RadioButton
-            Content="Table"
-            IsChecked="{Binding SelectedViewMode, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Table}"
-            GroupName="RelicViewMode" />
+            Content="Stone"
+            IsChecked="{Binding SelectedPalette, Converter={x:Static local:EnumToBoolConverter.Instance}, ConverterParameter=Stone}"
+            GroupName="ColorPalette" />
       </StackPanel>
     </StackPanel>
 

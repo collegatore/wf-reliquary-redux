@@ -1,7 +1,7 @@
 ## Requirements
 
 ### Requirement: "Show exact drop chances" toggle controls relic detail level
-The "Relics and Missions" tab control panel SHALL include a "Show exact drop chances" checkbox placed in a dedicated **Missions** group, separated from the Relics controls by a visual separator and preceded by a "Missions:" text label. When checked, relic entries in farming mission cards render one line per relic with the relic name and its chance percentage. When unchecked (default), all relics for a given section SHALL be shown as a single compact row containing only relic names (comma-separated), with no chance percentages visible.
+The "Relics and Missions" tab SHALL include a "Show exact drop chances" checkbox, rendered as a chip in the missions separator panel directly after its "Missions" section heading (see the `wishlist-relics-view` and `control-bar-visual-style` capabilities). When checked, relic entries in farming mission cards render one line per relic with the relic name and its chance percentage. When unchecked (default), all relics for a given section SHALL be shown as a single compact row containing only relic names (comma-separated), with no chance percentages visible.
 
 #### Scenario: Toggle on shows per-relic rows with chances
 - **WHEN** "Show exact drop chances" is checked
@@ -29,4 +29,4 @@ The "Relics and Missions" tab control panel SHALL include a "Show exact drop cha
 
 #### Scenario: Toggle is visually grouped under the Missions label
 - **WHEN** the "Relics and Missions" tab is displayed
-- **THEN** the "Show exact drop chances" checkbox appears after a separator following the Relics group, preceded by a "Missions:" label
+- **THEN** the "Show exact drop chances" chip appears in the missions separator panel, directly after the "Missions" section heading

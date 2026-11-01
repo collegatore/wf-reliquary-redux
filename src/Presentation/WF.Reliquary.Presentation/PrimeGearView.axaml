@@ -11,7 +11,9 @@
     <DataTemplate x:Key="GearCardTemplate" DataType="{x:Type local:PrimeGearCardViewModel}">
       <!-- Panel layers a transparent full-card click target over the card. In group
            mode the overlay is shown: clicking anywhere selects the card and the inner
-           controls (parts, overflow menu) are suppressed. -->
+           controls (parts, overflow menu) are suppressed. To make that discoverable,
+           group mode also swaps the ⋮ button for a selection checkbox, dims the parts
+           list, and outlines the card on hover (overlay style in MainWindow.axaml). -->
       <Panel IsVisible="{Binding IsShown}">
         <Border
             Margin="8"
@@ -49,29 +51,52 @@
                     VerticalAlignment="Center"
                     ToolTip.Tip="Owned" />
               </StackPanel>
-              <Button
-                  Grid.Column="1"
-                  Margin="4,0,0,0"
-                  Padding="6,2"
-                  VerticalAlignment="Center"
-                  Background="Transparent"
-                  BorderThickness="0"
-                  FontWeight="Bold"
-                  Content="⋮"
-                  ToolTip.Tip="{Binding OwnedMenuLabel}"
-                  ToolTip.ShowDelay="1000">
-                <Button.Flyout>
-                  <!-- Right-align the menu to the button so it opens to the
-                       left, then nudge it 30px back toward the button. -->
-                  <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
-                    <MenuItem
-                        Header="{Binding OwnedMenuLabel}"
-                        Command="{Binding MarkOwnedCommand}" />
-                  </MenuFlyout>
-                </Button.Flyout>
-              </Button>
+              <!-- Fixed-width slot: the ⋮ menu outside group mode, the selection
+                   checkbox inside it, so the header doesn't shift on the swap. -->
+              <Panel Grid.Column="1" Margin="4,0,0,0" Width="20" Height="24" VerticalAlignment="Center">
+                <Button
+                    Padding="6,2"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    FontWeight="Bold"
+                    Content="⋮"
+                    ToolTip.Tip="{Binding OwnedMenuLabel}"
+                    ToolTip.ShowDelay="1000"
+                    IsVisible="{Binding !DataContext.PrimeGear.IsGroupMode, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
+                  <Button.Flyout>
+                    <!-- Right-align the menu to the button so it opens to the
+                         left, then nudge it 30px back toward the button. -->
+                    <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25" FlyoutPresenterClasses="app-menu">
+                      <MenuItem
+                          Header="{Binding OwnedMenuLabel}"
+                          Command="{Binding MarkOwnedCommand}" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+                <!-- Display-only: the selection overlay above the card takes every
+                     click (including on this box) and toggles the selection. -->
+                <CheckBox
+                    Padding="0"
+                    MinHeight="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding IsSelected, Mode=OneWay}"
+                    IsHitTestVisible="False"
+                    IsVisible="{Binding DataContext.PrimeGear.IsGroupMode, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
+                  <CheckBox.Resources>
+                    <!-- Fluent sizes the box row from this resource (32) inside the
+                         template; shrink it so the header keeps its height. -->
+                    <x:Double x:Key="CheckBoxMinHeight">20</x:Double>
+                  </CheckBox.Resources>
+                </CheckBox>
+              </Panel>
             </Grid>
-            <ItemsControl ItemsSource="{Binding Parts}">
+            <ItemsControl
+                ItemsSource="{Binding Parts}"
+                Classes="gear-parts"
+                Classes.group-mode="{Binding DataContext.PrimeGear.IsGroupMode, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type local:PrimePartViewModel}">
                   <Grid ColumnDefinitions="Auto,Auto,*">
@@ -123,12 +148,8 @@
   <DockPanel Margin="0,12,0,0">
     <StackPanel DockPanel.Dock="Top">
 
-      <!-- Wishlist selector / filter row -->
-      <Border
-          Margin="8,0,8,8"
-          Padding="12,8"
-          Background="#1A808080"
-          CornerRadius="4">
+      <!-- Wishlist selector / filter row. Look comes from Styles/ControlBars.axaml. -->
+      <Border Classes="control-bar">
         <DockPanel>
 
           <!-- Right side: search box and hidden-match hint -->
@@ -149,136 +170,117 @@
                 FontStyle="Italic" />
           </StackPanel>
 
-          <!-- Left side: wishlist selector and toggles -->
+          <!-- Left side: wishlist selector and toggles. The "Wishlist" caption sits
+               inside the selector's closed field (SelectionBoxItemTemplate), so it
+               can't read as a row title; the open list shows names only. -->
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <TextBlock Text="Wishlist:" VerticalAlignment="Center" />
-            <Button
-                x:Name="WishlistDropdownButton"
+            <!-- Selector + its ⋮ actions menu, kept tighter than the bar's spacing. -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
+            <ComboBox
                 MinWidth="160"
-                Padding="10,6"
-                Background="Transparent"
-                BorderBrush="Gray"
-                BorderThickness="1">
-              <TextBlock
-                  MaxWidth="{StaticResource NameDisplayMaxWidth}"
-                  Text="{Binding Wishlist.ActiveWishlistName}"
-                  TextTrimming="CharacterEllipsis"
-                  ToolTip.Tip="{Binding Wishlist.ActiveWishlistName}" />
-              <Button.Flyout>
-                <Flyout Placement="Bottom">
-                  <StackPanel MinWidth="200" Spacing="0">
-
-                    <!-- Existing wishlists -->
-                    <ItemsControl ItemsSource="{Binding Wishlist.Wishlists}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type local:WishlistEntryViewModel}">
-                          <Button
-                              HorizontalAlignment="Stretch"
-                              HorizontalContentAlignment="Left"
-                              Padding="12,6"
-                              Command="{Binding SelectCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                              <TextBlock Text="✓" IsVisible="{Binding IsActive}" Width="14" />
-                              <TextBlock Text=" " IsVisible="{Binding !IsActive}" Width="14" />
-                              <TextBlock Text="{Binding Name}" />
-                            </StackPanel>
-                          </Button>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Separator -->
-                    <Separator Margin="0,4" />
-
-                    <!-- Management actions -->
-                    <Button
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        Padding="12,6"
-                        Command="{Binding Wishlist.RenameCommand}"
-                        Content="Rename this list…" />
-                    <Button
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        Padding="12,6"
-                        Command="{Binding Wishlist.DeleteCommand}"
-                        IsEnabled="{Binding Wishlist.CanDelete}"
-                        Content="Delete this list" />
-                    <Button
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        Padding="12,6"
-                        Command="{Binding Wishlist.CreateCommand}"
-                        Content="+ New list" />
-
+                ItemsSource="{Binding Wishlist.Wishlists}"
+                SelectedItem="{Binding Wishlist.SelectedEntry, Mode=TwoWay}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:WishlistEntryViewModel}">
+                  <TextBlock
+                      MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                      Text="{Binding Name}"
+                      TextTrimming="CharacterEllipsis"
+                      ToolTip.Tip="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+              <ComboBox.SelectionBoxItemTemplate>
+                <DataTemplate DataType="{x:Type local:WishlistEntryViewModel}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Classes="field-caption" Text="Wishlist:" />
+                    <TextBlock
+                        MaxWidth="{StaticResource NameDisplayMaxWidth}"
+                        Text="{Binding Name}"
+                        TextTrimming="CharacterEllipsis"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="{Binding Name}" />
                   </StackPanel>
-                </Flyout>
+                </DataTemplate>
+              </ComboBox.SelectionBoxItemTemplate>
+            </ComboBox>
+            <Button Classes="dropdown-field icon-only" ToolTip.Tip="Wishlist actions">
+              <PathIcon Data="{StaticResource Icon.MoreVertical}" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+                  <MenuItem Header="Rename this list…" Command="{Binding Wishlist.RenameCommand}">
+                    <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Pencil}" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Classes="destructive" Header="Delete this list" Command="{Binding Wishlist.DeleteCommand}">
+                    <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Trash}" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Header="New list" Command="{Binding Wishlist.CreateCommand}">
+                    <MenuItem.Icon><PathIcon Data="{StaticResource Icon.Plus}" /></MenuItem.Icon>
+                  </MenuItem>
+                </MenuFlyout>
               </Button.Flyout>
             </Button>
-            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
+            </StackPanel>
+            <!-- Filters: what to hide. Checked entries hide; the funnel takes the
+                 selection accent (non-default) while anything is hidden. -->
             <Button
-                Padding="10,6"
-                Background="Transparent"
-                BorderThickness="0"
-                Command="{Binding PrimeGear.ToggleFilterPanelCommand}"
-                Content="Filters"
-                ToolTip.Tip="Show or hide filter options" />
-            <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-            <Button
-                Padding="10,6"
-                Background="Transparent"
-                BorderThickness="0"
-                Command="{Binding PrimeGear.ToggleGroupModeCommand}"
-                Content="Group operations"
-                ToolTip.Tip="Enable or disable group selection and bulk actions" />
+                Classes="dropdown-field icon-only"
+                Classes.non-default="{Binding PrimeGear.IsFilterActive}"
+                ToolTip.Tip="{Binding PrimeGear.FilterSummary}">
+              <PathIcon Data="{StaticResource Icon.Funnel}" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="app-menu">
+                  <MenuItem Classes="menu-caption" Header="Hide" IsEnabled="False" />
+                  <MenuItem
+                      Header="Vaulted"
+                      ToggleType="CheckBox"
+                      StaysOpenOnClick="True"
+                      IsChecked="{Binding PrimeGear.HideVaulted, Mode=TwoWay}" />
+                  <MenuItem
+                      Header="Owned"
+                      ToggleType="CheckBox"
+                      StaysOpenOnClick="True"
+                      IsChecked="{Binding PrimeGear.HideOwned, Mode=TwoWay}" />
+                  <MenuItem
+                      Header="Not wishlisted"
+                      ToggleType="CheckBox"
+                      StaysOpenOnClick="True"
+                      IsChecked="{Binding PrimeGear.HideNotWishlisted, Mode=TwoWay}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <StackPanel Classes="button-group">
+              <Button
+                  Command="{Binding PrimeGear.ToggleGroupModeCommand}"
+                  Content="Group operations"
+                  ToolTip.Tip="Enable or disable group selection and bulk actions" />
+            </StackPanel>
           </StackPanel>
 
         </DockPanel>
       </Border>
 
-      <!-- Filter panel: shown when the Filters button is toggled on. -->
-      <Border
-          Margin="8,0,8,8"
-          Padding="12,8"
-          Background="#1A808080"
-          CornerRadius="4"
-          IsVisible="{Binding PrimeGear.IsFilterPanelOpen}">
-        <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <CheckBox IsChecked="{Binding PrimeGear.ShowVaulted}" VerticalAlignment="Center" />
-            <TextBlock Text="Show vaulted gear" VerticalAlignment="Center" />
-          </StackPanel>
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <CheckBox IsChecked="{Binding PrimeGear.ShowOwned}" VerticalAlignment="Center" />
-            <TextBlock Text="Show owned gear" VerticalAlignment="Center" />
-          </StackPanel>
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-            <CheckBox IsChecked="{Binding PrimeGear.ShowWishlistedOnly}" VerticalAlignment="Center" />
-            <TextBlock Text="Wishlisted only" VerticalAlignment="Center" />
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
       <!-- Group-operations control row: only shown while group operations is enabled. -->
       <Border
-          Margin="8,0,8,8"
-          Padding="12,8"
-          Background="#1A808080"
-          CornerRadius="4"
+          Classes="control-bar"
           IsVisible="{Binding PrimeGear.IsGroupMode}">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <TextBlock
-              Text="{Binding PrimeGear.SelectedCount, StringFormat='{}{0} selected'}"
-              VerticalAlignment="Center"
-              MinWidth="80" />
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" Background="Transparent" BorderThickness="0" />
-          <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" Background="Transparent" BorderThickness="0" />
-          <Border Width="1" Background="Gray" Margin="4,0" VerticalAlignment="Stretch" />
-          <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" Background="Transparent" BorderThickness="0" />
-          <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" Background="Transparent" BorderThickness="0" />
+          <!-- Selection status: hint while nothing is selected, then the count. The
+               invisible copy of the hint keeps the cell as wide as the hint at any
+               font size, so the action buttons don't shift as the text changes. -->
+          <Grid VerticalAlignment="Center">
+            <TextBlock Text="Click cards to select them" Opacity="0" IsHitTestVisible="False" />
+            <TextBlock Text="{Binding PrimeGear.SelectionStatusText}" />
+          </Grid>
+          <StackPanel Classes="button-group joined">
+            <Button Content="Select all" Command="{Binding PrimeGear.SelectAllCommand}" />
+            <Button Content="Select none" Command="{Binding PrimeGear.SelectNoneCommand}" />
+          </StackPanel>
+          <!-- Always shown and joined; Unmark owned is inactive while no selected card is
+               owned (e.g. while owned gear is hidden), rather than hidden. -->
+          <StackPanel Classes="button-group joined">
+            <Button Content="Mark owned" Command="{Binding PrimeGear.MarkSelectedOwnedCommand}" />
+            <Button Content="Unmark owned" Command="{Binding PrimeGear.UnmarkSelectedCommand}" />
+          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -319,9 +321,9 @@
       <Border
           Margin="8,8,8,0"
           Padding="12,8"
-          Background="#1A808080"
+          Background="{DynamicResource ControlBarBackgroundBrush}"
           CornerRadius="4"
-          IsVisible="{Binding PrimeGear.ShowVaulted}">
+          IsVisible="{Binding !PrimeGear.HideVaulted}">
         <TextBlock FontWeight="SemiBold" Text="Vaulted" />
       </Border>
 
@@ -329,7 +331,7 @@
       <ItemsControl
           ItemsSource="{Binding PrimeGear.VaultedCards}"
           ItemTemplate="{StaticResource GearCardTemplate}"
-          IsVisible="{Binding PrimeGear.ShowVaulted}">
+          IsVisible="{Binding !PrimeGear.HideVaulted}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel Orientation="Horizontal" />

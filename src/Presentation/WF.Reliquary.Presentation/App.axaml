@@ -6,7 +6,7 @@
 
   <!-- ═══════════════════════════════════════════════════════════════════════
        VERBATIM RELIC CARD TEMPLATE — application-scoped (not just the relics
-       panel's) so the rewards modal (Table mode's ⊞ pictogram) can host the
+       panel's) so the rewards modal (Table mode's rewards pictogram) can host the
        same card via a plain ContentControl with no duplicated markup.
        ═══════════════════════════════════════════════════════════════════════ -->
   <Application.DataTemplates>
@@ -37,7 +37,7 @@
                 FontWeight="Bold"
                 Content="⋮">
               <Button.Flyout>
-                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25">
+                <MenuFlyout Placement="BottomEdgeAlignedRight" HorizontalOffset="25" FlyoutPresenterClasses="app-menu">
                   <MenuItem
                       Header="Compose Recruiting Chat message…"
                       Command="{Binding ComposeCommand}" />
@@ -97,13 +97,49 @@
     <Style Selector="TextBox">
       <Setter Property="FontSize" Value="{DynamicResource ContentFontSize}" />
     </Style>
+    <!-- Icons scale with the font size (IconSize); a class may override for a
+         different size. Shapes come from Styles/Icons.axaml. -->
+    <Style Selector="PathIcon">
+      <Setter Property="Width" Value="{DynamicResource IconSize}" />
+      <Setter Property="Height" Value="{DynamicResource IconSize}" />
+    </Style>
+    <!-- Table mode row actions: icons stay muted behind the row text and come to
+         full strength on hover. -->
+    <Style Selector="Button.table-action PathIcon">
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="Button.table-action:pointerover PathIcon">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <!-- Shared control-bar look; must follow the TextBlock font-size style above
+         so section headings keep their larger size. -->
+    <StyleInclude Source="/Styles/ControlBars.axaml" />
+    <!-- App-wide dropdowns (ComboBoxes, selector popups) and card menus. -->
+    <StyleInclude Source="/Styles/Dropdowns.axaml" />
   </Application.Styles>
   <Application.Resources>
+    <ResourceDictionary>
+    <!-- The active color palette (control bars, dropdowns, card menus, selection
+         color). Linen at load; PaletteApplier replaces this single merged entry
+         when the user picks another palette. Palette keys live only there. -->
+    <ResourceDictionary.MergedDictionaries>
+      <ResourceInclude Source="/Styles/Palettes/Linen.axaml" />
+      <!-- Vector icons (PathIcon.Data); palette-independent. -->
+      <ResourceInclude Source="/Styles/Icons.axaml" />
+    </ResourceDictionary.MergedDictionaries>
     <x:Double x:Key="FontSizeSmall">11</x:Double>
     <x:Double x:Key="FontSizeMedium">14</x:Double>
     <x:Double x:Key="FontSizeLarge">18</x:Double>
     <!-- ContentFontSize is overwritten at runtime; Medium is the startup default -->
     <x:Double x:Key="ContentFontSize">14</x:Double>
+    <!-- Control-bar section headings ("Relics", "Missions"); rescaled with the
+         font size at runtime like the card widths below. Medium-font anchor. -->
+    <x:Double x:Key="SectionHeadingFontSize">16</x:Double>
+    <!-- Icon size (PathIcon style above); rescaled with the font size at runtime.
+         Medium-font anchor. -->
+    <x:Double x:Key="IconSize">16</x:Double>
+    <!-- Menu captions ("Hide", "View"); rescaled with the font size. Medium anchor. -->
+    <x:Double x:Key="MenuCaptionFontSize">12</x:Double>
 
     <!-- Card widths track the font size at runtime (see SettingsViewModel.ApplyFontSize);
          these are the Medium-font anchors. RelicCardWidth's anchor is user-configurable
@@ -129,12 +165,15 @@
     <!-- Owned-gear accent: an unintrusive muted green, used for the owned card outline
          and the owned ✓ marker so owned reads as a positive state distinct from vaulting. -->
     <SolidColorBrush x:Key="OwnedAccentBrush" Color="#5E9E6E" />
-    <!-- Subtle wash applied to a card selected for group operations. -->
-    <SolidColorBrush x:Key="CardSelectedBrush" Color="#332D7DC4" />
+
+    <!-- Destructive actions (Delete in the ⋮ actions menus) while pointed at. The
+         same in every palette, so it isn't a palette key. -->
+    <SolidColorBrush x:Key="DestructiveForegroundBrush" Color="#B3261E" />
 
     <!-- Highlighter-style wash behind wishlisted reward text in the Table mode
          rewards modal, so the wishlisted reward stands out against the rest of
          the (otherwise dimmed) reward list. -->
     <SolidColorBrush x:Key="WishlistHighlightBrush" Color="#40FFD54F" />
+    </ResourceDictionary>
   </Application.Resources>
 </Application>

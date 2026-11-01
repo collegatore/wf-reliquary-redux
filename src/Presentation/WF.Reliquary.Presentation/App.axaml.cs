@@ -9,6 +9,7 @@ public sealed partial class App : Avalonia.Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        MenuKeyboardHighlight.Register();
     }
 
     public override void OnFrameworkInitializationCompleted()

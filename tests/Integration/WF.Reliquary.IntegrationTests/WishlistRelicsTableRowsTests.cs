@@ -95,28 +95,27 @@ public sealed class WishlistRelicsTableRowsTests
     [Test]
     public async Task Rows_FollowEraSort_WithDefaultSettings()
     {
-        // Default sort is Era ascending; ViewModel sorts regardless of reader input order.
-        var vm = await LoadedViewModelAsync(MesoB2Vaulted, LithA1); // Meso first in reader output
-        vm.ShowVaulted = true;
+        // Default sort is Era descending; ViewModel sorts regardless of reader input order.
+        var vm = await LoadedViewModelAsync(LithA1, MesoB2Vaulted); // Lith first in reader output
 
-        Assert.That(vm.TableRows.Select(r => r.DisplayName), Is.EqualTo(new[] { "Lith A1", "Meso B2" }));
+        Assert.That(vm.TableRows.Select(r => r.DisplayName), Is.EqualTo(new[] { "Meso B2", "Lith A1" }));
     }
 
     [Test]
-    public async Task ShowVaulted_FiltersVaultedRows_AndVaultedRowIsDimmed()
+    public async Task HideVaulted_FiltersVaultedRows_AndVaultedRowIsDimmed()
     {
         var vm = await LoadedViewModelAsync(LithA1, MesoB2Vaulted);
 
-        // Default: vaulted relic hidden.
-        Assert.That(vm.TableRows.Select(r => r.DisplayName), Is.EqualTo(new[] { "Lith A1" }));
-
-        vm.ShowVaulted = true;
+        // Default: nothing hidden; the vaulted row is shown dimmed.
         var meso = vm.TableRows.Single(r => r.DisplayName == "Meso B2");
         Assert.Multiple(() =>
         {
             Assert.That(meso.IsVaulted, Is.True);
             Assert.That(meso.RowOpacity, Is.EqualTo(0.45), "vaulted rows use reduced opacity");
         });
+
+        vm.HideVaulted = true;
+        Assert.That(vm.TableRows.Select(r => r.DisplayName), Is.EqualTo(new[] { "Lith A1" }));
     }
 
     [Test]

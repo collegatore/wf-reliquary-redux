@@ -78,19 +78,7 @@ public sealed class AppearanceViewModelTests
     }
 
     [Test]
-    public void SelectedViewMode_Change_InvokesApplyViewMode()
-    {
-        var vm = CreateViewModel();
-        RelicViewMode? applied = null;
-        vm.ApplyViewMode = m => applied = m;
-
-        vm.SelectedViewMode = RelicViewMode.Table;
-
-        Assert.That(applied, Is.EqualTo(RelicViewMode.Table));
-    }
-
-    [Test]
-    public async Task SelectedViewMode_Change_AutoSavesToStore()
+    public async Task SelectedPalette_Change_AutoSavesToStore()
     {
         var store = new Mock<IUserSettingsStore>();
         UserSettings? saved = null;
@@ -104,10 +92,14 @@ public sealed class AppearanceViewModelTests
 
         var vm = CreateViewModel(store.Object);
 
-        vm.SelectedViewMode = RelicViewMode.Table;
+        vm.SelectedPalette = ColorPalette.Stone;
         await SettleAsync();
 
-        Assert.That(saved?.ViewMode, Is.EqualTo(RelicViewMode.Table));
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectedPalette, Is.EqualTo(ColorPalette.Stone));
+            Assert.That(saved?.Palette, Is.EqualTo(ColorPalette.Stone));
+        });
     }
 
     [Test]

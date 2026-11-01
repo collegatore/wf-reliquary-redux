@@ -133,7 +133,7 @@ public sealed class PrimeGearViewModelTests
     // ── Owned state & Show owned gear filtering ───────────────────────────────
 
     [Test]
-    public async Task LoadAsync_ReflectsPersistedOwnedState_AndHidesOwnedByDefault()
+    public async Task LoadAsync_ReflectsPersistedOwnedState_AndShowsOwnedByDefault()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false),
@@ -145,14 +145,17 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object);
         await SettleAsync();
 
-        // Card stays in the collection; IsShown=false hides it via visibility toggling.
         var ashCard = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
-        Assert.That(ashCard.IsShown, Is.False, "owned gear is hidden by default");
-        Assert.That(vm.ActiveCards.Single(c => c.GearName == "Mag Prime").IsShown, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(ashCard.IsOwned, Is.True);
+            Assert.That(ashCard.IsShown, Is.True, "owned gear is shown by default");
+            Assert.That(vm.ActiveCards.Single(c => c.GearName == "Mag Prime").IsShown, Is.True);
+        });
     }
 
     [Test]
-    public async Task ShowOwned_RevealsAndHidesOwnedCards_InBothSections()
+    public async Task HideOwned_HidesAndRevealsOwnedCards_InBothSections()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false),
@@ -164,26 +167,26 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object);
         await SettleAsync();
 
-        // Both owned cards are in their collections but collapsed via IsShown.
+        // Both owned cards are shown by default.
         var ashCard = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
         var boarCard = vm.VaultedCards.Single(c => c.GearName == "Boar Prime");
-        Assert.That(ashCard.IsShown, Is.False);
-        Assert.That(boarCard.IsShown, Is.False);
+        Assert.That(ashCard.IsShown, Is.True);
+        Assert.That(boarCard.IsShown, Is.True);
 
-        vm.ShowOwned = true;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(ashCard.IsShown, Is.True);
-            Assert.That(boarCard.IsShown, Is.True);
-        });
-
-        vm.ShowOwned = false;
+        vm.HideOwned = true;
 
         Assert.Multiple(() =>
         {
             Assert.That(ashCard.IsShown, Is.False);
             Assert.That(boarCard.IsShown, Is.False);
+        });
+
+        vm.HideOwned = false;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ashCard.IsShown, Is.True);
+            Assert.That(boarCard.IsShown, Is.True);
         });
     }
 
@@ -199,6 +202,7 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object);
         await SettleAsync();
 
+        vm.HideOwned = true;
         var card = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
         card.IsOwned = true;
         await SettleAsync();
@@ -322,6 +326,7 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, owned.Object);
         await SettleAsync();
 
+        vm.HideOwned = true;
         vm.SearchText = "volt";
 
         Assert.That(vm.HiddenOwnedMatchCount, Is.EqualTo(1));
@@ -339,7 +344,8 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, StoreWithItems([]).Object, OwnedStore().Object);
         await SettleAsync();
 
-        // ShowVaulted defaults to false; "volt" matches the vaulted card.
+        // "volt" matches the vaulted card, hidden by Hide Vaulted.
+        vm.HideVaulted = true;
         vm.SearchText = "volt";
 
         Assert.That(vm.HiddenVaultedMatchCount, Is.EqualTo(1));
@@ -493,8 +499,9 @@ public sealed class PrimeGearViewModelTests
     [Test]
     public async Task SelectAll_SelectsOnlyVisibleCards()
     {
-        // Ember Prime is owned; with Show owned off it is hidden and must not be selected.
+        // Ember Prime is owned; with Hide Owned on it is hidden and must not be selected.
         var vm = await MakeMultiCardVm(ownedGear: "Ember Prime");
+        vm.HideOwned = true;
 
         vm.SelectAllCommand.Execute(null);
 
@@ -516,6 +523,154 @@ public sealed class PrimeGearViewModelTests
 
         vm.SelectNoneCommand.Execute(null);
         Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
+    // ── Group operations: selection status text ───────────────────────────────
+
+    private const string SelectionHint = "Click cards to select them";
+
+    [Test]
+    public async Task SelectionStatusText_ShowsHint_WhenGroupModeStartsEmpty()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+
+        Assert.That(vm.SelectionStatusText, Is.EqualTo(SelectionHint));
+    }
+
+    [Test]
+    public async Task SelectionStatusText_ShowsCount_AfterSelecting_AndNotifies()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+        Assert.That(vm.SelectionStatusText, Is.EqualTo("1 selected"));
+
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectionStatusText, Is.EqualTo("2 selected"));
+            Assert.That(raised, Does.Contain(nameof(PrimeGearViewModel.SelectionStatusText)));
+        });
+    }
+
+    [Test]
+    public async Task SelectionStatusText_ReturnsToHint_AfterSelectNone()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        vm.SelectAllCommand.Execute(null);
+        Assert.That(vm.SelectionStatusText, Is.Not.EqualTo(SelectionHint));
+
+        vm.SelectNoneCommand.Execute(null);
+        Assert.That(vm.SelectionStatusText, Is.EqualTo(SelectionHint));
+    }
+
+    [Test]
+    public async Task SelectionStatusText_ReturnsToHint_AfterBulkAction()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+
+        vm.MarkSelectedOwnedCommand.Execute(null);
+        await SettleAsync();
+
+        Assert.That(vm.SelectionStatusText, Is.EqualTo(SelectionHint));
+    }
+
+    // ── Group operations: actions inactive without a selection ────────────────
+
+    [Test]
+    public async Task SelectionActions_AreInactive_WhileNothingIsSelected()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectNoneCommand.CanExecute(null), Is.False);
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.False);
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.False);
+            Assert.That(vm.SelectAllCommand.CanExecute(null), Is.True, "Select all is always available");
+        });
+    }
+
+    [Test]
+    public async Task SelectNone_ActivatesOnFirstSelection_AndDeactivatesWhenEmptied()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        var changes = 0;
+        vm.SelectNoneCommand.CanExecuteChanged += (_, _) => changes++;
+
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+        Assert.That(vm.SelectNoneCommand.CanExecute(null), Is.True);
+
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+        Assert.That(changes, Is.EqualTo(1), "Select none is re-evaluated only when the selection becomes empty or non-empty");
+
+        vm.SelectNoneCommand.Execute(null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.SelectNoneCommand.CanExecute(null), Is.False);
+            Assert.That(changes, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public async Task MarkAndUnmark_FollowWhatIsSelected()
+    {
+        var vm = await MakeMultiCardVm(ownedGear: "Ember Prime");
+        vm.HideOwned = false; // owned cards are shown (the default), so they can be selected
+        await SettleAsync();
+        vm.IsGroupMode = true;
+        var ember = vm.ActiveCards.Single(c => c.GearName == "Ember Prime");
+        var ash = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
+
+        ember.IsSelected = true;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.False, "only an owned card is selected");
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.True);
+        });
+
+        ash.IsSelected = true;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.True, "owned and unowned cards are selected");
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.True);
+        });
+
+        ember.IsSelected = false;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.MarkSelectedOwnedCommand.CanExecute(null), Is.True);
+            Assert.That(vm.UnmarkSelectedCommand.CanExecute(null), Is.False, "only an unowned card is selected");
+        });
+    }
+
+    [Test]
+    public async Task MarkAndUnmark_ReevaluateOnEverySelectionChange()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.IsGroupMode = true;
+        var markChanges = 0;
+        var unmarkChanges = 0;
+        vm.MarkSelectedOwnedCommand.CanExecuteChanged += (_, _) => markChanges++;
+        vm.UnmarkSelectedCommand.CanExecuteChanged += (_, _) => unmarkChanges++;
+
+        vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsSelected = true;
+        vm.ActiveCards.Single(c => c.GearName == "Banshee Prime").IsSelected = true;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(markChanges, Is.EqualTo(2));
+            Assert.That(unmarkChanges, Is.EqualTo(2));
+        });
     }
 
     // ── Group operations: bulk mark / unmark ──────────────────────────────────
@@ -611,7 +766,7 @@ public sealed class PrimeGearViewModelTests
     {
         var owned = OwnedStore("Ember Prime", "Volt Prime");
         var vm = await MakeMultiCardVm(owned: owned);
-        vm.ShowOwned = true; // reveal owned cards so they can be selected
+        vm.HideOwned = false; // owned cards are shown (the default), so they can be selected
         await SettleAsync();
 
         vm.ActiveCards.Single(c => c.GearName == "Ember Prime").IsSelected = true;
@@ -625,9 +780,10 @@ public sealed class PrimeGearViewModelTests
     }
 
     [Test]
-    public async Task BulkMark_WithShowOwnedOff_HidesCards_AndEmptiesSelection()
+    public async Task BulkMark_WithHideOwnedOn_HidesCards_AndEmptiesSelection()
     {
         var vm = await MakeMultiCardVm();
+        vm.HideOwned = true;
         var ash = vm.ActiveCards.Single(c => c.GearName == "Ash Prime");
         ash.IsSelected = true;
         vm.MarkSelectedOwnedCommand.Execute(null);
@@ -636,7 +792,7 @@ public sealed class PrimeGearViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(ash.IsOwned, Is.True);
-            Assert.That(ash.IsShown, Is.False, "marked-owned card is hidden when Show owned is off");
+            Assert.That(ash.IsShown, Is.False, "marked-owned card is hidden while Hide Owned is on");
             Assert.That(vm.SelectedCount, Is.EqualTo(0));
         });
     }
@@ -654,22 +810,84 @@ public sealed class PrimeGearViewModelTests
     }
 
     [Test]
-    public async Task TogglingShowVaulted_ClearsSelection()
+    public async Task TogglingHideVaulted_ClearsSelection()
     {
         var vm = await MakeMultiCardVm();
         vm.ActiveCards.First().IsSelected = true;
 
-        vm.ShowVaulted = true;
+        vm.HideVaulted = true;
         Assert.That(vm.SelectedCount, Is.EqualTo(0));
     }
 
     [Test]
-    public async Task TogglingShowOwned_ClearsSelection()
+    public async Task TogglingHideNotWishlisted_ClearsSelection()
     {
         var vm = await MakeMultiCardVm();
         vm.ActiveCards.First().IsSelected = true;
 
-        vm.ShowOwned = true;
+        vm.HideNotWishlisted = true;
+        Assert.That(vm.SelectedCount, Is.EqualTo(0));
+    }
+
+    // ── Filters: defaults, marker, summary, persistence ───────────────────────
+
+    [Test]
+    public async Task Filters_DefaultToNothingHidden()
+    {
+        var vm = await MakeMultiCardVm();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.HideVaulted, Is.False);
+            Assert.That(vm.HideOwned, Is.False);
+            Assert.That(vm.HideNotWishlisted, Is.False);
+            Assert.That(vm.IsFilterActive, Is.False);
+            Assert.That(vm.FilterSummary, Is.EqualTo("Filters: nothing hidden"));
+        });
+    }
+
+    [Test]
+    public async Task FilterSummary_ListsEveryHiddenCategory()
+    {
+        var vm = await MakeMultiCardVm();
+
+        vm.HideOwned = true;
+        vm.HideNotWishlisted = true;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.IsFilterActive, Is.True);
+            Assert.That(vm.FilterSummary, Is.EqualTo("Filters: hiding owned, not wishlisted"));
+        });
+    }
+
+    [Test]
+    public async Task FilterChange_InvokesSaveHook_ButLoadDoesNot()
+    {
+        var vm = await MakeMultiCardVm(ownedGear: "Ember Prime");
+        var saves = 0;
+        vm.SaveFilterSettingsAsync = () => { saves++; return Task.CompletedTask; };
+
+        vm.LoadFilterSettings(hideVaulted: true, hideOwned: true, hideNotWishlisted: false);
+        Assert.Multiple(() =>
+        {
+            Assert.That(saves, Is.Zero);
+            Assert.That(vm.HideOwned, Is.True);
+            Assert.That(vm.ActiveCards.Single(c => c.GearName == "Ember Prime").IsShown, Is.False,
+                "loaded filters apply to the cards");
+        });
+
+        vm.HideVaulted = false;
+        Assert.That(saves, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task TogglingHideOwned_ClearsSelection()
+    {
+        var vm = await MakeMultiCardVm();
+        vm.ActiveCards.First().IsSelected = true;
+
+        vm.HideOwned = true;
         Assert.That(vm.SelectedCount, Is.EqualTo(0));
     }
 
@@ -687,7 +905,7 @@ public sealed class PrimeGearViewModelTests
     // ── Wishlisted-only filter ────────────────────────────────────────────────
 
     [Test]
-    public async Task ShowWishlistedOnly_False_AllCardsVisible()
+    public async Task HideNotWishlisted_False_AllCardsVisible()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false),
@@ -699,11 +917,11 @@ public sealed class PrimeGearViewModelTests
         await SettleAsync();
 
         Assert.That(vm.ActiveCards.All(c => c.IsShown), Is.True,
-            "with ShowWishlistedOnly off, cards with no checked parts remain visible");
+            "with Hide Not wishlisted off, cards with no checked parts remain visible");
     }
 
     [Test]
-    public async Task ShowWishlistedOnly_True_HidesCardWithNoCheckedParts()
+    public async Task HideNotWishlisted_True_HidesCardWithNoCheckedParts()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
@@ -713,13 +931,13 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, OwnedStore().Object);
         await SettleAsync();
 
-        vm.ShowWishlistedOnly = true;
+        vm.HideNotWishlisted = true;
 
         Assert.That(vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsShown, Is.False);
     }
 
     [Test]
-    public async Task ShowWishlistedOnly_True_ShowsCardWithCheckedPart()
+    public async Task HideNotWishlisted_True_ShowsCardWithCheckedPart()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics", "Systems"], IsVaulted: false),
@@ -732,7 +950,7 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, OwnedStore().Object);
         await SettleAsync();
 
-        vm.ShowWishlistedOnly = true;
+        vm.HideNotWishlisted = true;
 
         Assert.Multiple(() =>
         {
@@ -744,7 +962,7 @@ public sealed class PrimeGearViewModelTests
     }
 
     [Test]
-    public async Task ShowWishlistedOnly_Unchecking_RestoresHiddenCards()
+    public async Task HideNotWishlisted_Unchecking_RestoresHiddenCards()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
@@ -754,15 +972,15 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, OwnedStore().Object);
         await SettleAsync();
 
-        vm.ShowWishlistedOnly = true;
+        vm.HideNotWishlisted = true;
         Assert.That(vm.ActiveCards.Single().IsShown, Is.False);
 
-        vm.ShowWishlistedOnly = false;
+        vm.HideNotWishlisted = false;
         Assert.That(vm.ActiveCards.Single().IsShown, Is.True);
     }
 
     [Test]
-    public async Task ShowWishlistedOnly_OwnedFilterTakesPrecedence_OwnedCardWithCheckedPartsIsHidden()
+    public async Task HideNotWishlisted_OwnedFilterTakesPrecedence_OwnedCardWithCheckedPartsIsHidden()
     {
         var reader = ReaderWith([
             new PrimeGearEntry("Ash Prime", ["Neuroptics"], IsVaulted: false)
@@ -775,11 +993,12 @@ public sealed class PrimeGearViewModelTests
         var vm = new PrimeGearViewModel(reader.Object, store.Object, owned.Object);
         await SettleAsync();
 
-        // Both ShowOwned=false (default) and ShowWishlistedOnly=true
-        vm.ShowWishlistedOnly = true;
+        // Both Hide Owned and Hide Not wishlisted on
+        vm.HideOwned = true;
+        vm.HideNotWishlisted = true;
 
         Assert.That(vm.ActiveCards.Single(c => c.GearName == "Ash Prime").IsShown, Is.False,
-            "owned card is hidden regardless of wishlist state when ShowOwned is false");
+            "owned card is hidden regardless of wishlist state while Hide Owned is on");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

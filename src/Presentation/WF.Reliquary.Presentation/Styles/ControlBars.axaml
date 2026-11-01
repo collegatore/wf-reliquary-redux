@@ -1,0 +1,176 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       CONTROL-BAR STYLES — the shared look of the tab control bars (Relics
+       control panel + its Filters/Sorting rows, missions separator panel,
+       Prime Gear primary bar + filter row + group-operations row).
+
+       Fluent (Avalonia 12.0.5) template facts these selectors rely on:
+       - Button: a single ContentPresenter#PART_ContentPresenter carries the
+         background and border; theme hover/press styles recolor it.
+       - CheckBox: Grid#RootGrid (columns "20,*") holds Border#PART_Border
+         (spans the whole control: background + outline), an unnamed Grid with
+         the box (Border#NormalRectangle, 20x20) in column 0, and
+         ContentPresenter#PART_ContentPresenter (Margin = Padding) in column 1.
+         The box row height is the CheckBoxMinHeight resource (32), set inside
+         the template, so chips keep the 32px height.
+       - Plain style setters on template parts lose to TemplateBinding; setters
+         under a pseudo-class (:pointerover, :checked, ...) win. Base looks are
+         therefore set on the control itself, state looks on the template part.
+       ═══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Colors come from the active palette (Styles/Palettes/*.axaml), merged into
+       App.axaml's resources: Control*Brush, CardSelectedBrush, SelectionAccentBrush. -->
+
+  <!-- ── Bar surface ─────────────────────────────────────────────────────── -->
+  <Style Selector="Border.control-bar">
+    <Setter Property="Background" Value="{DynamicResource ControlBarBackgroundBrush}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Margin" Value="8,0,8,8" />
+    <Setter Property="Padding" Value="12,8" />
+  </Style>
+  <!-- Compact divider-bar variant (missions separator panel, stacked layout). -->
+  <Style Selector="Border.control-bar.compact">
+    <Setter Property="Padding" Value="12,2" />
+  </Style>
+
+  <!-- ── Section heading / field caption ─────────────────────────────────── -->
+  <!-- Heads the pane beneath the bar ("Relics", "Missions"). Declared after the
+       app-wide TextBlock font-size style so its size wins; the size resource
+       scales with the font-size setting (AppearanceViewModel.ApplyFontSize). -->
+  <Style Selector="TextBlock.section-heading">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="{DynamicResource SectionHeadingFontSize}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,0,14,0" />
+  </Style>
+  <!-- Muted label shown inside the control it describes (Wishlist selector). -->
+  <Style Selector="TextBlock.field-caption">
+    <Setter Property="Opacity" Value="0.65" />
+    <Setter Property="Margin" Value="0,0,8,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- ── Button chips and fields ─────────────────────────────────────────── -->
+  <!-- Every bar button is its own outlined pill. Related buttons share a
+       <StackPanel Classes="button-group">, which keeps them closer together
+       than the bar's spacing between groups. Dropdown fields (Styles/Dropdowns.axaml)
+       share the same look. All of them match the
+       Fluent CheckBox/TextBox height (32) so chips, fields and the search box
+       line up on a bar. -->
+  <Style Selector="StackPanel.button-group">
+    <Setter Property="Orientation" Value="Horizontal" />
+    <Setter Property="Spacing" Value="6" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="StackPanel.button-group > Button">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="10,5" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="StackPanel.button-group > Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <Style Selector="StackPanel.button-group > Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <!-- Inactive (command can't execute): Avalonia disables the button, so it gets no
+       hover or clicks. It keeps the field background; text and outline switch to the
+       palette's muted inactive colors, which keeps a joined pair's divider intact. -->
+  <Style Selector="StackPanel.button-group > Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlInactiveOutlineBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
+  </Style>
+  <!-- Joined variant (<StackPanel Classes="button-group joined">) for pairs that act
+       as one control: the buttons touch, the outer corners stay rounded, and each
+       button after the first draws the 1px divider with its own left border (the
+       one before it drops its right border, so seams never double). -->
+  <Style Selector="StackPanel.button-group.joined">
+    <Setter Property="Spacing" Value="0" />
+  </Style>
+  <Style Selector="StackPanel.button-group.joined > Button">
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="1,1,0,1" />
+  </Style>
+  <Style Selector="StackPanel.button-group.joined > Button:nth-child(1)">
+    <Setter Property="CornerRadius" Value="4,0,0,4" />
+  </Style>
+  <Style Selector="StackPanel.button-group.joined > Button:nth-last-child(1)">
+    <Setter Property="CornerRadius" Value="0,4,4,0" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+
+  <!-- ── Checkbox chips ──────────────────────────────────────────────────── -->
+  <!-- Markup: <CheckBox Classes="chip" Content="Label" />. The box is shifted
+       8px into the pill (it would otherwise touch the outline), and the label
+       padding grows by the same 8px. -->
+  <Style Selector="CheckBox.chip">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="16,0,10,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <!-- Label is Content (not a TextBlock), so the app-wide TextBlock font-size
+         style doesn't reach it; follow the font-size setting explicitly. -->
+    <Setter Property="FontSize" Value="{DynamicResource ContentFontSize}" />
+  </Style>
+  <Style Selector="CheckBox.chip /template/ Grid:not(#RootGrid)">
+    <Setter Property="Margin" Value="8,0,-8,0" />
+  </Style>
+  <Style Selector="CheckBox.chip:pointerover /template/ Border#PART_Border">
+    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <Style Selector="CheckBox.chip:pressed /template/ Border#PART_Border">
+    <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <!-- Checked: the app-wide "selected/on" tint (also the selected gear-card wash). -->
+  <Style Selector="CheckBox.chip:checked /template/ Border#PART_Border">
+    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
+  </Style>
+  <Style Selector="CheckBox.chip:checked:pointerover /template/ Border#PART_Border">
+    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <Style Selector="CheckBox.chip:checked:pressed /template/ Border#PART_Border">
+    <Setter Property="Background" Value="{DynamicResource CardSelectedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineHoverBrush}" />
+  </Style>
+  <!-- Inactive chip: same muted treatment as inactive bar buttons. -->
+  <Style Selector="CheckBox.chip:disabled /template/ Border#PART_Border">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlInactiveOutlineBrush}" />
+  </Style>
+  <Style Selector="CheckBox.chip:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource ControlInactiveForegroundBrush}" />
+  </Style>
+  <!-- Checked chip's box uses the palette's selection accent instead of Fluent's
+       global accent. Scoped to chips: card part checkboxes and Settings checkboxes
+       keep the standard accent. -->
+  <Style Selector="CheckBox.chip:checked /template/ Border#NormalRectangle, CheckBox.chip:checked:pointerover /template/ Border#NormalRectangle, CheckBox.chip:checked:pressed /template/ Border#NormalRectangle">
+    <Setter Property="Background" Value="{DynamicResource SelectionAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SelectionAccentBrush}" />
+  </Style>
+
+  <!-- ── Bar text fields (Prime Gear search) ─────────────────────────────── -->
+  <!-- Solid field background like the other bar fields, instead of Fluent's
+       translucent one that lets the bar color show through. Fluent's own focus and
+       pointer-over looks still apply on top. -->
+  <Style Selector="Border.control-bar TextBox">
+    <Setter Property="Background" Value="{DynamicResource ControlFieldBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ControlOutlineBrush}" />
+  </Style>
+</Styles>

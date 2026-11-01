@@ -27,7 +27,7 @@ The Prime Gear control panel SHALL include a **Group operations** button that to
 
 ### Requirement: Click-to-select cards in group-operations mode
 
-While group operations is enabled, each Prime gear card SHALL become a single selection target: clicking anywhere on the card SHALL toggle its selection, and the card's own interactive controls (the per-part checkboxes and the overflow-menu button) SHALL be suppressed so they do not respond while group operations is enabled. A selected card SHALL be indicated by a subtle background wash, distinct from the owned and vaulted treatments. Selecting a card SHALL NOT change its owned state. While group operations is disabled, cards SHALL behave normally — the overflow menu and part checkboxes SHALL be interactive and clicking the card body SHALL NOT select it.
+While group operations is enabled, each Prime gear card SHALL become a single selection target: clicking anywhere on the card SHALL toggle its selection, and the card's own interactive controls (the per-part checkboxes and the overflow-menu button) SHALL be suppressed so they do not respond while group operations is enabled. To make this discoverable, while group operations is enabled each card SHALL show a selection checkbox in the card header in place of the overflow-menu button, checked exactly when the card is selected; the card's parts list SHALL be visibly dimmed; and the whole card SHALL show an outline while the pointer is over it. A selected card SHALL be indicated by a subtle background wash, distinct from the owned and vaulted treatments, together with its checked selection checkbox. Selecting a card SHALL NOT change its owned state. While group operations is disabled, cards SHALL behave normally — the overflow menu and part checkboxes SHALL be interactive, no selection checkbox is shown, the parts list is not dimmed, and clicking the card body SHALL NOT select it.
 
 #### Scenario: Clicking a card selects it in group mode
 
@@ -54,24 +54,35 @@ While group operations is enabled, each Prime gear card SHALL become a single se
 - **WHEN** group operations is disabled
 - **THEN** clicking a card body does not select it, and the overflow menu and part checkboxes are interactive
 
-### Requirement: Group-operations control row
+#### Scenario: Selection checkbox replaces the overflow menu in group mode
 
-While group operations is enabled, the Prime Gear control panel SHALL display a second row containing a **selection count**, a **Select all** action, a **Select none** action, a **Mark owned** action, and an **Unmark owned** action. This row SHALL be hidden while group operations is disabled. The selection count SHALL reflect the number of currently selected cards.
+- **WHEN** the user enables group operations
+- **THEN** every card header shows an unchecked selection checkbox where the overflow-menu button was, and no overflow-menu button is shown
 
-#### Scenario: Second row appears only in group-operations mode
+#### Scenario: Selection checkbox follows the selection
 
-- **WHEN** group operations is enabled
-- **THEN** the control panel shows a second row with Select all, Select none, Mark owned, and Unmark owned actions and a selection count
+- **WHEN** group operations is enabled and the user selects a card, then invokes Select none
+- **THEN** that card's selection checkbox is checked after the selection and unchecked after Select none
 
-#### Scenario: Second row hidden when group operations is off
+#### Scenario: Clicking the selection checkbox toggles selection
 
-- **WHEN** group operations is disabled
-- **THEN** the second control row is not shown
+- **WHEN** group operations is enabled and the user clicks a card's selection checkbox
+- **THEN** the card's selection toggles exactly as when clicking elsewhere on the card
 
-#### Scenario: Selection count reflects selected cards
+#### Scenario: Parts list is dimmed in group mode
 
-- **WHEN** the user selects three cards in group-operations mode
-- **THEN** the control row reports three selected
+- **WHEN** the user enables group operations
+- **THEN** each card's parts list is rendered dimmed, and it returns to full strength when group operations is disabled
+
+#### Scenario: Card shows an outline on hover in group mode
+
+- **WHEN** group operations is enabled and the pointer moves over a gear card
+- **THEN** an outline appears around that whole card, and disappears when the pointer leaves
+
+#### Scenario: No hover outline when group operations is off
+
+- **WHEN** group operations is disabled and the pointer moves over a gear card
+- **THEN** no selection hover outline appears
 
 ### Requirement: Select all and Select none
 
@@ -94,7 +105,7 @@ In group-operations mode, **Select all** SHALL select every currently visible ge
 
 ### Requirement: Bulk mark and unmark owned
 
-In group-operations mode, **Mark owned** SHALL mark every selected card's gear as owned for the active profile, and **Unmark owned** SHALL clear the owned mark on every selected card's gear, each persisting via the owned gear store. When marked owned while Show owned gear is unchecked, the affected cards SHALL fade out and be removed from view using the same transition as single-card marking. After a bulk action completes, the selection SHALL be empty.
+In group-operations mode, **Mark owned** SHALL mark every selected card's gear as owned for the active profile, and **Unmark owned** SHALL clear the owned mark on every selected card's gear, each persisting via the owned gear store. When marked owned while the Filters menu hides Owned, the affected cards SHALL fade out and be removed from view using the same transition as single-card marking. After a bulk action completes, the selection SHALL be empty.
 
 #### Scenario: Bulk mark owned marks all selected gear
 
@@ -108,7 +119,7 @@ In group-operations mode, **Mark owned** SHALL mark every selected card's gear a
 
 #### Scenario: Bulk-marked cards fade out when owned gear is hidden
 
-- **WHEN** Show owned gear is unchecked and the user bulk-marks selected cards owned
+- **WHEN** Owned is checked in the Filters menu and the user bulk-marks selected cards owned
 - **THEN** those cards fade out and are removed from view
 
 #### Scenario: Selection is empty after a bulk action
@@ -145,26 +156,70 @@ When a bulk **Mark owned** is invoked and at least one selected card has parts i
 - **WHEN** the batched dialog is shown and the user chooses Cancel
 - **THEN** no selected gear is marked owned and the selection is left unchanged
 
-### Requirement: Selection clears on view changes
+### Requirement: Selection actions are inactive when they have nothing to act on
+In group-operations mode, an action SHALL be inactive (no response to clicks, no hover feedback, an inactive look) whenever it has nothing to act on: **Select none** while no card is selected, **Mark owned** while no selected card is unowned, and **Unmark owned** while no selected card is owned. **Select all** SHALL stay active. Each action SHALL re-evaluate whenever the selection changes.
 
-The group selection SHALL be cleared whenever the visible set of cards changes through a user view change: changing the search text, toggling Show vaulted gear, toggling Show owned gear, or switching the active wishlist. This ensures the selection never references cards that are no longer visible.
+#### Scenario: Actions are inactive on entering group mode
+- **WHEN** the user enables group operations and no card is selected
+- **THEN** Select none, Mark owned, and Unmark owned are shown inactive and clicking them does nothing, while Select all is active
+
+#### Scenario: Only unowned cards selected
+- **WHEN** the selection contains only cards that are not owned
+- **THEN** Select none and Mark owned are active and Unmark owned is inactive
+
+#### Scenario: Only owned cards selected
+- **WHEN** owned gear is shown and the selection contains only owned cards
+- **THEN** Select none and Unmark owned are active and Mark owned is inactive
+
+#### Scenario: Mixed selection
+- **WHEN** the selection contains both owned and unowned cards
+- **THEN** Select none, Mark owned, and Unmark owned are all active
+
+#### Scenario: Actions deactivate when the selection empties
+- **WHEN** cards are selected and the user invokes Select none
+- **THEN** Select none, Mark owned, and Unmark owned become inactive again
+
+### Requirement: Group-operations action row
+While group operations is enabled, the Prime Gear control panel SHALL display a second row containing a **selection status**, a **Select all** action, a **Select none** action, a **Mark owned** action, and an **Unmark owned** action. This row SHALL be hidden while group operations is disabled. All four actions SHALL always be shown; an action with nothing to act on is inactive rather than hidden.
+
+#### Scenario: Second row appears only in group-operations mode
+- **WHEN** group operations is enabled
+- **THEN** the control panel shows a second row with Select all, Select none, Mark owned, and Unmark owned actions and a selection status
+
+#### Scenario: Second row hidden when group operations is off
+- **WHEN** group operations is disabled
+- **THEN** the second control row is not shown
+
+#### Scenario: Unmark owned stays shown while owned gear is hidden
+- **WHEN** group operations is enabled and Owned is checked in the Prime Gear Filters menu
+- **THEN** Unmark owned is still shown, inactive, next to Mark owned
+
+### Requirement: Selection status in the action row
+The action row's selection status SHALL read "Click cards to select them" while no card is selected, and otherwise SHALL be a count of the currently selected cards.
+
+#### Scenario: Selection count reflects selected cards
+- **WHEN** the user selects three cards in group-operations mode
+- **THEN** the control row reports three selected
+
+#### Scenario: Hint is shown while nothing is selected
+- **WHEN** the user enables group operations and no card is selected
+- **THEN** the selection status reads "Click cards to select them"
+
+#### Scenario: Hint returns when the selection empties
+- **WHEN** cards are selected and the selection becomes empty (Select none, a bulk action completing, or a view change)
+- **THEN** the selection status reads "Click cards to select them" again
+
+### Requirement: Selection clears when the visible cards change
+The group selection SHALL be cleared whenever the visible set of cards changes through a user view change: changing the search text, checking or unchecking any entry of the Prime Gear Filters menu, or switching the active wishlist. This ensures the selection never references cards that are no longer visible.
 
 #### Scenario: Changing the search clears the selection
-
 - **WHEN** cards are selected and the user changes the search text
 - **THEN** the selection is cleared
 
-#### Scenario: Toggling Show vaulted clears the selection
-
-- **WHEN** cards are selected and the user toggles Show vaulted gear
-- **THEN** the selection is cleared
-
-#### Scenario: Toggling Show owned clears the selection
-
-- **WHEN** cards are selected and the user toggles Show owned gear
+#### Scenario: Changing a filter clears the selection
+- **WHEN** cards are selected and the user checks or unchecks Vaulted, Owned, or Not wishlisted in the Filters menu
 - **THEN** the selection is cleared
 
 #### Scenario: Switching the active wishlist clears the selection
-
 - **WHEN** cards are selected and the user switches the active wishlist
 - **THEN** the selection is cleared

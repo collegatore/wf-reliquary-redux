@@ -60,7 +60,7 @@ public sealed class WishlistRelicsSortingTests
         var vm = await LoadedViewModelAsync(AxiD4, MesoC3, LithB2, LithA1, NeoE5);
 
         vm.SortMode = RelicSortMode.Era; // already default but explicit
-        vm.SortDescending = false;
+        vm.SortDescending = false; // default is descending
 
         Assert.That(
             vm.Cards.Select(c => c.RelicName),
@@ -221,14 +221,14 @@ public sealed class WishlistRelicsSortingTests
     }
 
     [Test]
-    public async Task SortMode_Change_ToEra_DefaultsToAscending()
+    public async Task SortMode_Change_ToEra_DefaultsToDescending()
     {
         var vm = await LoadedViewModelAsync(LithA1);
 
-        vm.SortMode = RelicSortMode.WishlistScore; // sets descending by default
+        vm.SortMode = RelicSortMode.Alphabetical; // sets ascending
         vm.SortMode = RelicSortMode.Era;
 
-        Assert.That(vm.SortDescending, Is.False);
+        Assert.That(vm.SortDescending, Is.True);
     }
 
     [Test]
@@ -309,42 +309,158 @@ public sealed class WishlistRelicsSortingTests
         });
     }
 
-    // ── Defaults and panel state ───────────────────────────────────────────
+    // ── Defaults and non-default marker ────────────────────────────────────
 
     [Test]
-    public void SortMode_DefaultsToEraAscending()
+    public void SortMode_DefaultsToEraDescending()
     {
         var vm = CreateViewModel();
 
         Assert.Multiple(() =>
         {
             Assert.That(vm.SortMode, Is.EqualTo(RelicSortMode.Era));
-            Assert.That(vm.SortDescending, Is.False);
+            Assert.That(vm.SortDescending, Is.True);
+            Assert.That(vm.IsSortNonDefault, Is.False);
         });
     }
 
     [Test]
-    public void IsFilterPanelOpen_DefaultsClosed()
-    {
-        Assert.That(CreateViewModel().IsFilterPanelOpen, Is.False);
-    }
-
-    [Test]
-    public void IsSortPanelOpen_DefaultsClosed()
-    {
-        Assert.That(CreateViewModel().IsSortPanelOpen, Is.False);
-    }
-
-    [Test]
-    public void SortDirectionLabel_ReflectsActiveDirection()
+    public void IsSortNonDefault_TrueForAnyOtherSort()
     {
         var vm = CreateViewModel();
 
         vm.SortDescending = false;
-        Assert.That(vm.SortDirectionLabel, Is.EqualTo("Ascending"));
+        Assert.That(vm.IsSortNonDefault, Is.True, "Era ascending");
 
         vm.SortDescending = true;
-        Assert.That(vm.SortDirectionLabel, Is.EqualTo("Descending"));
+        vm.SortMode = RelicSortMode.WishlistScore;
+        Assert.That(vm.IsSortNonDefault, Is.True, "Wishlist score descending");
+    }
+
+    [Test]
+    public void LoadSortSettings_SavedEraAscending_IsNonDefault()
+    {
+        var vm = CreateViewModel();
+
+        vm.LoadSortSettings(RelicSortMode.Era, descending: false);
+
+        Assert.That(vm.IsSortNonDefault, Is.True);
+    }
+
+    [Test]
+    public void SortSummary_DescribesModeAndDirection()
+    {
+        var vm = CreateViewModel();
+        Assert.That(vm.SortSummary, Is.EqualTo("Sorted by era, descending"));
+
+        vm.SortMode = RelicSortMode.Alphabetical;
+        Assert.That(vm.SortSummary, Is.EqualTo("Sorted alphabetically, ascending"));
+    }
+
+    [Test]
+    public void SortChange_InvokesSaveHook_ButLoadDoesNot()
+    {
+        var vm = CreateViewModel();
+        var saves = 0;
+        vm.SaveSortSettingsAsync = () => { saves++; return Task.CompletedTask; };
+
+        vm.LoadSortSettings(RelicSortMode.Alphabetical, descending: false);
+        Assert.That(saves, Is.Zero);
+
+        vm.ToggleSortDirectionCommand.Execute(null);
+        Assert.That(saves, Is.EqualTo(1));
+    }
+
+    // ── Filters and Display ────────────────────────────────────────────────
+
+    [Test]
+    public async Task HideVaulted_DefaultsOff_AndHidesVaultedRelicsWhenOn()
+    {
+        var vaulted = new WishlistRelicEntry("Meso V1 Relic", "Meso", IsVaulted: true,
+            [new WishlistRelicReward("Part", "Common", IsWishlisted: true)]);
+        var vm = await LoadedViewModelAsync(LithA1, vaulted);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.HideVaulted, Is.False);
+            Assert.That(vm.IsFilterActive, Is.False);
+            Assert.That(vm.FilterSummary, Is.EqualTo("Filters: nothing hidden"));
+            Assert.That(vm.Cards.Select(c => c.RelicName), Does.Contain("Meso V1 Relic"));
+        });
+
+        vm.HideVaulted = true;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.IsFilterActive, Is.True);
+            Assert.That(vm.FilterSummary, Is.EqualTo("Filters: hiding vaulted relics"));
+            Assert.That(vm.Cards.Select(c => c.RelicName), Does.Not.Contain("Meso V1 Relic"));
+            Assert.That(vm.TableRows.Select(r => r.DisplayName), Does.Not.Contain("Meso V1"));
+        });
+    }
+
+    [Test]
+    public void FilterChange_InvokesSaveHook_ButLoadDoesNot()
+    {
+        var vm = CreateViewModel();
+        var saves = 0;
+        vm.SaveFilterSettingsAsync = () => { saves++; return Task.CompletedTask; };
+
+        vm.LoadFilterSettings(hideVaulted: true);
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.HideVaulted, Is.True);
+            Assert.That(saves, Is.Zero);
+        });
+
+        vm.HideVaulted = false;
+        Assert.That(saves, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void IsDisplayNonDefault_FollowsViewModeAndShowAllRewards()
+    {
+        var vm = CreateViewModel();
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.IsDisplayNonDefault, Is.False, "Compact, all rewards off");
+            Assert.That(vm.DisplaySummary, Is.EqualTo("Display: Compact view"));
+        });
+
+        vm.ShowAllRewards = true;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.IsDisplayNonDefault, Is.True, "all rewards on");
+            Assert.That(vm.DisplaySummary, Is.EqualTo("Display: Compact view, all rewards shown"));
+        });
+
+        vm.ShowAllRewards = false;
+        vm.ViewMode = RelicViewMode.Table;
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.IsDisplayNonDefault, Is.True, "Table mode");
+            Assert.That(vm.DisplaySummary, Is.EqualTo("Display: Table view"));
+        });
+    }
+
+    [Test]
+    public void DisplayChange_InvokesSaveHook_ButLoadDoesNot()
+    {
+        var vm = CreateViewModel();
+        var saves = 0;
+        vm.SaveDisplaySettingsAsync = () => { saves++; return Task.CompletedTask; };
+
+        vm.LoadDisplaySettings(RelicViewMode.Verbatim, showAllRewards: true);
+        Assert.Multiple(() =>
+        {
+            Assert.That(vm.ViewMode, Is.EqualTo(RelicViewMode.Verbatim));
+            Assert.That(vm.ShowAllRewards, Is.True);
+            Assert.That(saves, Is.Zero);
+        });
+
+        vm.ViewMode = RelicViewMode.Table;
+        vm.ShowAllRewards = false;
+        Assert.That(saves, Is.EqualTo(2));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

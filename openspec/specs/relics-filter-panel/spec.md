@@ -2,38 +2,52 @@
 
 ## Purpose
 
-Defines the collapsible filter panel for the Relics and Missions tab, which hosts the Show vaulted and Show all rewards checkboxes (moved from the inline control panel). The panel is toggled by a Filters button in the Relics control panel and follows the same visual style as the Prime Gear filter panel.
+Defines the Filters menu on the Relics bar: a funnel-icon menu button whose "Hide" entries hide categories of relics (Vaulted), with nothing hidden by default, the choice saved across sessions, and a marked button while anything is hidden.
 
 ## Requirements
 
-### Requirement: Filters button toggles a collapsible filter panel
-The Relics control panel SHALL contain a **Filters** button (transparent background, borderless, matching the Prime Gear Filters button style). Pressing it SHALL toggle a collapsible filter panel rendered as its own row directly below the Relics control panel, using the same background tint and corner styling as the control panel. The filter panel SHALL be closed by default when the application starts, and its open/closed state SHALL NOT persist across sessions. Closing the panel SHALL NOT reset any filter state.
+### Requirement: Filters menu button on the Relics bar
+The Relics control bar SHALL contain an icon-only **Filters** menu button showing a funnel icon, as defined by the `control-bar-visual-style` capability. Pressing it SHALL open a menu below it listing what can be hidden. No filter row SHALL appear below the bar.
 
-#### Scenario: Filters button opens the panel
-- **WHEN** the user presses the Filters button while the filter panel is closed
-- **THEN** the filter panel appears below the Relics control panel
-
-#### Scenario: Closing the panel keeps filters applied
-- **WHEN** the user checks Show vaulted and then presses the Filters button to close the panel
-- **THEN** vaulted relics remain visible
-
-#### Scenario: Panel is closed on startup
-- **WHEN** the application starts
-- **THEN** the filter panel is not visible until the Filters button is pressed
+#### Scenario: Filters button opens its menu
+- **WHEN** the user presses the Filters button on the Relics bar
+- **THEN** a menu opens below it, and no extra row appears under the bar
 
 ---
 
-### Requirement: Filter panel hosts the Show vaulted and Show all rewards checkboxes
-The filter panel SHALL contain the **Show vaulted** and **Show all rewards** checkboxes (moved from the Relics control panel), separated by a thin vertical divider, matching the Prime Gear filter panel layout. Both checkboxes SHALL keep their existing behavior: unchecked by default, session-only state, and immediate effect on the relic views. The Show all rewards checkbox (and its divider) SHALL be hidden while the **Table** view mode is active, with its checked state retained, exactly as it behaved on the control panel.
+### Requirement: Filters menu hides categories with checked entries
+The Relics Filters menu SHALL list, under a non-interactive "Hide" caption, a **Vaulted** checkbox entry. A checked entry SHALL hide that category of relics; nothing SHALL be hidden while no entry is checked. Toggling an entry SHALL apply immediately and SHALL NOT close the menu. Every entry SHALL be unchecked by default.
 
-#### Scenario: Checkboxes appear inside the panel
-- **WHEN** the filter panel is open in a card view mode
-- **THEN** it shows the Show vaulted and Show all rewards checkboxes, and the Relics control panel itself shows neither checkbox
+#### Scenario: Nothing is hidden by default
+- **WHEN** the application starts with no saved filters
+- **THEN** the Vaulted entry is unchecked and vaulted relics are shown
 
-#### Scenario: Show all rewards hidden in Table mode inside the panel
-- **WHEN** the filter panel is open and the user switches to Table view mode
-- **THEN** the Show all rewards checkbox is not visible in the panel while Show vaulted remains visible
+#### Scenario: Checking Vaulted hides vaulted relics
+- **WHEN** the user opens the Filters menu and checks Vaulted
+- **THEN** vaulted relics disappear from every view mode and the menu stays open
 
-#### Scenario: Show all rewards state survives Table mode
-- **WHEN** Show all rewards is checked, the user switches to Table mode and back to Compact mode
-- **THEN** the checkbox reappears in the filter panel still checked
+---
+
+### Requirement: Relics filters persist across sessions
+The Relics filter choices SHALL be saved when changed and restored at startup, independently of the Prime Gear filters. A settings file without them SHALL load with nothing hidden.
+
+#### Scenario: Hidden vaulted relics stay hidden after restart
+- **WHEN** the user checks Vaulted in the Relics Filters menu and restarts the application
+- **THEN** vaulted relics are hidden and the Vaulted entry is checked
+
+#### Scenario: Older settings hide nothing
+- **WHEN** the application loads a settings file that has no Relics filter values
+- **THEN** vaulted relics are shown
+
+---
+
+### Requirement: Filters button marks active filters
+The Relics Filters button SHALL show the non-default indicator defined by the `control-bar-visual-style` capability while any of its entries is checked. Its tooltip SHALL name the Filters control and list what is hidden, or state that nothing is hidden.
+
+#### Scenario: Hiding vaulted marks the button
+- **WHEN** Vaulted is checked in the Relics Filters menu
+- **THEN** the Filters button's funnel icon is tinted with the selection accent
+
+#### Scenario: Tooltip lists what is hidden
+- **WHEN** Vaulted is checked and the user rests the pointer on the Filters button
+- **THEN** after a short delay a tooltip names the Filters control and states that vaulted relics are hidden

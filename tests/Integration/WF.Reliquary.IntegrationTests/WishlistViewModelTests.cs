@@ -39,7 +39,7 @@ public sealed class WishlistViewModelTests
         Assert.That(vm.CanDelete, Is.True);
     }
 
-    // ── SelectCommand ─────────────────────────────────────────────────────────
+    // ── SelectAsync / SelectedEntry ───────────────────────────────────────────
 
     [Test]
     public async Task SelectAsync_ChangesActiveEntry()
@@ -80,6 +80,69 @@ public sealed class WishlistViewModelTests
         await vm.SelectAsync(second);
 
         Assert.That(changed, Is.True);
+    }
+
+    [Test]
+    public async Task SelectedEntry_Set_ActivatesAndPersistsEntry()
+    {
+        var store = StoreWithWishlists([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new WishlistViewModel(store.Object, NullPrompt);
+        await SettleAsync(vm);
+
+        var second = vm.Wishlists.Single(w => w.Id == SecondEntry.Id);
+        vm.SelectedEntry = second;
+        await SettleAsync(vm);
+
+        Assert.That(vm.ActiveEntry, Is.SameAs(second));
+        Assert.That(vm.SelectedEntry, Is.SameAs(second));
+        store.Verify(s => s.SetActiveAsync(SecondEntry.Id, default), Times.Once);
+    }
+
+    [Test]
+    public async Task SelectedEntry_SetNull_IsIgnored()
+    {
+        // The selector pushes null back while ReloadAsync clears the list.
+        var store = StoreWithWishlists([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new WishlistViewModel(store.Object, NullPrompt);
+        await SettleAsync(vm);
+        var active = vm.ActiveEntry;
+
+        vm.SelectedEntry = null;
+        await SettleAsync(vm);
+
+        Assert.That(vm.ActiveEntry, Is.SameAs(active));
+        store.Verify(s => s.SetActiveAsync(It.IsAny<long>(), default), Times.Never);
+    }
+
+    [Test]
+    public async Task SelectedEntry_SetToActiveEntry_DoesNotPersist()
+    {
+        var store = StoreWithWishlists([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new WishlistViewModel(store.Object, NullPrompt);
+        await SettleAsync(vm);
+
+        vm.SelectedEntry = vm.ActiveEntry;
+        await SettleAsync(vm);
+
+        store.Verify(s => s.SetActiveAsync(It.IsAny<long>(), default), Times.Never);
+    }
+
+    [Test]
+    public async Task ReloadAsync_UpdatesSelectedEntry_WithoutPersisting()
+    {
+        // A profile switch reloads the list; that must not write the active wishlist back.
+        var store = StoreWithWishlists([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new WishlistViewModel(store.Object, NullPrompt);
+        await SettleAsync(vm);
+        var changed = new List<string?>();
+        vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        store.Setup(s => s.GetActiveAsync(default)).ReturnsAsync(SecondEntry);
+
+        await vm.ReloadAsync();
+
+        Assert.That(vm.SelectedEntry!.Id, Is.EqualTo(SecondEntry.Id));
+        Assert.That(changed, Does.Contain(nameof(WishlistViewModel.SelectedEntry)));
+        store.Verify(s => s.SetActiveAsync(It.IsAny<long>(), default), Times.Never);
     }
 
     // ── CreateCommand ─────────────────────────────────────────────────────────

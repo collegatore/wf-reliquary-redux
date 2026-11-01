@@ -34,15 +34,28 @@
     </Style>
     <!-- Full-card transparent click target shown over a card in group-operations mode:
          clicking anywhere selects the card, and it suppresses the inner controls. The
-         chrome is neutralized so it stays invisible across hover/press. -->
+         background stays transparent across hover/press (so hover never looks like the
+         selected wash); on hover the overlay, which covers the card exactly, outlines
+         it so the whole card reads as one target. -->
     <Style Selector="Button.card-select-overlay">
       <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="Button.card-select-overlay:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="BorderBrush">
+        <SolidColorBrush Color="{DynamicResource SystemAccentColor}" />
+      </Setter>
     </Style>
     <Style Selector="Button.card-select-overlay:pressed /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <!-- Group-operations mode: the card's parts list is dimmed, since its checkboxes
+         don't respond while the overlay takes the clicks. Mild, because owned cards are
+         already faded. -->
+    <Style Selector="ItemsControl.gear-parts.group-mode">
+      <Setter Property="Opacity" Value="0.6" />
     </Style>
     <!-- Fade a card out before it is removed when marked owned with "Show owned gear"
          off. Declared last so its Opacity wins over the muted owned style above. -->
@@ -62,11 +75,6 @@
     <!-- Non-wishlisted rewards dimmed when "Show all rewards" is on. -->
     <Style Selector="TextBlock.dimmed">
       <Setter Property="Opacity" Value="0.5" />
-    </Style>
-    <!-- Buttons inside Flyout popups: lighter background so they don't look
-         like heavy stand-alone buttons in a dropdown list context. -->
-    <Style Selector="FlyoutPresenter Button">
-      <Setter Property="Background" Value="#18FFFFFF" />
     </Style>
     <!-- Per-tier accent bar color (left border of each tier group). -->
     <Style Selector="Border.tier-common">
@@ -105,7 +113,7 @@
     <Border
         DockPanel.Dock="Bottom"
         Padding="12,6"
-        Background="#1A808080">
+        Background="{DynamicResource ControlBarBackgroundBrush}">
       <StackPanel
           HorizontalAlignment="Left"
           VerticalAlignment="Center"

@@ -149,18 +149,15 @@
              bottom corners are square where it meets the splitter. -->
         <Border
             Grid.Row="1"
+            Classes="control-bar compact"
             Margin="8,4,8,0"
-            Padding="12,2"
-            Background="#1A808080"
             CornerRadius="4,4,0,0">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="Missions:" VerticalAlignment="Center" />
-            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <CheckBox
-                  IsChecked="{Binding WishlistFarming.ShowExactDropChances}"
-                  VerticalAlignment="Center" />
-              <TextBlock Text="Show exact drop chances" VerticalAlignment="Center" />
-            </StackPanel>
+            <TextBlock Classes="section-heading" Text="Missions" />
+            <CheckBox
+                Classes="chip"
+                Content="Show exact drop chances"
+                IsChecked="{Binding WishlistFarming.ShowExactDropChances}" />
           </StackPanel>
         </Border>
       </Grid>
@@ -246,20 +243,13 @@
 
       <!-- Column 2: Missions panel (control bar + card scroll) -->
       <Grid Grid.Column="2" RowDefinitions="Auto,*">
-        <Border
-            Grid.Row="0"
-            Margin="8,0,8,8"
-            Padding="12,8"
-            Background="#1A808080"
-            CornerRadius="4">
+        <Border Grid.Row="0" Classes="control-bar">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="Missions:" VerticalAlignment="Center" />
-            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <CheckBox
-                  IsChecked="{Binding WishlistFarming.ShowExactDropChances}"
-                  VerticalAlignment="Center" />
-              <TextBlock Text="Show exact drop chances" VerticalAlignment="Center" />
-            </StackPanel>
+            <TextBlock Classes="section-heading" Text="Missions" />
+            <CheckBox
+                Classes="chip"
+                Content="Show exact drop chances"
+                IsChecked="{Binding WishlistFarming.ShowExactDropChances}" />
           </StackPanel>
         </Border>
         <ScrollViewer Grid.Row="1">

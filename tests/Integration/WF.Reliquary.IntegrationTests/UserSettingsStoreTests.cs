@@ -202,7 +202,7 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
-    public async Task LoadAsync_WhenFileAbsent_DefaultsToEraSortModeAscending()
+    public async Task LoadAsync_WhenFileAbsent_DefaultsToEraSortModeDescending()
     {
         var store = new LocalUserSettingsStore(tempDir);
 
@@ -211,7 +211,7 @@ public sealed class UserSettingsStoreTests
         Assert.Multiple(() =>
         {
             Assert.That(settings.SortMode, Is.EqualTo(RelicSortMode.Era));
-            Assert.That(settings.SortDescending, Is.False);
+            Assert.That(settings.SortDescending, Is.True);
         });
     }
 
@@ -235,7 +235,7 @@ public sealed class UserSettingsStoreTests
     }
 
     [Test]
-    public async Task LoadAsync_WhenSortFieldsMissingFromFile_DefaultsToEraAscending()
+    public async Task LoadAsync_WhenSortFieldsMissingFromFile_DefaultsToEraDescending()
     {
         // Simulate a settings file written by an older version that lacks SortMode/SortDescending.
         var path = Path.Combine(tempDir, "user-settings.json");
@@ -248,7 +248,111 @@ public sealed class UserSettingsStoreTests
         Assert.Multiple(() =>
         {
             Assert.That(loaded.SortMode, Is.EqualTo(RelicSortMode.Era));
-            Assert.That(loaded.SortDescending, Is.False);
+            Assert.That(loaded.SortDescending, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenSortDescendingSavedFalse_KeepsAscending()
+    {
+        // An install that saved Era ascending (the old default) keeps it.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14,"sortMode":"Era","sortDescending":false}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.SortDescending, Is.False);
+    }
+
+    [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsFiltersAndShowAllRewards()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        await store.SaveAsync(UserSettings.Default with
+        {
+            RelicsHideVaulted = true,
+            GearHideVaulted = true,
+            GearHideOwned = true,
+            GearHideNotWishlisted = true,
+            ShowAllRewards = true,
+        });
+        var loaded = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.RelicsHideVaulted, Is.True);
+            Assert.That(loaded.GearHideVaulted, Is.True);
+            Assert.That(loaded.GearHideOwned, Is.True);
+            Assert.That(loaded.GearHideNotWishlisted, Is.True);
+            Assert.That(loaded.ShowAllRewards, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenFilterFieldsMissingFromFile_HidesNothing()
+    {
+        // Simulate a settings file written before filters and Show all rewards persisted.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.RelicsHideVaulted, Is.False);
+            Assert.That(loaded.GearHideVaulted, Is.False);
+            Assert.That(loaded.GearHideOwned, Is.False);
+            Assert.That(loaded.GearHideNotWishlisted, Is.False);
+            Assert.That(loaded.ShowAllRewards, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task SaveAsync_ThenLoadAsync_RoundTripsPalette()
+    {
+        var store = new LocalUserSettingsStore(tempDir);
+
+        await store.SaveAsync(UserSettings.Default with { Palette = ColorPalette.Stone });
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.Palette, Is.EqualTo(ColorPalette.Stone));
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenPaletteMissingFromFile_DefaultsToLinen()
+    {
+        // Simulate a settings file written by a version without the palette setting.
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":14}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.That(loaded.Palette, Is.EqualTo(ColorPalette.Linen));
+    }
+
+    [Test]
+    public async Task LoadAsync_WhenPaletteUnrecognized_DefaultsToLinen_AndKeepsOtherSettings()
+    {
+        var path = Path.Combine(tempDir, "user-settings.json");
+        await File.WriteAllTextAsync(path,
+            """{"sourceUrl":"https://example.test/","windowWidth":900,"windowHeight":600,"fontSizePt":18,"viewMode":"Table","palette":"Neon"}""");
+        var store = new LocalUserSettingsStore(tempDir);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.Palette, Is.EqualTo(ColorPalette.Linen));
+            Assert.That(loaded.FontSizePt, Is.EqualTo(18), "an unknown palette must not reset other settings");
+            Assert.That(loaded.ViewMode, Is.EqualTo(RelicViewMode.Table));
+            Assert.That(loaded.WindowWidth, Is.EqualTo(900));
         });
     }
 

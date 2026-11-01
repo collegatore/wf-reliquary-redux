@@ -39,7 +39,7 @@ public sealed class ProfileViewModelTests
         Assert.That(vm.CanDelete, Is.True);
     }
 
-    // ── SelectCommand ─────────────────────────────────────────────────────────
+    // ── SelectAsync / SelectedEntry ───────────────────────────────────────────
 
     [Test]
     public async Task SelectAsync_ChangesActiveEntry()
@@ -80,6 +80,51 @@ public sealed class ProfileViewModelTests
         await vm.SelectAsync(second);
 
         Assert.That(changed, Is.True);
+    }
+
+    [Test]
+    public async Task SelectedEntry_Set_ActivatesAndPersistsEntry()
+    {
+        var store = StoreWithProfiles([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new ProfileViewModel(store.Object, NullPrompt);
+        await SettleAsync();
+
+        var second = vm.Profiles.Single(p => p.Id == SecondEntry.Id);
+        vm.SelectedEntry = second;
+        await SettleAsync();
+
+        Assert.That(vm.ActiveEntry, Is.SameAs(second));
+        Assert.That(vm.SelectedEntry, Is.SameAs(second));
+        store.Verify(s => s.SetActiveAsync(SecondEntry.Id, default), Times.Once);
+    }
+
+    [Test]
+    public async Task SelectedEntry_SetNull_IsIgnored()
+    {
+        // The selector pushes null back while ReloadAsync clears the list.
+        var store = StoreWithProfiles([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new ProfileViewModel(store.Object, NullPrompt);
+        await SettleAsync();
+        var active = vm.ActiveEntry;
+
+        vm.SelectedEntry = null;
+        await SettleAsync();
+
+        Assert.That(vm.ActiveEntry, Is.SameAs(active));
+        store.Verify(s => s.SetActiveAsync(It.IsAny<long>(), default), Times.Never);
+    }
+
+    [Test]
+    public async Task SelectedEntry_SetToActiveEntry_DoesNotPersist()
+    {
+        var store = StoreWithProfiles([DefaultEntry, SecondEntry], DefaultEntry);
+        var vm = new ProfileViewModel(store.Object, NullPrompt);
+        await SettleAsync();
+
+        vm.SelectedEntry = vm.ActiveEntry;
+        await SettleAsync();
+
+        store.Verify(s => s.SetActiveAsync(It.IsAny<long>(), default), Times.Never);
     }
 
     // ── CreateCommand ─────────────────────────────────────────────────────────

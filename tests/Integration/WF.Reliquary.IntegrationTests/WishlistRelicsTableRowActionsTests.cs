@@ -58,7 +58,8 @@ public sealed class WishlistRelicsTableRowActionsTests
         vm.TableRows[0].ShowRewardsCommand!.Execute(null);
         vm.TableRows[1].ShowRewardsCommand!.Execute(null);
 
-        Assert.That(seen, Is.EqualTo(new[] { "Lith A1 Relic", "Meso B2 Relic" }));
+        // Default sort is Era descending: Meso before Lith.
+        Assert.That(seen, Is.EqualTo(new[] { "Meso B2 Relic", "Lith A1 Relic" }));
     }
 
     [Test]

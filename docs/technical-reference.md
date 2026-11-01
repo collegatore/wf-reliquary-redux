@@ -25,6 +25,23 @@ dotnet test --filter "FullyQualifiedName~<TestClassName>"  # single test class
 dotnet run --project src/Presentation/WF.Reliquary.Presentation/WF.Reliquary.Presentation.csproj
 ```
 
+### UI snapshots
+
+`tools/WF.Reliquary.UiSnapshots` renders the real views off-screen (Avalonia headless with Skia drawing) and saves one PNG per scene to `artifacts/ui-snapshots/` (git-ignored). Use it to check a styling change without launching the app:
+
+```bash
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots                    # all scenes
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --only prime    # scenes whose name contains "prime"
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --list          # list scenes
+dotnet run -c Release --project tools/WF.Reliquary.UiSnapshots -- --set ControlHoverBrush=#D7E8D5   # try a color without editing styles
+```
+
+- It boots the real `App`, so `App.axaml` and `Styles/` load exactly as in the app; no services or database are created.
+- Views get stand-in DataContexts (`StandIn.cs`): anonymous objects with just the bound property paths. A new binding in a view needs a matching property there, or that control falls back to its default. Gear cards are real `PrimeGearCardViewModel`s, and the selectors are real `WishlistViewModel` / `ProfileViewModel`s over in-memory stores (`StubStores.cs`), so the typed templates apply.
+- `MainWindow.axaml`'s `Window.Styles` (card styles) are parsed from source at runtime (`WindowStyles.cs`) and added to each scene window, so card scenes look as they do in the app.
+- Scenes (`Scenes.cs`) set the window size, the font size (Small 11 / Medium 14 / Large 18), the color palette (Linen by default; `*-stone` scenes use Stone), an optional pointer position for hover states, and an optional `Prepare` step run after the window is shown: opening a selector or a `⋮` menu (popups are captured), pressing keys, or filling Table mode with rows. `icons` / `icons-large-font` show every icon.
+- Run it in Release so it builds next to, not over, a Debug build that a running debug session has locked.
+
 VS Code workspace tasks (`Ctrl+Shift+B`): `dotnet: restore`, `dotnet: build`, `dotnet: test`, `dotnet: run presentation`. Launch configurations: `.NET: Debug Presentation` (with debugger), `.NET: Launch Presentation` (without).
 
 ## Publishing and Releases
@@ -74,6 +91,8 @@ src/
 tests/
   Unit/          — NUnit, Application layer only, Moq for all ports
   Integration/   — NUnit, real SQLite stack, ViewModel wiring, boundary checks
+tools/
+  WF.Reliquary.UiSnapshots/ — dev-only off-screen renderer for UI screenshots (not shipped)
 ```
 
 ## Architecture
@@ -164,6 +183,17 @@ Each relic card on the Relics and Missions tab has a `⋮` overflow menu (same p
 ## UI Design
 
 - **Card display** — the rationale behind the relic and farming-mission cards, the three relic view modes (Verbatim / Compact / Table), the Compact word-clipping rule, the Table mode TreeDataGrid decision, tier accent bars, the light-theme palette, and font-scaled card widths, is documented in [card-display-design.md](card-display-design.md).
+- **Control-bar styling** — the tab control bars (the Relics control panel, the missions separator panel, the Prime Gear bars) take their look from `Presentation/Styles/ControlBars.axaml`, included from `App.axaml`. Bars declare structure with classes and do not use inline colors or separator elements:
+  - `Border.control-bar` (bar surface; add `compact` for the missions divider bar)
+  - `StackPanel.button-group` around related `Button`s: each button is its own outlined pill with the field look, and the group's tighter spacing keeps related buttons together; add `joined` for a pair that acts as one control (one outline, single divider). Corners are chosen by position, which counts hidden children, so if a member can be hidden, bind `Classes.joined` to the same condition as its visibility (as Mark/Unmark owned does with `ShowOwned`)
+  - A bar button whose command can't execute is disabled by Avalonia (no hover, no clicks) and shown inactive: field background kept, text and outline in the palette's inactive colors; express availability through the command's `CanExecute`, not through bindings in the view
+  - `CheckBox.chip` with the label as `Content` (checked chips use `CardSelectedBrush`, the app's "selected/on" color)
+  - `TextBlock.section-heading` for pane titles (sized by `SectionHeadingFontSize`, which scales with the font-size setting)
+  - `TextBlock.field-caption` inside a selector's closed field for a label that belongs to one control (the Wishlist selector's "Wishlist:", set through the `ComboBox`'s `SelectionBoxItemTemplate` so the open list shows names only)
+- **Dropdowns and menus** — `Presentation/Styles/Dropdowns.axaml` (included after `ControlBars.axaml`) styles every dropdown app-wide: all `ComboBox`es and their items, including the Wishlist and Profile selectors (a `ComboBox` whose `SelectedItem` binds two-way to the view model's `SelectedEntry`; the active entry is marked by the selection color alone). Commands never go inside a selector: each selector is followed by a `⋮` actions button (`Button.dropdown-field.icon-only` with a `MenuFlyout`). Every `⋮` menu (cards and actions) opts in with `FlyoutPresenterClasses="app-menu"`: it opens with no item highlighted, and `MenuKeyboardHighlight` (registered in `App.Initialize`) adds a `keyboard-nav` class on the first key press so arrow-key navigation still shows a highlight (Fluent's arrow keys never set `:focus-visible`). A `MenuItem.destructive` (Delete) turns `DestructiveForegroundBrush`, a palette-independent brush in `App.axaml`, while pointed at.
+- **Bar menus and markers** — Filters, Sort and Display are `Button.dropdown-field.icon-only` buttons with a `MenuFlyout` (`app-menu`) of toggle `MenuItem`s: `ToggleType="CheckBox"` with `StaysOpenOnClick="True"` for options, `ToggleType="Radio"` (shared `GroupName`) for a single choice, and a disabled `MenuItem.menu-caption` for headings ("Hide", "View"). Check and radio marks use `SelectionAccentBrush`. A control whose state differs from its default binds `Classes.non-default` to a view-model flag (`IsFilterActive`, `IsSortNonDefault`, `IsDisplayNonDefault`), which gives it the checked-chip look (`CardSelectedBrush` wash, `SelectionAccentBrush` icon); its `ToolTip.Tip` binds the matching `*Summary` string. Filters (`RelicsHideVaulted`, `GearHide*`), Show all rewards, view mode and sort persist in `UserSettings`; view models restore them with `Load*Settings` (no save) and save through `Save*SettingsAsync` hooks that `MainWindow` runs one at a time.
+- **Icons** — `Presentation/Styles/Icons.axaml` holds `StreamGeometry` resources (`Icon.*`, Material Design Icons paths, Apache-2.0 per `NOTICE`) for `PathIcon.Data`. Icons are fill-based, so a `PathIcon` takes its control's `Foreground` (hover, disabled and destructive colors apply without extra styles). A default `PathIcon` style sizes them from `IconSize`, which scales with the font-size setting like the card widths. Use icons rather than text or emoji glyphs for new actions; an icon-only action carries a tooltip. Table mode row actions use `Button.table-action`, which keeps their icons muted until hover.
+- **Color palettes** — every color used by these styles comes from the active palette, a `ResourceDictionary` in `Presentation/Styles/Palettes/` (`Linen.axaml`, the default, and `Stone.axaml`). All palettes define the same keys: `Control*Brush` (bar, field background, outline, hover/pressed tints, hover outline), `ControlInactive*Brush` (inactive text and outline), `CardSelectedBrush` (selection wash), `SelectionAccentBrush` (checked-chip tick), plus a `PaletteName` marker. `App.axaml` merges Linen at load; `PaletteApplier.Apply(ColorPalette)` swaps the merged palette (found by its marker), and everything follows via `DynamicResource`. To add a palette, copy a palette file, add a `ColorPalette` value, and add a radio button to `AppearanceWindow.axaml`.
 
 ## UI Concurrency
 

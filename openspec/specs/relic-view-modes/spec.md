@@ -7,15 +7,15 @@ Defines the three relic view modes available in the Relics and Missions tab: **V
 ## Requirements
 
 ### Requirement: Relic view mode selector
-The **Appearance window** SHALL contain a three-way relic view mode selector with the options **Verbatim**, **Compact**, and **Table**, alongside the existing layout orientation control. Selecting a mode SHALL immediately switch the relics panel content in the main window (live preview, per the Appearance window's existing behavior) without requiring a reload, in both the stacked and side-by-side layouts. The default mode SHALL be **Compact**.
+The **Display menu** on the Relics bar (see the `relics-display-menu` capability) SHALL offer a three-way relic view mode choice with the options **Verbatim**, **Compact**, and **Table**. Selecting a mode SHALL immediately switch the relics panel content without requiring a reload, in both the stacked and side-by-side layouts. The Appearance window SHALL NOT offer the view mode. The default mode SHALL be **Compact**.
 
 #### Scenario: Selector offers three modes
-- **WHEN** the Appearance window is open
-- **THEN** it shows a relic view mode selector with exactly the options Verbatim, Compact, and Table
+- **WHEN** the user opens the Display menu on the Relics bar
+- **THEN** it offers exactly the view modes Verbatim, Compact, and Table
 
 #### Scenario: Switching modes updates the relics panel immediately
-- **WHEN** the user changes the selected view mode in the Appearance window
-- **THEN** the relics panel in the main window re-renders in the newly selected mode without a reload
+- **WHEN** the user chooses a different view mode in the Display menu
+- **THEN** the relics panel re-renders in the newly selected mode without a reload
 
 #### Scenario: Compact is the default mode
 - **WHEN** the application runs with no previously saved view mode
@@ -78,7 +78,7 @@ Compact mode (cards and Table rows) SHALL clip display names as a presentation-l
 ---
 
 ### Requirement: Table mode renders one row per relic
-In **Table** mode, the relics panel SHALL render a table with one top-level row per relic showing: the clipped relic name, a wishlisted-tier marker listing the tiers that contain at least one wishlisted reward in Common → Uncommon → Rare order without parentheses (e.g. "C, R"), and two pictogram actions (rewards modal and Recruiting Chat message composer). When a tier contains more than one wishlisted reward, its marker SHALL be prefixed with the count (e.g. "C, 2 R" for one wishlisted Common and two wishlisted Rares). Rows SHALL follow the active sort mode and direction (see the `relics-sorting-panel` capability), matching the card modes; with default settings this is era order (Lith → Meso → Neo → Axi) then alphabetical by relic name. The **Show vaulted** filter SHALL apply, and vaulted rows SHALL use the same reduced-opacity treatment as vaulted cards.
+In **Table** mode, the relics panel SHALL render a table with one top-level row per relic showing: the clipped relic name, a wishlisted-tier marker listing the tiers that contain at least one wishlisted reward in Common → Uncommon → Rare order without parentheses (e.g. "C, R"), and two pictogram actions (rewards modal and Recruiting Chat message composer). When a tier contains more than one wishlisted reward, its marker SHALL be prefixed with the count (e.g. "C, 2 R" for one wishlisted Common and two wishlisted Rares). Rows SHALL follow the active sort mode and direction (see the `relics-sorting-panel` capability), matching the card modes; with default settings this is era order (Axi → Neo → Meso → Lith) then alphabetical by relic name. The **Vaulted** filter SHALL apply, and vaulted rows SHALL use the same reduced-opacity treatment as vaulted cards.
 
 #### Scenario: Row shows name, markers, and pictograms
 - **WHEN** a relic with wishlisted Common and Rare rewards is displayed in Table mode
@@ -94,11 +94,11 @@ In **Table** mode, the relics panel SHALL render a table with one top-level row 
 
 #### Scenario: Default sort orders rows by era then name
 - **WHEN** Lith and Meso relics are displayed in Table mode with default sort settings
-- **THEN** all Lith rows appear before any Meso rows, alphabetically within each era
+- **THEN** all Meso rows appear before any Lith rows, alphabetically within each era
 
 #### Scenario: Vaulted rows are dimmed and filterable
-- **WHEN** Show vaulted is checked and a vaulted relic is displayed in Table mode
-- **THEN** its row renders at reduced opacity; unchecking Show vaulted hides it
+- **WHEN** a vaulted relic is displayed in Table mode with nothing hidden by the Filters menu
+- **THEN** its row renders at reduced opacity; checking Vaulted in the Filters menu hides it
 
 ---
 
@@ -116,7 +116,7 @@ Each top-level relic row SHALL be expandable into child rows, one per **wishlist
 ---
 
 ### Requirement: Rewards modal pictogram
-Each top-level relic row in Table mode SHALL provide a pictogram action that opens a modal dialog showing that relic rendered as a **Verbatim** card in all-rewards mode (verbatim names, tier groups). Non-wishlisted rewards SHALL render dimmed exactly as on the main-panel Verbatim card; wishlisted rewards SHALL receive no additional highlight. The dialog SHALL be closable only via the window's native close control (no in-content Close button), returning the user to the table unchanged.
+Each top-level relic row in Table mode SHALL provide a pictogram action, drawn as an icon from the `ui-iconography` capability rather than a text glyph, that opens a modal dialog showing that relic rendered as a **Verbatim** card in all-rewards mode (verbatim names, tier groups). Non-wishlisted rewards SHALL render dimmed exactly as on the main-panel Verbatim card; wishlisted rewards SHALL receive no additional highlight. The dialog SHALL be closable only via the window's native close control (no in-content Close button), returning the user to the table unchanged.
 
 #### Scenario: Pictogram opens the Verbatim card modal
 - **WHEN** the user activates the rewards pictogram on a relic row
@@ -126,11 +126,19 @@ Each top-level relic row in Table mode SHALL provide a pictogram action that ope
 - **WHEN** the user closes the rewards modal via the window's native close control
 - **THEN** the table is unchanged, including row expansion states
 
+#### Scenario: Rewards pictogram is an icon with a tooltip
+- **WHEN** the user rests the pointer on the rewards pictogram of a relic row
+- **THEN** the pictogram is drawn as an icon in the row's text color and a tooltip names the action
+
 ---
 
 ### Requirement: Recruiting Chat message pictogram
-Each top-level relic row in Table mode SHALL provide a pictogram action that opens the existing Recruiting Chat message composer for that relic, equivalent to the "Compose Recruiting Chat message…" action on relic cards.
+Each top-level relic row in Table mode SHALL provide a pictogram action, drawn as an icon from the `ui-iconography` capability rather than a text or emoji glyph, that opens the existing Recruiting Chat message composer for that relic, equivalent to the "Compose Recruiting Chat message…" action on relic cards.
 
 #### Scenario: Pictogram opens the Recruiting Chat message composer
 - **WHEN** the user activates the Recruiting Chat message pictogram on a relic row
 - **THEN** the Recruiting Chat message composer dialog opens for that relic
+
+#### Scenario: Recruiting pictogram is an icon with a tooltip
+- **WHEN** the user rests the pointer on the Recruiting Chat message pictogram of a relic row
+- **THEN** the pictogram is drawn as an icon in the row's text color, not a colored emoji, and a tooltip names the action

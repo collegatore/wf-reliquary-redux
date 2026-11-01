@@ -20,7 +20,7 @@ The system SHALL create a wishlist named **Default** within the active profile a
 
 ### Requirement: Wishlist selector control
 
-The Prime Gear tab SHALL display a wishlist selector row above the gear cards. The selector SHALL show the name of the currently active wishlist and allow the user to switch to another wishlist by selecting it from a dropdown. The selector SHALL list only the wishlists belonging to the active profile.
+The Prime Gear tab SHALL display a wishlist selector row above the gear cards. The selector SHALL show the name of the currently active wishlist and allow the user to switch to another wishlist by selecting it from a dropdown. The selector SHALL list only the wishlists belonging to the active profile, and SHALL list no actions (see the `selector-actions-menu` capability).
 
 #### Scenario: Selector shows active wishlist name
 
@@ -37,20 +37,6 @@ The Prime Gear tab SHALL display a wishlist selector row above the gear cards. T
 - **WHEN** the user opens the wishlist selector dropdown
 - **THEN** only wishlists belonging to the active profile are listed
 
-### Requirement: Wishlist management actions in dropdown
-
-The wishlist selector dropdown SHALL include a visually separated bottom section containing three actions: **Rename this list…**, **Delete this list**, and **+ New list**.
-
-#### Scenario: Bottom section is separated from list entries
-
-- **WHEN** the user opens the wishlist selector dropdown
-- **THEN** a visual divider separates the list of wishlist names from the management actions
-
-#### Scenario: All three management actions are present
-
-- **WHEN** the user opens the wishlist selector dropdown
-- **THEN** the actions "Rename this list…", "Delete this list", and "+ New list" are visible in the bottom section
-
 ### Requirement: Create new wishlist
 
 The user SHALL be able to create a new named wishlist via a modal dialog. The confirmed name
@@ -60,13 +46,13 @@ immediately after creation.
 
 #### Scenario: User creates a new wishlist
 
-- **WHEN** the user selects "+ New list" and confirms the modal with a valid name
+- **WHEN** the user selects "New list" in the Wishlist actions menu and confirms the modal with a valid name
 - **THEN** a new wishlist with that name is created in the active profile, it becomes the active
   wishlist, and it appears in the dropdown
 
 #### Scenario: User cancels new wishlist creation
 
-- **WHEN** the user selects "+ New list" and dismisses the modal without confirming
+- **WHEN** the user selects "New list" in the Wishlist actions menu and dismisses the modal without confirming
 - **THEN** no wishlist is created and the active wishlist is unchanged
 
 ### Requirement: Rename wishlist
@@ -96,7 +82,7 @@ The user SHALL be able to delete the currently active wishlist. When deleted, th
 
 #### Scenario: Delete is disabled when only one wishlist remains
 
-- **WHEN** the user opens the dropdown and only one wishlist exists
+- **WHEN** the user opens the Wishlist actions menu and only one wishlist exists
 - **THEN** the "Delete this list" action is disabled and cannot be selected
 
 ### Requirement: Last active wishlist persisted across sessions
@@ -200,3 +186,12 @@ truncating an over-long name with an ellipsis and showing the full name in a too
 - **WHEN** the active wishlist's name is too long to fit the selector button
 - **THEN** the button shows a truncated name with an ellipsis and reveals the full name in a
   tooltip when hovered
+
+### Requirement: Wishlist actions menu
+
+The Wishlist selector SHALL be followed by an actions button, as defined by the `selector-actions-menu` capability, whose menu contains **Rename this list…**, **Delete this list**, and **New list**.
+
+#### Scenario: All three actions are in the menu
+
+- **WHEN** the user presses the Wishlist actions button
+- **THEN** the menu shows "Rename this list…", "Delete this list", and "New list"

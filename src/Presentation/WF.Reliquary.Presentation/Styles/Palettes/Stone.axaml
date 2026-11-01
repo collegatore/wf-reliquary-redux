@@ -1,0 +1,28 @@
+<ResourceDictionary
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Stone: light stone bars, off-white controls, a sage hover marking available
+       options, and a heather (dusty mauve) selection color. Every palette defines
+       the same keys; PaletteApplier swaps the whole dictionary. -->
+
+  <!-- Identifies this dictionary as the active palette (PaletteApplier looks it up). -->
+  <x:String x:Key="PaletteName">Stone</x:String>
+
+  <!-- Control bars and their controls -->
+  <SolidColorBrush x:Key="ControlBarBackgroundBrush" Color="#EEEEE8" />
+  <SolidColorBrush x:Key="ControlFieldBackgroundBrush" Color="#FAFAF7" />
+  <SolidColorBrush x:Key="ControlOutlineBrush" Color="#CBCBC0" />
+  <SolidColorBrush x:Key="ControlOutlineHoverBrush" Color="#6FA37C" />
+  <SolidColorBrush x:Key="ControlHoverBrush" Color="#E2EDE3" />
+  <SolidColorBrush x:Key="ControlPressedBrush" Color="#CCE0D0" />
+
+  <!-- Inactive controls (disabled bar buttons, chips, dropdowns): muted text and
+       outline over the unchanged field background. -->
+  <SolidColorBrush x:Key="ControlInactiveForegroundBrush" Color="#A6A69D" />
+  <SolidColorBrush x:Key="ControlInactiveOutlineBrush" Color="#DDDDD5" />
+
+  <!-- Selection: checked chips, selected dropdown items, selected gear cards -->
+  <SolidColorBrush x:Key="CardSelectedBrush" Color="#DFD2E3" />
+  <SolidColorBrush x:Key="SelectionAccentBrush" Color="#876391" />
+</ResourceDictionary>

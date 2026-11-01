@@ -16,7 +16,7 @@ public sealed class AppearanceViewModel : ObservableObject
     private double fontSizePt;          // sole font-size state; SelectedFontSize is derived
     private double relicCardWidthPx;    // base width at Medium font size
     private RelicsMissionsOrientation orientation;
-    private RelicViewMode viewMode;
+    private ColorPalette palette;
 
     public AppearanceViewModel(IUserSettingsStore settingsStore, UserSettings initialSettings)
     {
@@ -25,7 +25,7 @@ public sealed class AppearanceViewModel : ObservableObject
         fontSizePt = initialSettings.FontSizePt;
         relicCardWidthPx = initialSettings.RelicCardWidthPx;
         orientation = initialSettings.Orientation;
-        viewMode = initialSettings.ViewMode;
+        palette = initialSettings.Palette;
     }
 
     // ── Delegates wired by the shell ────────────────────────────────────────
@@ -41,12 +41,6 @@ public sealed class AppearanceViewModel : ObservableObject
     /// so the side-by-side splitter's minimum width stays correct. Wired by the shell.
     /// </summary>
     public Action<double>? ApplyRelicCardWidth { get; set; }
-
-    /// <summary>
-    /// Applies the chosen relic view mode to the live shell (main window) so the
-    /// switch takes effect immediately, like orientation. Wired by the shell.
-    /// </summary>
-    public Action<RelicViewMode>? ApplyViewMode { get; set; }
 
     // ── Properties ─────────────────────────────────────────────────────────
 
@@ -139,21 +133,21 @@ public sealed class AppearanceViewModel : ObservableObject
     }
 
     /// <summary>
-    /// The active relic view mode. Applies live to the shell and auto-saves on
-    /// selection, like font size, relic card width, and orientation.
+    /// The active color palette. Applies live to the whole app (via the shared palette
+    /// resources) and auto-saves on selection, like the other appearance settings.
     /// </summary>
-    public RelicViewMode SelectedViewMode
+    public ColorPalette SelectedPalette
     {
-        get => viewMode;
+        get => palette;
         set
         {
-            if (viewMode == value) return;
+            if (palette == value) return;
 
-            viewMode = value;
+            palette = value;
             OnPropertyChanged();
 
-            ApplyViewMode?.Invoke(value);
-            _ = SaveViewModeNow();
+            PaletteApplier.Apply(value);
+            _ = SavePaletteNow();
         }
     }
 
@@ -177,17 +171,18 @@ public sealed class AppearanceViewModel : ObservableObject
         await settingsStore.SaveAsync(current with { RelicCardWidthPx = relicCardWidthPx });
     }
 
-    private async Task SaveViewModeNow()
+    private async Task SavePaletteNow()
     {
         var current = await settingsStore.LoadAsync();
-        await settingsStore.SaveAsync(current with { ViewMode = viewMode });
+        await settingsStore.SaveAsync(current with { Palette = palette });
     }
 
     /// <summary>
     /// Applies font size app-wide and recomputes <c>RelicCardWidth</c> from
     /// <paramref name="relicCardBasePx"/> — the card's effective width at Medium
     /// font size — scaled by the current font-size ratio. <c>MissionCardWidth</c>
-    /// keeps its historical fixed 300px base (not user-configurable). Returns the
+    /// keeps its historical fixed 300px base (not user-configurable), and
+    /// <c>SectionHeadingFontSize</c> and <c>IconSize</c> their fixed 16 bases. Returns the
     /// resulting effective relic card width, so callers can propagate it live
     /// (e.g. to the side-by-side layout's minimum column width).
     /// </summary>
@@ -203,6 +198,9 @@ public sealed class AppearanceViewModel : ObservableObject
             var relicCardWidth = relicCardBasePx * ratio;
             resources["RelicCardWidth"] = relicCardWidth;
             resources["MissionCardWidth"] = 300 * ratio;
+            resources["SectionHeadingFontSize"] = 16 * ratio;
+            resources["IconSize"] = 16 * ratio;
+            resources["MenuCaptionFontSize"] = 12 * ratio;
             return relicCardWidth;
         }
 
